@@ -14,8 +14,6 @@ from pyPLANES.gmsh.import_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_files
 
-
-
 class Model():
     def __init__(self, p):
         self.f = open(p.gmsh_file + ".msh", "r")
