@@ -53,6 +53,7 @@ class Model():
         for _ in self.vertices[1:]:
             print(_)
 
+
     def print_edges(self):
         for _ in self.edges:
             print(_)
