@@ -135,5 +135,9 @@ doc/
 
 # pyPLANES
 materials/
-tests/
-!one_layer
+tests/*
+!tests/one_layer/
+
+# pyPLANES
+*.msh
+*.geo
