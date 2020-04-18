@@ -135,3 +135,5 @@ doc/
 
 # pyPLANES
 materials/
+tests/
+!one_layer
