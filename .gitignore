@@ -135,8 +135,8 @@ doc/
 
 # pyPLANES
 materials/
-tests/*
-!tests/one_layer/
+# tests/*
+# !tests/one_layer/
 
 # pyPLANES
 *.msh

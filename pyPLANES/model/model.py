@@ -194,14 +194,11 @@ class Model():
             self.create_linear_system(f)
             self.solve()
             write_out_files(self)
-
             result = p.solver_pymls.solve(f, p.theta_d)
             R_PW, T_PW = p.S_PW.resolution_PW(f, p.theta_d)
-
-            print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
-            print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
-            # print("R pyPLANES_PW   = {}".format(R_PW))
-            # print("R pymls         = {}".format(result['R'][0]))
+            if hasattr(self,"modulus_trans"):
+                print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
+                print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
             print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
             print("|R pyPLANES_PW|   = {}".format(np.abs(R_PW)))
             print("|R pymls|         = {}".format(np.abs(result['R'][0])))
@@ -237,19 +234,15 @@ class Model():
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]
         self.abs = 1.
-        print(self.abs)
         for _ent in self.entities[1:]:
-
             if isinstance(_ent, IncidentPwFem):
                 _ent.sol = X[_ent.dofs]
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= np.abs(self.modulus_reflex)**2
-                print(self.abs)
             elif isinstance(_ent, TransmissionPwFem):
                 _ent.sol = X[_ent.dofs]
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= np.abs(self.modulus_trans)**2
-                print(self.abs)
 
     def display_sol(self, p):
         if any(p.plot[3:]):
