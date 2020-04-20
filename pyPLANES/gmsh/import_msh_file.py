@@ -90,8 +90,13 @@ def entities(self, f, p):
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
     for __ in range(_p):
         _f = f.readline().split()
+        # print(f)
         tag = int(_f[0])
+        # print(tag)
         x, y, z = float(_f[1]), float(_f[2]), float(_f[3])
+        # print(x)
+        # print(y)
+        # print(z)
         num_physical_tags = int(_f[4])
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z)

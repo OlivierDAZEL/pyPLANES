@@ -196,7 +196,7 @@ class Model():
             write_out_files(self)
             result = p.solver_pymls.solve(f, p.theta_d)
             R_PW, T_PW = p.S_PW.resolution_PW(f, p.theta_d)
-            if hasattr(self,"modulus_trans"):
+            if hasattr(self, "modulus_trans"):
                 print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
                 print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
             print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))

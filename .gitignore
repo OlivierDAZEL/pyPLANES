@@ -129,14 +129,17 @@ dmypy.json
 .pyre/
 
 doc/
-# Mac OS
+# Mac OS et al.
 .DS_*
 .vscode/
 
+
 # pyPLANES
 materials/
+synch2KTH.py
 # tests/*
 # !tests/one_layer/
+doc/
 
 # pyPLANES
 *.msh

@@ -1,7 +1,6 @@
 import sys
-import numpy as np
 
-sys.path.insert(0, "../../pyPLANES")
+sys.path.insert(0, "../../")
 from pyPLANES.model.model import Model
 from pyPLANES.classes.model_classes import ModelParameter
 from pyPLANES.utils.utils_PW import Solver_PW
@@ -10,7 +9,7 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 from pymls import from_yaml, Solver, Layer, backing
 
 param = ModelParameter()
-theta_d = 00
+theta_d = 10
 param.frequency = (10., 50., 1)
 param.name_project = "metaporous_benchmark_7"
 
@@ -54,6 +53,7 @@ G.new_periodicity(l_1, l_3, (L, 0, 0))
 option = "-2 "
 G.run_gmsh(option)
 
+
 foam2 = from_yaml("foam2.yaml")
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
@@ -69,6 +69,3 @@ param.gmsh_file = param.name_project
 model = Model(param)
 
 model.resolution(param)
-
-
-
