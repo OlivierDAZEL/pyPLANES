@@ -28,8 +28,8 @@ from setuptools import setup, find_packages
 with open('README.rst', 'r') as fh:
     long_description = fh.read()
 
-setup(name='pymls',
-    version='1.6.0',
+setup(name='pyPLANES',
+    version='0.1.0',
     description='python Porous LAum NumErical Simulator',
     long_description=long_description,
     url='https://github.com/cpplanes/pyplanes',

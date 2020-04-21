@@ -132,11 +132,13 @@ doc/
 # Mac OS et al.
 .DS_*
 .vscode/
-
+*.pdf
 
 # pyPLANES
 materials/
 synch2KTH.py
+*_out.txt
+_info.txt
 # tests/*
 # !tests/one_layer/
 doc/

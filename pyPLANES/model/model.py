@@ -21,6 +21,9 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
+import os
+import platform
+
 import numpy as np
 import numpy.linalg as LA
 
@@ -39,7 +42,7 @@ from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_fi
 
 class Model():
     def __init__(self, p):
-        self.f = open(p.gmsh_file + ".msh", "r")
+        self.name_project = p.name_project
         self.dim = 2
         self.theta_d = p.theta_d
         self.entities = [] # List of all GMSH Entities
@@ -74,7 +77,6 @@ class Model():
         for _ in self.vertices[1:]:
             print(_)
 
-
     def print_edges(self):
         for _ in self.edges:
             print(_)
@@ -102,8 +104,6 @@ class Model():
             if isinstance(_ent,(IncidentPwFem, TransmissionPwFem)):
                 _ent.dofs = np.ones(len(_ent.kx),dtype=int)
                 self.nb_dofs = renumber_dof(_ent.dofs, self.nb_dofs)
-
-
 
     def __str__(self):
         out = "TBD"
@@ -194,19 +194,23 @@ class Model():
             self.create_linear_system(f)
             self.solve()
             write_out_files(self)
-            result = p.solver_pymls.solve(f, p.theta_d)
-            R_PW, T_PW = p.S_PW.resolution_PW(f, p.theta_d)
-            if hasattr(self, "modulus_trans"):
-                print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
-                print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
-            print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
-            print("|R pyPLANES_PW|   = {}".format(np.abs(R_PW)))
-            print("|R pymls|         = {}".format(np.abs(result['R'][0])))
+            # result = p.solver_pymls.solve(f, p.theta_d)
+            # R_PW, T_PW = p.S_PW.resolution_PW(f, p.theta_d)
+            # if hasattr(self, "modulus_trans"):
+            #     print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
+            #     print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
+            # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
+            # print("|R pyPLANES_PW|   = {}".format(np.abs(R_PW)))
+            # print("|R pymls|         = {}".format(np.abs(result['R'][0])))
             # print("|R pyPLANES_FEM|= {}".format(np.abs(self.reflex)))
-            if any(p.plot):
-                self.display_sol(p)
-        # self.outfile.close()
-
+            # if any(p.plot):
+            #     self.display_sol(p)
+        self.outfile.close()
+        self.resfile.close()
+        name_server = platform.node()
+        mail = " mailx -s \"Calculation of pyPLANES over on \"" + name_server + " olivier.dazel@univ-lemans.fr < " + self.resfile_name
+        if name_server == "il-calc1":
+            os.system(mail)
 
     def solve(self):
         A_global = np.zeros((self.nb_dofs, self.nb_dofs), dtype=complex)
