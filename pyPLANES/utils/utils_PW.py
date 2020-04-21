@@ -25,14 +25,14 @@
 import numpy as np
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
-from pymls import from_yaml, media, Solver, Layer, backing
+# from pymls.utils import from_yaml, media, Solver, Layer, backing
 
 
-from pymls import Solver, Layer, backing
-from pymls.media import Air, PEM, EqFluidJCA
+# from pymls import Solver, Layer, backing
+from mediapack import Air, PEM, EqFluidJCA
 
 
-Air = media.Air()
+Air = Air()
 
 class Solver_PW():
     def __init__(self, S, p):

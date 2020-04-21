@@ -27,7 +27,7 @@ from numpy import pi
 from itertools import product
 
 
-from pymls.media import Air
+from mediapack import Air
 
 from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices
 from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector

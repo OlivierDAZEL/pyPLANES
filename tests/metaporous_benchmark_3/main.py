@@ -2,17 +2,17 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
+sys.path.insert(0, "../..")
 
 from pyPLANES.model.model import Model
 from pyPLANES.classes.model_classes import ModelParameter
 from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
-from pymls import from_yaml, Solver, Layer, backing
 
 param = ModelParameter()
 theta_d = 0
-param.frequency = (10., 5010., 201)
+param.frequency = (10., 5010., 2)
 param.name_project = "metaporous_benchmark_3"
 
 param.theta_d = theta_d

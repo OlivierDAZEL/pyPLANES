@@ -27,7 +27,7 @@
 import numpy as np
 
 # from pymls.media import Air
-from pymls import from_yaml
+from mediapack.utils import from_yaml
 
 
 

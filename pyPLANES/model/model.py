@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
 # from scipy.sparse import coo_matrix
-from pymls.media import Air
+from mediapack import Air
 # from pymls import media
 
 from pyPLANES.classes.entity_classes import IncidentPwFem, EquivalentFluidFem, AirFem, Pem01Fem, Pem98Fem, TransmissionPwFem
