@@ -47,8 +47,7 @@ def imposed_pw_elementary_vector(_elem, k):
     h = LA.norm(coord_e[:, 1]-coord_e[:, 0])
     x_mid = min(coord_e[0, :]) + h/2.
     K_ref = _elem.reference_element
-    # print("kh/2pi={}".format(k*h/(2*np.pi)))
-
+    # Integration on the reference element
     n, m = K_ref.Phi.shape
     F = np.zeros(n, dtype=complex)
     for ipg in range(m):
@@ -56,7 +55,6 @@ def imposed_pw_elementary_vector(_elem, k):
         F += K_ref.w[ipg]*_Phi*np.exp(-1j*k*(h*K_ref.xi[ipg]/2.))
     # Integral on the real element
     F *= (h/2.)*np.exp(-1j*k*x_mid)
-    # print("F={}".format(F))
     return F
 
 def fluid_structure_interaction_elementary_matrix(_elem):

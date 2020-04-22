@@ -42,6 +42,7 @@ from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_fi
 
 class Model():
     def __init__(self, p):
+        self.verbose = p.verbose
         self.name_project = p.name_project
         self.dim = 2
         self.theta_d = p.theta_d
@@ -57,6 +58,7 @@ class Model():
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
         self.outfile = None
+        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
         if hasattr(p, "materials_directory"):
             self.materials_directory = p.materials_directory
         else:
@@ -194,17 +196,13 @@ class Model():
             self.create_linear_system(f)
             self.solve()
             write_out_files(self)
-            # result = p.solver_pymls.solve(f, p.theta_d)
-            R_PW, T_PW = p.S_PW.resolution_PW(f, p.theta_d)
-            # if hasattr(self, "modulus_trans"):
-            #     print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
-            #     print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
-            print("|abs pyPLANES_FEM|  = {}".format(self.abs))
-            print("|abs pyPLANES_PW |  = {}".format(1-np.abs(R_PW)**2))
-            # print("|R pymls|         = {}".format(np.abs(result['R'][0])))
-            # print("|R pyPLANES_FEM|= {}".format(np.abs(self.reflex)))
-            # if any(p.plot):
-            #     self.display_sol(p)
+
+            if self.verbose:
+                R_PW, T_PW = p.S_PW.resolution_PW(f, p.theta_d)
+                print("|abs pyPLANES_FEM|  = {}".format(self.abs))
+                print("|abs pyPLANES_PW |  = {}".format(1-np.abs(R_PW)**2))
+            if any(p.plot):
+                self.display_sol(p)
         self.outfile.close()
         self.resfile.close()
         name_server = platform.node()
@@ -237,11 +235,10 @@ class Model():
         for _bb in self.bubbles:
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]
-        self.abs = 1.
+        # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
                 _ent.sol = X[_ent.dofs]
-                print("_ent.sol={}".format(_ent.sol))
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):

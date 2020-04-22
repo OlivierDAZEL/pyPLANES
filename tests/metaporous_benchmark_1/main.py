@@ -1,4 +1,6 @@
 import sys
+import platform
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,6 +13,7 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 from pymls import from_yaml, Solver, Layer, backing
 
+name_server = platform.node()
 
 param = ModelParameter()
 theta_d = 0
@@ -23,9 +26,22 @@ d = 0.02
 a = 0.008
 lcar = 0.02
 
-param.order = 2
+param.order = 3
 param.plot = [True, True, True, False, False, False]
 param.plot = [False]*6
+
+if name_server == "oliviers-macbook-pro.home":
+    param.verbose = True
+    pem = from_yaml('pem_benchmark_1.yaml')
+    param.solver_pymls = Solver()
+    param.solver_pymls.layers = [
+        Layer(pem, L),
+    ]
+    # param.solver_pymls.backing = backing.transmission
+    param.solver_pymls.backing = backing.rigid
+    param.S_PW = Solver_PW(param.solver_pymls, param)
+
+
 
 p = param
 G = Gmsh(p.name_project)
@@ -66,14 +82,7 @@ model = Model(param)
 
 
 
-pem = from_yaml('pem_benchmark_1.yaml')
-param.solver_pymls = Solver()
-param.solver_pymls.layers = [
-    Layer(pem, L),
-]
-# param.solver_pymls.backing = backing.transmission
-param.solver_pymls.backing = backing.rigid
-param.S_PW = Solver_PW(param.solver_pymls, param)
+
 
 
 

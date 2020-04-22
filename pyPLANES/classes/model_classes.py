@@ -25,13 +25,13 @@ from numpy import pi
 
 class ModelParameter:
     '''Class ModelParameter'''
-    def __init__(self):
+    def __init__(self,verbose=False):
+        self.verbose = verbose
         pass
     def __str__(self):
         out = "Parameters of the FEM Model{}\n"
         out += "\t f = {}\n".format(self.f)
-
         return out
-        
+
 if __name__ == "__main__":
     model_parameter = Model_Parameter()

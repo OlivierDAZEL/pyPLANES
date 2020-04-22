@@ -287,7 +287,7 @@ def reference_element(key, order):
         if key[0] == 2:
             out = Kt(order, 2*order)
         elif key[0] == 1:
-            out = Ka(order, 5*order)
+            out = Ka(order, 10*order)
 
 
     return out
