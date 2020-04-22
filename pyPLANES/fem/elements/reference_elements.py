@@ -40,9 +40,8 @@ import quadpy as quadpy
 
 
 class Ka:
-    def __init__(self, order=2):
+    def __init__(self, order=2, p= 4):
         self.order = order
-        p = 2*order
         self.xi, self.w = leggauss(p)
         # Number of Shape Functions
         self.nb_v = 2
@@ -60,7 +59,7 @@ class Ka:
         return out
 
 class Kt:
-    def __init__(self, order=2):
+    def __init__(self, order=2, p= 4):
         self.order = order
         scheme = eval("quadpy.triangle.dunavant_"+'{:02}'.format(2*order) +"()")
         _points = scheme.points.dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
@@ -86,10 +85,6 @@ class Kt:
     def __str__(self):
         out = "K_t of order {}".format(self.order)
         return out
-
-
-
-
 
 
 class PlotKt:
@@ -156,7 +151,7 @@ class PlotKt:
         plt.colorbar()
         plt.show()
 
-def shape_functions_Kt(xi_1,xi_2,order):
+def shape_functions_Kt(xi_1, xi_2, order):
     ''' Return Lobatto Shape functions on Kt'''
     lamda = np.zeros((3,len(xi_1)))
     dlamda = [np.zeros((3, len(xi_1))),np.zeros((3, len(xi_1)))]

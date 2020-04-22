@@ -139,7 +139,7 @@ materials/
 synch2KTH.py
 *_out.txt
 _info.txt
-html
+html/
 # tests/*
 # !tests/one_layer/
 doc/

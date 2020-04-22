@@ -200,7 +200,7 @@ class Model():
             #     print("|T pyPLANES_PW|   = {}".format(np.abs(T_PW)))
             #     print("|T pyPLANES_FEM|  = {}".format(self.modulus_trans))
             print("|abs pyPLANES_FEM|  = {}".format(self.abs))
-            print("|R pyPLANES_PW|   = {}".format(1-np.abs(R_PW)**2))
+            print("|abs pyPLANES_PW |  = {}".format(1-np.abs(R_PW)**2))
             # print("|R pymls|         = {}".format(np.abs(result['R'][0])))
             # print("|R pyPLANES_FEM|= {}".format(np.abs(self.reflex)))
             # if any(p.plot):
@@ -241,7 +241,7 @@ class Model():
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
                 _ent.sol = X[_ent.dofs]
-                print(_ent.sol)
+                print("_ent.sol={}".format(_ent.sol))
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):

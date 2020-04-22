@@ -21,15 +21,10 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-
-
-
 import numpy as np
 
 # from pymls.media import Air
 from mediapack.utils import from_yaml
-
-
 
 from pyPLANES.fem.elements.reference_elements import Ka, Kt
 from pyPLANES.classes.fem_classes import Vertex, Element
@@ -90,13 +85,8 @@ def entities(self, f, p):
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
     for __ in range(_p):
         _f = f.readline().split()
-        # print(f)
         tag = int(_f[0])
-        # print(tag)
         x, y, z = float(_f[1]), float(_f[2]), float(_f[3])
-        # print(x)
-        # print(y)
-        # print(z)
         num_physical_tags = int(_f[4])
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z)
@@ -233,22 +223,26 @@ def elements(self, f, p):
     self.elements =[None]*(max_element_tag+1)
     for __ in range(int(num_entity_blocks)):
         entity_dim, entity_tag, element_type, num_elements_in_block = readl_int(f)
-        if element_type not in self.reference_elements.keys():
-            self.reference_elements[element_type] = reference_element(element_type, p.order)
+        reference_element_key = element_type
+        if isinstance(self.entities[self.entity_tag[entity_tag]],(IncidentPwFem, TransmissionPwFem)):
+            reference_element_key = (element_type, "PW")
+        if reference_element_key not in self.reference_elements.keys():
+            self.reference_elements[reference_element_key] = reference_element(reference_element_key, p.order)
         for _i in range(num_elements_in_block):
             element_tag, *node_tag = readl_int(f)
             if element_type == 1:
                 if entity_dim != 1:
                     raise NameError("in import_msh_file, entity_dim!1 for element_type = 1")
                 vertices = [self.vertices[n] for n in node_tag]
-                self.elements[element_tag] = Element(element_type, element_tag, vertices, self.reference_elements[element_type])
+                self.elements[element_tag] = Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
             elif element_type == 2:
                 if entity_dim != 2:
                     raise NameError("in import_msh_file, entity_dim!2 for element_type = 2")
                 vertices = [self.vertices[n] for n in node_tag]
-                self.elements[element_tag]=Element(element_type, element_tag, vertices, self.reference_elements[element_type])
+                self.elements[element_tag]=Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity) :
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
+    print(self.reference_elements)
 
 def periodic(self, f):
     self.vertices_left = []
@@ -282,11 +276,20 @@ def periodic(self, f):
                     _ent.period = period
 
 
-def reference_element(typ, order):
-    if typ == 2:
-        out = Kt(order)
-    elif typ == 1:
-        out = Ka(order)
+def reference_element(key, order):
+    print("key={}".format(key))
+    if isinstance(key, int):
+        if key == 2:
+            out = Kt(order, 2*order)
+        elif key == 1:
+            out = Ka(order, 2*order)
+    else:
+        if key[0] == 2:
+            out = Kt(order, 2*order)
+        elif key[0] == 1:
+            out = Ka(order, 5*order)
+
+
     return out
 
 def readl_int(fid):

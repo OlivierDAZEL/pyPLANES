@@ -38,16 +38,25 @@ def imposed_Neumann(_elem):
 
 
 def imposed_pw_elementary_vector(_elem, k):
+    ''' Calculus of I = int_{\Omega_e} e^{-jkx} Phi(x) dx
+        On the reference element:
+            I = (h/2)e^{-jkx-mid} * \int_{-1}^{1} e^{-jkhxi/2} \Phi(xi) dxi
+    '''
+    # Geometrical datas
     coord_e = _elem.get_coordinates()
-    a = min(coord_e[0, :])
+    h = LA.norm(coord_e[:, 1]-coord_e[:, 0])
+    x_mid = min(coord_e[0, :]) + h/2.
     K_ref = _elem.reference_element
-    length = LA.norm(coord_e[:, 1]-coord_e[:, 0])
+    # print("kh/2pi={}".format(k*h/(2*np.pi)))
+
     n, m = K_ref.Phi.shape
     F = np.zeros(n, dtype=complex)
     for ipg in range(m):
         _Phi = K_ref.Phi[:, ipg].reshape(n)
-        F += K_ref.w[ipg]*_Phi*np.exp(-1j*k*(length*K_ref.xi[ipg]/2.))
-    F *= (length/2.)*np.exp(-1j*k*(a+length/2.))
+        F += K_ref.w[ipg]*_Phi*np.exp(-1j*k*(h*K_ref.xi[ipg]/2.))
+    # Integral on the real element
+    F *= (h/2.)*np.exp(-1j*k*x_mid)
+    # print("F={}".format(F))
     return F
 
 def fluid_structure_interaction_elementary_matrix(_elem):
