@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 # from pymls.utils import from_yaml, media, Solver, Layer, backing
 
 
-# from pymls import Solver, Layer, backing
+from pymls import Solver, Layer, backing
 from mediapack import Air, PEM, EqFluidJCA
 
 

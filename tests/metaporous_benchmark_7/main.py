@@ -8,8 +8,6 @@ from pyPLANES.classes.model_classes import ModelParameter
 from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
-from pymls import from_yaml, Solver, Layer, backing
-
 param = ModelParameter()
 theta_d = 0
 param.frequency = (10., 5010., 201)
@@ -19,7 +17,7 @@ param.theta_d = theta_d
 L = 0.02
 d = 0.02
 a = 0.008
-lcar = 0.001
+lcar = 0.002
 
 param.order = 2
 # param.plot = [True, True, True, False, False, False]
@@ -59,7 +57,7 @@ model = Model(param)
 model.resolution(param)
 
 
-output = np.loadtxt(model.outfile_name)
-plt.plot(output[:, 0], output[:, 1])
-plt.savefig(param.name_project+".pdf")
+# output = np.loadtxt(model.outfile_name)
+# plt.plot(output[:, 0], output[:, 1])
+# plt.savefig(param.name_project+".pdf")
 

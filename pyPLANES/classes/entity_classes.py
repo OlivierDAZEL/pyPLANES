@@ -26,7 +26,6 @@ import numpy as np
 from numpy import pi
 from itertools import product
 
-
 from mediapack import Air
 
 from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices
@@ -129,6 +128,7 @@ class Pem98Fem(FemEntity):
 
     def update_frequency(self, omega):
         self.mat.update_frequency(omega)
+
     def append_global_matrices(self, _elem):
         dof_u, orient_u = dof_u_element(_elem)
         dof_p, orient_p = dof_p_element(_elem)
@@ -311,7 +311,6 @@ class ElasticSolidFem(FemEntity):
         out = "ElaticSolid" + FemEntity.__str__(self)
         return out
 
-
 class UnitDisplacementFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
@@ -353,12 +352,16 @@ class IncidentPwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+3
-        nb_bloch_waves = 1
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10
+        print(nb_bloch_waves)
+        # nb_bloch_waves = 0
+        print(nb_bloch_waves)
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
+        print(self.kx)
+        print(self.ky)
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
@@ -406,8 +409,8 @@ class TransmissionPwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+3
-        nb_bloch_waves = 1
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10
+        # nb_bloch_waves = 3
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
