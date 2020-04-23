@@ -55,11 +55,8 @@ class Gmsh():
             out ="Line entity from points {} to point {}. Tag={}".format(self.p_1.tag, self.p_2.tag, self.tag)
             return out
         def inverted(self):
-            print(self)
             out = deepcopy(self)
             out.tag = -self.tag
-            print(out)
-            print(self)
             return out
 
     class LineLoop():

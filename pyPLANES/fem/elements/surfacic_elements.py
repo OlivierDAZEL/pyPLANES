@@ -46,13 +46,14 @@ def imposed_pw_elementary_vector(_elem, k):
     coord_e = _elem.get_coordinates()
     h = LA.norm(coord_e[:, 1]-coord_e[:, 0])
     x_mid = min(coord_e[0, :]) + h/2.
+    k_prime = k*h/2.
     K_ref = _elem.reference_element
     # Integration on the reference element
     n, m = K_ref.Phi.shape
     F = np.zeros(n, dtype=complex)
     for ipg in range(m):
         _Phi = K_ref.Phi[:, ipg].reshape(n)
-        F += K_ref.w[ipg]*_Phi*np.exp(-1j*k*(h*K_ref.xi[ipg]/2.))
+        F += K_ref.w[ipg]*_Phi*np.exp(-1j*k_prime*K_ref.xi[ipg])
     # Integral on the real element
     F *= (h/2.)*np.exp(-1j*k*x_mid)
     return F
