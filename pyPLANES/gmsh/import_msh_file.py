@@ -147,7 +147,7 @@ def entities(self, f, p):
         pass
     # ######
     _ = [_ent.tag for _ent in self.entities]
-    self.entity_tag=[None]*(max(_)+1)
+    self.entity_tag = [None]*(max(_)+1)
     for i,index in enumerate(_):
         self.entity_tag[index] = i
 
@@ -223,8 +223,10 @@ def elements(self, f, p):
     self.elements =[None]*(max_element_tag+1)
     for __ in range(int(num_entity_blocks)):
         entity_dim, entity_tag, element_type, num_elements_in_block = readl_int(f)
+        # Initialise the reference element key with an integer = element
         reference_element_key = element_type
-        if isinstance(self.entities[self.entity_tag[entity_tag]],(IncidentPwFem, TransmissionPwFem)):
+        # Change the key for PW to have higher quadratures
+        if isinstance(self.entities[self.entity_tag[entity_tag]], (IncidentPwFem, TransmissionPwFem)):
             reference_element_key = (element_type, "PW")
         if reference_element_key not in self.reference_elements.keys():
             self.reference_elements[reference_element_key] = reference_element(reference_element_key, p.order)
@@ -242,7 +244,6 @@ def elements(self, f, p):
                 self.elements[element_tag]=Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity) :
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
-    print(self.reference_elements)
 
 def periodic(self, f):
     self.vertices_left = []
@@ -277,7 +278,6 @@ def periodic(self, f):
 
 
 def reference_element(key, order):
-    print("key={}".format(key))
     if isinstance(key, int):
         if key == 2:
             out = Kt(order, 2*order)
@@ -287,8 +287,7 @@ def reference_element(key, order):
         if key[0] == 2:
             out = Kt(order, 2*order)
         elif key[0] == 1:
-            out = Ka(order, 10*order)
-
+            out = Ka(order, 6*order)
 
     return out
 

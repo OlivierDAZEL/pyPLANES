@@ -237,7 +237,7 @@ def preprocess(self, p):
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-    self.frequencies = init_vec_frequencies(p.frequency)
+    self.frequencies = init_vec_frequencies(p.frequencies)
     # Creation of edges and faces
     create_lists(self, p)
 

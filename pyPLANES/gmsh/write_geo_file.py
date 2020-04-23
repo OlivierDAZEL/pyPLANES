@@ -24,10 +24,8 @@
 
 
 import os
-
 import numpy as np
-
-
+from copy import deepcopy
 
 
 class Gmsh():
@@ -53,6 +51,16 @@ class Gmsh():
             self.tag = tag
             self.typ = "Line"
             f.write("Line({})= {{{}, {}}};\n".format(tag, _1.tag, _2.tag))
+        def __str__(self):
+            out ="Line entity from points {} to point {}. Tag={}".format(self.p_1.tag, self.p_2.tag, self.tag)
+            return out
+        def inverted(self):
+            print(self)
+            out = deepcopy(self)
+            out.tag = -self.tag
+            print(out)
+            print(self)
+            return out
 
     class LineLoop():
         def __init__(self, f, tag, _list):
@@ -74,7 +82,7 @@ class Gmsh():
             f.write("Circle({})= {{{}, {}, {}}};\n".format(_tag, west.tag, center.tag, south.tag)); _tag +=1
             f.write("Circle({})= {{{}, {}, {}}};\n".format(_tag, south.tag, center.tag, east.tag)); _tag +=1
             f.write("Curve Loop({})= {{{}, {}, {}, {}}};\n".format(_tag, _tag-4, _tag-3, _tag-2, _tag-1))
-            self. tag = _tag
+            self.tag = _tag
 
     class Surface():
         def __init__(self, f, tag, ll):
@@ -117,13 +125,19 @@ class Gmsh():
 
     def new_circle(self, x_0, y_0, r, lc):
         self.nb_tags += 1
-        center = self.Point(self.f, self.nb_tags, x_0, y_0, lc); self.nb_tags +=1
-        east = self.Point(self.f, self.nb_tags, x_0+r, y_0, lc); self.nb_tags +=1
-        north = self.Point(self.f, self.nb_tags, x_0, y_0+r, lc); self.nb_tags +=1
-        west = self.Point(self.f, self.nb_tags, x_0-r, y_0, lc); self.nb_tags+=1
-        south = self.Point(self.f, self.nb_tags, x_0, y_0-r, lc); self.nb_tags +=1
+        center = self.Point(self.f, self.nb_tags, x_0, y_0, lc)
+        self.nb_tags +=1
+        east = self.Point(self.f, self.nb_tags, x_0+r, y_0, lc)
+        self.nb_tags +=1
+        north = self.Point(self.f, self.nb_tags, x_0, y_0+r, lc)
+        self.nb_tags +=1
+        west = self.Point(self.f, self.nb_tags, x_0-r, y_0, lc)
+        self.nb_tags+=1
+        south = self.Point(self.f, self.nb_tags, x_0, y_0-r, lc)
+        self.nb_tags +=1
         points = [center, east, north, west, south]
         c = self.Circle(self.f, self.nb_tags, points)
+        self.nb_tags +=4 # 4 additional entities created in Circle
         return c
 
     def new_physical(self, obj, label):
@@ -172,9 +186,7 @@ def one_layer(p):
 
     matrice = g.new_surface([ll_0.tag])
 
-    # G. add("Mesh.NbPartition=2")
     g.new_physical(l_2,"condition=Transmission")
-    # g.new_physical(l_2, "condition=Rigid Wall")
     g.new_physical([l_1, l_3], "condition=Periodicity")
     g.new_physical(l_0, "condition=Incident_PW")
     g.new_physical(matrice, "mat="+p.pem1)

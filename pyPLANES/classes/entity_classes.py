@@ -155,6 +155,15 @@ class Pem98Fem(FemEntity):
             self.C_j.append(dof_p[jj])
             self.C_v.append(orient_u[ii]*orient_p[jj]*C[ii, jj])
     def append_linear_system(self, omega):
+        # print(self.mat.name)
+        # print("K_eq_til={}".format(self.mat.K_eq_til))
+        # print("P_tilde={}".format(self.mat.P_til))
+        # print("Q_tilde={}".format(self.mat.Q_til))
+        # print("R_tilde={}".format(self.mat.R_til))
+        # print("N={}".format(self.mat.N))
+        # print("rho_11_tilde={}".format(self.mat.rho_11_til))
+        # print("rho_12_tilde={}".format(self.mat.rho_12_til))
+        # print("rho_22_tilde={}".format(self.mat.rho_22_til))
         A_i = self.K_0_i.copy()
         A_j = self.K_0_j.copy()
         A_v = list(self.mat.P_hat*np.array(self.K_0_v))
@@ -341,7 +350,6 @@ class IncidentPwFem(FemEntity):
         self.F_i, self.F_v = [], []
         self.dofs, self.sol = [], []
         self.theta_d = kwargs["p"].theta_d
-        # self.period = kwargs["p"].period
         self.kx, self.ky = [],[]
 
     def __str__(self):
@@ -352,16 +360,13 @@ class IncidentPwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+3
-        # print(nb_bloch_waves)
-        # nb_bloch_waves = 1
-        # print(nb_bloch_w/aves)
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5
+        # nb_bloch_waves = 0
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
-        # print(self.kx)
-        # print(self.ky)
+        print(self.ky)
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
@@ -409,8 +414,9 @@ class TransmissionPwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10
-        # nb_bloch_waves = 3
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5
+        # nb_bloch_waves = 0
+
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
@@ -432,36 +438,10 @@ class TransmissionPwFem(FemEntity):
                 A_i.extend(dof_pw)
                 A_j.extend(dof_FEM)
                 A_v.extend(np.conj(_))
-                # if i_w == i_spec:
-                #     F_i.extend(dof_FEM)
-                #     F_v.extend(Omega_u*_)
         # append_orthogonality(self):
             A_i.append(self.dofs[i_w])
             A_j.append(self.dofs[i_w])
             A_v.append(-self.period)
-
-    #     F_i.append(self.dofs[i_spec])
-    #     F_v.append(self.period)
-
-
-    #     A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
-    #     for _elem in self.elements:
-    #         F = imposed_pw_elementary_vector(_elem, self.kx[0])
-    #         dof_FEM, orient = dof_p_element(_elem)
-    #         dof_pw = [self.dofs[0]]*len(dof_FEM)
-    #         Omega_u = 1j*self.ky[0]/(Air.rho*omega**2)
-    #         _ = np.array(orient)*F
-    #         A_i.extend(dof_FEM)
-    #         A_j.extend(dof_pw)
-    #         A_v.extend(Omega_u*_)
-    #         A_i.extend(dof_pw)
-    #         A_j.extend(dof_FEM)
-    #         A_v.extend(np.conj(_))
-
-    # # append_orthogonality(self):
-    #     A_i.append(self.dofs[0])
-    #     A_j.append(self.dofs[0])
-    #     A_v.append(-self.period)
 
         return A_i, A_j, A_v, F_i, F_v
 

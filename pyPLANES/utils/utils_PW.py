@@ -38,6 +38,12 @@ class Solver_PW():
     def __init__(self, S, p):
         self.layers = S.layers
         self.backing = S.backing
+        if p.frequencies[2] > 0:
+                self.frequencies = np.linspace(p.frequencies[0],p.frequencies[1],p.frequencies[2])
+        elif p.frequencies[2]<0:
+            self.frequencies = np.logspace(np.log10(p.frequencies[0]),np.log10(p.frequencies[1]),abs(p.frequencies[2]))
+
+
         self.kx, self.ky, self.k = None, None, None
         self.plot = p.plot
         self.result = {}
@@ -50,7 +56,12 @@ class Solver_PW():
         self.ky = omega*np.cos(theta_d*np.pi/180)/Air.c
         self.k = omega/Air.c
 
-    def resolution_PW(self, f, theta_d):
+    def resolution(self, theta_d):
+        for f in self.frequencies:
+            R, T = self.solve(f, theta_d)
+            print("|R pyPLANES_PW |  = {}".format(np.abs(R)))
+
+    def solve(self, f, theta_d):
         self.update_frequency(f, theta_d)
         Layers = self.layers.copy()
         Layers.insert(0, Layer(Air, 0.1))
@@ -81,20 +92,20 @@ class Solver_PW():
 
 
 
-        F = -M[:, 0]*np.exp(1j*self.ky*Layers[0].thickness) # - is for transposition, exponential term is for the phase shift
-        M = np.delete(M, 0, axis=1)
-        X = LA.solve(M, F)
-        R_pyPLANES_PW = X[0]
-        if self.backing == backing.transmission:
-            T_pyPLANES_PW = X[-2]
-        else:
-            T_pyPLANES_PW = 0.
-        X = np.delete(X, 0)
-        del(dofs[0])
-        for i, _ld in enumerate(dofs):
-            dofs[i] -= 2
-        if self.plot:
-            self.plot_sol_PW(X, dofs)
+            F = -M[:, 0]*np.exp(1j*self.ky*Layers[0].thickness) # - is for transposition, exponential term is for the phase shift
+            M = np.delete(M, 0, axis=1)
+            X = LA.solve(M, F)
+            R_pyPLANES_PW = X[0]
+            if self.backing == backing.transmission:
+                T_pyPLANES_PW = X[-2]
+            else:
+                T_pyPLANES_PW = 0.
+            X = np.delete(X, 0)
+            del(dofs[0])
+            for i, _ld in enumerate(dofs):
+                dofs[i] -= 2
+            if self.plot:
+                self.plot_sol_PW(X, dofs)
         return R_pyPLANES_PW, T_pyPLANES_PW
 
     def interface_fluid_fluid(self, ieq, iinter, L, d, M):

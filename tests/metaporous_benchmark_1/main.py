@@ -17,7 +17,7 @@ name_server = platform.node()
 
 param = ModelParameter()
 theta_d = 0
-param.frequency = (80., 5010., 1)
+param.frequencies = (80., 5010., 1)
 param.name_project = "metaporous_benchmark_1"
 
 param.theta_d = theta_d
@@ -32,15 +32,6 @@ param.plot = [False]*6
 
 if name_server == "oliviers-macbook-pro.home":
     param.verbose = True
-    pem = from_yaml('pem_benchmark_1.yaml')
-    param.solver_pymls = Solver()
-    param.solver_pymls.layers = [
-        Layer(pem, L),
-    ]
-    # param.solver_pymls.backing = backing.transmission
-    param.solver_pymls.backing = backing.rigid
-    param.S_PW = Solver_PW(param.solver_pymls, param)
-
 
 
 p = param
@@ -62,7 +53,7 @@ matrice = G.new_surface([ll_0.tag])
 
 # inclusion = G.new_surface([c_0.tag])
 
-G.new_physical(l_2, "condition=Rigid Wall")
+G.new_physical(l_2, "condition=Transmission")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
 G.new_physical(matrice, "mat=pem_benchmark_1")
@@ -78,8 +69,15 @@ G.run_gmsh(option)
 model = Model(param)
 
 
-# print(model.reference_elements)
-
+pem = from_yaml('pem_benchmark_1.yaml')
+param.solver_pymls = Solver()
+param.solver_pymls.layers = [
+    Layer(pem, L),
+]
+param.solver_pymls.backing = backing.transmission
+# param.solver_pymls.backing = backing.rigid
+param.S_PW = Solver_PW(param.solver_pymls, param)
+param.S_PW.resolution(param.theta_d)
 
 
 
