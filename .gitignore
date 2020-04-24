@@ -143,6 +143,7 @@ html/
 # tests/*
 # !tests/one_layer/
 doc/
+TeX
 
 # pyPLANES
 *.msh

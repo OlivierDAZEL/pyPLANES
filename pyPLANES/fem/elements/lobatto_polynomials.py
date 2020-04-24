@@ -106,7 +106,6 @@ def lobatto(order,x):
         d_lobatto *= (1/2048)*np.sqrt(29/2)
     return p_lobatto, d_lobatto
 
-
 def lobatto_kernels(order, x):
 
     if order == 0:

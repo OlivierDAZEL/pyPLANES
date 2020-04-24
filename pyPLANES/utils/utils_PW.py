@@ -59,7 +59,7 @@ class Solver_PW():
     def resolution(self, theta_d):
         for f in self.frequencies:
             R, T = self.solve(f, theta_d)
-            print("|R pyPLANES_PW |  = {}".format(np.abs(R)))
+            print("R pyPLANES_PW   = {}".format((R)))
 
     def solve(self, f, theta_d):
         self.update_frequency(f, theta_d)
@@ -90,22 +90,20 @@ class Solver_PW():
         elif self.backing == backing.transmission:
             i_eq = self.semi_infinite_medium(M, i_eq, Layers[-1], dofs[-1] )
 
-
-
-            F = -M[:, 0]*np.exp(1j*self.ky*Layers[0].thickness) # - is for transposition, exponential term is for the phase shift
-            M = np.delete(M, 0, axis=1)
-            X = LA.solve(M, F)
-            R_pyPLANES_PW = X[0]
-            if self.backing == backing.transmission:
-                T_pyPLANES_PW = X[-2]
-            else:
-                T_pyPLANES_PW = 0.
-            X = np.delete(X, 0)
-            del(dofs[0])
-            for i, _ld in enumerate(dofs):
-                dofs[i] -= 2
-            if self.plot:
-                self.plot_sol_PW(X, dofs)
+        F = -M[:, 0]*np.exp(1j*self.ky*Layers[0].thickness) # - is for transposition, exponential term is for the phase shift
+        M = np.delete(M, 0, axis=1)
+        X = LA.solve(M, F)
+        R_pyPLANES_PW = X[0]
+        if self.backing == backing.transmission:
+            T_pyPLANES_PW = X[-2]
+        else:
+            T_pyPLANES_PW = 0.
+        X = np.delete(X, 0)
+        del(dofs[0])
+        for i, _ld in enumerate(dofs):
+            dofs[i] -= 2
+        if self.plot:
+            self.plot_sol_PW(X, dofs)
         return R_pyPLANES_PW, T_pyPLANES_PW
 
     def interface_fluid_fluid(self, ieq, iinter, L, d, M):

@@ -193,9 +193,9 @@ class Model():
             self.create_linear_system(f)
             self.solve()
             write_out_files(self)
-            if self.verbose:
-                print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
-                print("|abs pyPLANES_FEM| = {}".format(self.abs))
+            # if self.verbose:
+                # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
+                # print("|abs pyPLANES_FEM| = {}".format(self.abs))
             if any(p.plot):
                 self.display_sol(p)
         self.outfile.close()
@@ -234,7 +234,7 @@ class Model():
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
                 _ent.sol = X[_ent.dofs]
-                # print(_ent.sol)
+                print("R pyPLANES_FEM  = {}".format(_ent.sol[0]))
                 # print(np.real(_ent.ky)*np.abs(_ent.sol**2))
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 self.abs -= np.abs(self.modulus_reflex)**2

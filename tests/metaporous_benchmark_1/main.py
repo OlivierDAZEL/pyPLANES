@@ -12,19 +12,20 @@ from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 from pymls import from_yaml, Solver, Layer, backing
+from mediapack import Air
 
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 0
-param.frequencies = (80., 5010., 1)
+theta_d = 00
+param.frequencies = (10., 5010., 1)
 param.name_project = "one_layer"
 
 param.theta_d = theta_d
 L = 0.02
 d = 0.02
-a = 0.008
-lcar = 0.01
+# a = 0.008
+lcar = 0.002
 
 param.order = 3
 param.plot = [True, True, True, False, False, False]
@@ -32,7 +33,6 @@ param.plot = [False]*6
 print(name_server)
 if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
     param.verbose = True
-
 
 p = param
 G = Gmsh(p.name_project)
@@ -50,10 +50,10 @@ ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
 matrice = G.new_surface([ll_0.tag])
 
 
-G.new_physical(l_2, "condition=Transmission")
+G.new_physical(l_2, "condition=Rigid Wall")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
-G.new_physical(matrice, "mat=pem_benchmark_1")
+G.new_physical(matrice, "mat=Air")
 G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
@@ -69,9 +69,9 @@ model.resolution(param)
 pem = from_yaml('pem_benchmark_1.yaml')
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(pem, L),
+    Layer(Air, L),
 ]
-param.solver_pymls.backing = backing.transmission
+param.solver_pymls.backing = backing.rigid
 param.S_PW = Solver_PW(param.solver_pymls, param)
 param.S_PW.resolution(param.theta_d)
 

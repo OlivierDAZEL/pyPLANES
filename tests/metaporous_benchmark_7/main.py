@@ -17,9 +17,9 @@ param.theta_d = theta_d
 L = 0.02
 d = 0.02
 a = 0.008
-lcar = 0.02
+lcar = 0.002
 param.verbose = True
-param.order = 2
+param.order = 4
 # param.plot = [False, False, False, True, True, True]
 param.plot = [False]*6
 

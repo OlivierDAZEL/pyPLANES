@@ -54,9 +54,16 @@ def imposed_pw_elementary_vector(_elem, k):
     for ipg in range(m):
         _Phi = K_ref.Phi[:, ipg].reshape(n)
         F += K_ref.w[ipg]*_Phi*np.exp(-1j*k_prime*K_ref.xi[ipg])
+    # print("Validation")
+    # print("k_prime={}".format(k_prime))
+    # print("F_numerical= {}".format(F))
+    F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
+    # print("F_analytical={}".format(F_analytical))
+    # print("Error on F ={}".format(np.linalg.norm(F-F_analytical)))
     # Integral on the real element
     F *= (h/2.)*np.exp(-1j*k*x_mid)
-    return F
+    return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
+    # return F
 
 def fluid_structure_interaction_elementary_matrix(_elem):
     coord_e = _elem.get_coordinates()

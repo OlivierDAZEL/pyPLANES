@@ -24,6 +24,9 @@
 
 from itertools import product
 import numpy as np
+from scipy.special import legendre
+
+
 
 def dof_p_element(_elem):
     dof, orient = dof_element(_elem, 3)
@@ -63,3 +66,11 @@ def dof_element(_elem, i_field):
         # Orientation of the edges
         orient.extend(_elem.edges_orientation[0]**np.arange(order-1))
     return dof, orient
+
+def create_legendre_table(n):
+    out = np.zeros((n, n))
+    for N in range(n):
+        L = legendre(N)
+        for J in range(n):
+            out[N, J] = np.polyder(L, J)(1)
+    return out

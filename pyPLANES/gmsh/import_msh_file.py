@@ -26,7 +26,7 @@ import numpy as np
 # from pymls.media import Air
 from mediapack.utils import from_yaml
 
-from pyPLANES.fem.elements.reference_elements import Ka, Kt
+from pyPLANES.fem.elements.reference_elements import Ka, KaPw, Kt
 from pyPLANES.classes.fem_classes import Vertex, Element
 from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, Pem98Fem, \
         AirFem, TransmissionPwFem
@@ -287,7 +287,7 @@ def reference_element(key, order):
         if key[0] == 2:
             out = Kt(order, 2*order)
         elif key[0] == 1:
-            out = Ka(order, 6*order)
+            out = KaPw(order, 4*order)
 
     return out
 

@@ -360,8 +360,8 @@ class IncidentPwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5
-        # nb_bloch_waves = 0
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+3
+        nb_bloch_waves = 0
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
@@ -414,7 +414,7 @@ class TransmissionPwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10
         # nb_bloch_waves = 0
 
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)

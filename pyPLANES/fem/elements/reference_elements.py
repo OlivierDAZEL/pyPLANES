@@ -27,6 +27,7 @@ import importlib
 
 from pyPLANES.fem.elements.lobatto_polynomials import lobatto as l
 from pyPLANES.fem.elements.lobatto_polynomials import lobatto_kernels as phi
+from pyPLANES.utils.utils_fem import create_legendre_table
 
 import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
@@ -34,8 +35,6 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import axes3d
 from numpy.polynomial.legendre import leggauss
 import quadpy as quadpy
-
-
 
 
 
@@ -56,6 +55,34 @@ class Ka:
 
     def __str__(self):
         out = "K_a of order {}".format(self.order)
+        return out
+
+class KaPw(Ka):
+    def __init__(self, order=2, p= 4):
+        Ka.__init__(self, order, p)
+        # legendre table corresponds to values of L_n^(j)(1)
+        self.legendre_table = create_legendre_table(self.order)
+
+    def __str__(self):
+        out = "KaPw of order {}".format(self.order)
+        return out
+
+    def int_lobatto_exponential(self, k):
+        ''' Returns the vector of \dint{-1}{1} ln(xi)e^{-ik xi} dxi'''
+
+        n, m = self.Phi.shape
+        out = np.zeros(n,dtype=complex)
+
+        if k== 0 :
+            for i_w, w in enumerate(self.w):
+                out += w* self.Phi[:, i_w].reshape(n)
+        else:
+            ik = 1j*k
+            out[0] = (np.exp(ik)/ik)+(1j*np.sin(k))/k**2
+            out[1] =-(np.exp(-ik)/ik)-(1j*np.sin(k))/k**2
+            for _n in range(2,n):
+                _ = [self.legendre_table[_n-1, j]*(np.exp(-ik)-np.exp(ik)*(-1)**(_n-1+j))/(ik)**j for j in range(_n) ]
+                out[_n] = (np.sum(_)/(k**2*np.sqrt(2./(2*_n-1))))
         return out
 
 class Kt:
