@@ -27,12 +27,12 @@ d = 0.02
 # a = 0.008
 lcar = 0.002
 
-param.order = 3
+param.order = 2
 param.plot = [True, True, True, False, False, False]
 param.plot = [False]*6
 print(name_server)
-if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
-    param.verbose = True
+# if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
+#     param.verbose = True
 
 p = param
 G = Gmsh(p.name_project)
@@ -58,7 +58,7 @@ G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 
-option = "-2 "
+option = "-2 -v 0"
 G.run_gmsh(option)
 
 model = Model(param)

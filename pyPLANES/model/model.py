@@ -145,6 +145,11 @@ class Model():
         self.A_i = np.array(self.A_i)
         self.A_j = np.array(self.A_j)
         self.A_v = np.array(self.A_v, dtype=complex)
+        for _ent in self.model_entities:
+            if isinstance(_ent, IncidentPwFem):
+                _ent.rho_i = np.array(_ent.rho_i)
+                _ent.rho_j = np.array(_ent.rho_j)
+                _ent.rho_v = np.array(_ent.rho_v, dtype=complex)
 
     def create_linear_system(self, f):
         print("Creation of the linear system for f={}".format(f))
@@ -168,15 +173,19 @@ class Model():
         A_i, A_j, A_v = [], [], []
         if self.dof_left != []:
             for i_left, dof_left in enumerate(self.dof_left):
+                # Corresponding dof
                 dof_right = self.dof_right[i_left]
+                # Summation of the columns for the Matrix
                 index = np.where(self.A_j == dof_right)
                 self.A_j[index] = dof_left
                 for _i in index:
                     self.A_v[_i] *= self.delta_periodicity
+                # Summation of the rows for the Matrix
                 index = np.where(self.A_i == dof_right)
                 self.A_i[index] = dof_left
                 for _i in index:
                     self.A_v[_i] /= self.delta_periodicity
+                # Summation of the rows for the Matrix
                 index = np.where(self.F_i == dof_right)
                 self.F_i[index] = dof_left
                 for _i in index:
@@ -190,6 +199,16 @@ class Model():
         self.A_i = np.append(self.A_i, A_i)
         self.A_j = np.append(self.A_j, A_j)
         self.A_v = np.append(self.A_v, A_v)
+        for _ent in self.model_entities:
+            if isinstance(_ent, IncidentPwFem):
+                for i_left, dof_left in enumerate(self.dof_left):
+                    # Corresponding dof
+                    dof_right = self.dof_right[i_left]
+                    # Summation of the rows for the rho matrix
+                    index = np.where(_ent.rho_i == dof_right)
+                    _ent.rho_i[index] = dof_left
+                    for _i in index:
+                        _ent.rho_v[_i] /= self.delta_periodicity
 
     def resolution(self, p):
 
@@ -212,6 +231,8 @@ class Model():
 
     def solve(self,f):
         omega = 2*np.pi*f
+        print("self.nb_dofs={}".format(self.nb_dofs))
+        print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
         A_global = np.zeros((self.nb_dofs, self.nb_dofs), dtype=complex)
         F_global = np.zeros(self.nb_dofs, dtype=complex)
         for ii, _A_i in enumerate(self.A_i):
@@ -225,15 +246,16 @@ class Model():
         X = LA.solve(A_global[1:, 1:], F_global[1:])
         stop = timeit.default_timer()
         print(stop-start)
-        X = np.insert(X, 0, 0) # Insertion of the zero dof
+        X = np.insert(X, 0, 0)
+        # Deletion of the zero dof
         index = np.where(self.A_i*self.A_j != 0)
         A_i = self.A_i[index]-1
         A_j = self.A_j[index]-1
-        A_v = self.A_v[index]
+        A_v = self.A_v[index].copy()
         index = np.where(self.F_i != 0)
         F_i = self.F_i[index]-1
         F_j = np.zeros(len(F_i),dtype=int)
-        F_v = self.F_v[index]
+        F_v = self.F_v[index].copy()
 
         coo = coo_matrix((A_v, (A_i, A_j))).tocsr()
         rhs =coo_matrix((F_v, (F_i,np.zeros(len(F_i),dtype=int))))
@@ -242,8 +264,53 @@ class Model():
         stop = timeit.default_timer()
         print(stop-start)
         x = np.insert(x, 0, 0) # Insertion of the zero dof
+
+
+        A_global2 = np.zeros((self.nb_dofs,self.nb_dofs),dtype=complex)
+        A_global2[:self.nb_dofs-1,:self.nb_dofs-1] += A_global[:self.nb_dofs-1,:self.nb_dofs-1].copy()
+
+        F_global2 = np.zeros(self.nb_dofs,dtype=complex)
+        F_global2[:self.nb_dofs-1] += F_global[:self.nb_dofs-1].copy()
+
+        for _ent in self.model_entities:
+            if isinstance(_ent, IncidentPwFem):
+                # delta vector (in entities ?)
+                delta = np.zeros((_ent.nb_dofs,1),dtype=complex)
+                delta[_ent.dof_spec,0] = 1
+
+                rho_i = _ent.rho_i
+                rho_j = _ent.rho_j+self.nb_dof_FEM
+                rho_v = _ent.rho_v
+
+                rho_global = coo_matrix((rho_v, (rho_i, rho_j)),shape=(self.nb_dofs,self.nb_dofs)).todense()
+
+                A_global2 += _ent.Omega[0,0]*rho_global
+
+
+                A_global2 += rho_global.H
+                A_global2[-1,-1] = -_ent.period
+                F_global2[-1] = _ent.period
+
+                X_2 = LA.solve(A_global2[1:, 1:], F_global2[1:])
+                X_2 = np.insert(X_2, 0, 0)#.reshape(self.nb_dof_FEM)
+                R = (np.conj(rho_global.T)/_ent.period)@X_2-delta.reshape(_ent.nb_dofs)
+
+        print(A_global[1,-1])
+        print(A_global2[1,-1])
+        print(LA.norm((A_global[1,:]-A_global2[1,:])))
+        print("R pyPLANES_conden= {}".format(X_2[-1]))
         print("R pyPLANES_master= {}".format(X[-1]))
         print("R pyPLANES_COO   = {}".format(x[-1]))
+
+
+
+
+
+
+
+
+
+
         # print
         # nb_R = self.nb_dofs-self.nb_dof_FEM
         # A = A_global [:self.nb_dof_FEM,:self.nb_dof_FEM]
@@ -282,7 +349,6 @@ class Model():
                 _ent.sol = X[_ent.dofs]
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
-
 
     def display_sol(self, p):
         if any(p.plot[3:]):

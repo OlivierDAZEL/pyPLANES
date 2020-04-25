@@ -369,21 +369,35 @@ class IncidentPwFem(FemEntity):
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
-        i_spec = int((len(self.dofs)-1)/2)
+        self.rho_i, self.rho_j, self.rho_v, self.delta_i, self.delta_v, self.rho_Omegau = [], [], [], [], [], []
+        self.nb_dofs = len(self.dofs)
+        self.Omega = np.zeros((self.nb_dofs ,self.nb_dofs), dtype=complex)
+
+        self.dof_spec = int((self.nb_dofs-1)/2)
         for i_w, kx in enumerate(self.kx):
+            self.Omega[i_w, i_w] = 1j*self.ky[i_w]/(Air.rho*omega**2)
             for _elem in self.elements:
                 F = imposed_pw_elementary_vector(_elem, kx)
                 dof_FEM, orient = dof_p_element(_elem)
                 dof_pw = [self.dofs[i_w]]*len(dof_FEM)
+                dof_pw0 = [self.dofs0[i_w]]*len(dof_FEM)
                 Omega_u = 1j*self.ky[i_w]/(Air.rho*omega**2)
+
                 _ = np.array(orient)*F
+
                 A_i.extend(dof_FEM)
                 A_j.extend(dof_pw)
                 A_v.extend(Omega_u*_)
                 A_i.extend(dof_pw)
                 A_j.extend(dof_FEM)
                 A_v.extend(np.conj(_))
-                if i_w == i_spec:
+
+                self.rho_i.extend(dof_FEM)
+                self.rho_j.extend(dof_pw0)
+                self.rho_v.extend(_)
+
+
+                if i_w == self.dof_spec:
                     F_i.extend(dof_FEM)
                     F_v.extend(Omega_u*_)
         # append_orthogonality(self):
@@ -391,13 +405,10 @@ class IncidentPwFem(FemEntity):
             A_j.append(self.dofs[i_w])
             A_v.append(-self.period)
 
-        F_i.append(self.dofs[i_spec])
+
+
+        F_i.append(self.dofs[self.dof_spec])
         F_v.append(self.period)
-
-
-
-
-
 
         return A_i, A_j, A_v, F_i, F_v
 
