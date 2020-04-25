@@ -367,7 +367,6 @@ class IncidentPwFem(FemEntity):
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
 
-
     def append_linear_system(self, omega):
         A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
         i_spec = int((len(self.dofs)-1)/2)
@@ -394,6 +393,12 @@ class IncidentPwFem(FemEntity):
 
         F_i.append(self.dofs[i_spec])
         F_v.append(self.period)
+
+
+
+
+
+
         return A_i, A_j, A_v, F_i, F_v
 
 class TransmissionPwFem(FemEntity):

@@ -59,7 +59,7 @@ class Solver_PW():
     def resolution(self, theta_d):
         for f in self.frequencies:
             R, T = self.solve(f, theta_d)
-            print("R pyPLANES_PW   = {}".format((R)))
+            print("R pyPLANES_PW    = {}".format((R)))
 
     def solve(self, f, theta_d):
         self.update_frequency(f, theta_d)

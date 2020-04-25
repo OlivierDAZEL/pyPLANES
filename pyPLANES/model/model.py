@@ -23,6 +23,11 @@
 #
 import os
 import platform
+import timeit
+
+
+from scipy.sparse.linalg.dsolve import linsolve
+from scipy.sparse import coo_matrix
 
 import numpy as np
 import numpy.linalg as LA
@@ -191,13 +196,13 @@ class Model():
         self.create_global_matrices()
         for f in self.frequencies:
             self.create_linear_system(f)
-            self.solve()
+            self.solve(f)
             write_out_files(self)
             # if self.verbose:
                 # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
                 # print("|abs pyPLANES_FEM| = {}".format(self.abs))
             if any(p.plot):
-                self.display_sol(p)
+                self .display_sol(p)
         self.outfile.close()
         self.resfile.close()
         name_server = platform.node()
@@ -205,7 +210,8 @@ class Model():
         if name_server == "il-calc1":
             os.system(mail)
 
-    def solve(self):
+    def solve(self,f):
+        omega = 2*np.pi*f
         A_global = np.zeros((self.nb_dofs, self.nb_dofs), dtype=complex)
         F_global = np.zeros(self.nb_dofs, dtype=complex)
         for ii, _A_i in enumerate(self.A_i):
@@ -214,9 +220,43 @@ class Model():
         for ii, _F_i in enumerate(self.F_i):
             F_global[int(_F_i)] += self.F_v[ii]
         print("Resolution of the linear system")
+
+        start = timeit.default_timer()
         X = LA.solve(A_global[1:, 1:], F_global[1:])
-        print("End of the resolution of the linear system")
+        stop = timeit.default_timer()
+        print(stop-start)
         X = np.insert(X, 0, 0) # Insertion of the zero dof
+        index = np.where(self.A_i*self.A_j != 0)
+        A_i = self.A_i[index]-1
+        A_j = self.A_j[index]-1
+        A_v = self.A_v[index]
+        index = np.where(self.F_i != 0)
+        F_i = self.F_i[index]-1
+        F_j = np.zeros(len(F_i),dtype=int)
+        F_v = self.F_v[index]
+
+        coo = coo_matrix((A_v, (A_i, A_j))).tocsr()
+        rhs =coo_matrix((F_v, (F_i,np.zeros(len(F_i),dtype=int))))
+        start = timeit.default_timer()
+        x = linsolve.spsolve(coo, rhs)
+        stop = timeit.default_timer()
+        print(stop-start)
+        x = np.insert(x, 0, 0) # Insertion of the zero dof
+        print("R pyPLANES_master= {}".format(X[-1]))
+        print("R pyPLANES_COO   = {}".format(x[-1]))
+        # print
+        # nb_R = self.nb_dofs-self.nb_dof_FEM
+        # A = A_global [:self.nb_dof_FEM,:self.nb_dof_FEM]
+
+        # rho = np.conj(A_global [self.nb_dof_FEM:self.nb_dofs,:self.nb_dof_FEM]).reshape((self.nb_dof_FEM,nb_R))
+
+        # Omega_u = 1j*self.ky/(Air.rho*omega**2)
+
+
+
+
+
+
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
@@ -234,7 +274,7 @@ class Model():
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
                 _ent.sol = X[_ent.dofs]
-                print("R pyPLANES_FEM  = {}".format(_ent.sol[0]))
+                # print("R pyPLANES_FEM  = {}".format(_ent.sol[0]))
                 # print(np.real(_ent.ky)*np.abs(_ent.sol**2))
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 self.abs -= np.abs(self.modulus_reflex)**2
