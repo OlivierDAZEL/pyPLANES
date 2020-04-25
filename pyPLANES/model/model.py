@@ -108,9 +108,7 @@ class Model():
         self.nb_dofs = self.nb_dof_FEM
         for _ent in self.model_entities:
             _ent.update_frequency(omega)
-            if isinstance(_ent,(IncidentPwFem, TransmissionPwFem)):
-                _ent.dofs = np.ones(len(_ent.kx),dtype=int)
-                self.nb_dofs = renumber_dof(_ent.dofs, self.nb_dofs)
+
 
     def __str__(self):
         out = "TBD"
@@ -161,8 +159,7 @@ class Model():
         self.A_i, self.A_j, self.A_v = [], [], []
         for _ent in self.model_entities:
             if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
-                _A_i, _A_j, _A_v, _F_i, _F_v = _ent.append_linear_system(omega)
-                self.extend_AF(_A_i, _A_j, _A_v, _F_i, _F_v)
+                _ent.create_dynamical_matrices(omega)
             else: # only the matrix Matrix + RHS
                 _A_i, _A_j, _A_v = _ent.append_linear_system(omega)
                 self.extend_A(_A_i, _A_j, _A_v)
@@ -231,72 +228,42 @@ class Model():
 
     def solve(self,f):
         omega = 2*np.pi*f
-        print("self.nb_dofs={}".format(self.nb_dofs))
-        print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
-        A_global = np.zeros((self.nb_dofs, self.nb_dofs), dtype=complex)
-        F_global = np.zeros(self.nb_dofs, dtype=complex)
-        for ii, _A_i in enumerate(self.A_i):
-            # print(_A_i)
-            A_global[int(_A_i), int(self.A_j[ii])] += self.A_v[ii]
-        for ii, _F_i in enumerate(self.F_i):
-            F_global[int(_F_i)] += self.F_v[ii]
-        print("Resolution of the linear system")
-
-        # start = timeit.default_timer()
-        # X = LA.solve(A_global[1:, 1:], F_global[1:])
-        # stop = timeit.default_timer()
-        # print(stop-start)
-        # X = np.insert(X, 0, 0)
-
-        # Deletion of the zero dof
-
+        # print("self.nb_dofs={}".format(self.nb_dofs))
+        # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
 
         index = np.where((self.A_i*self.A_j*(self.A_i-534)*(self.A_j-534)) != 0)
         A_i = self.A_i[index]-1
         A_j = self.A_j[index]-1
         A_v = self.A_v[index].copy()
-        index = np.where(self.F_i != 0)
-        F_i = self.F_i[index]-1
-        F_v = self.F_v[index].copy()
-        # coo = coo_matrix(A_global[1:self.nb_dof_FEM,1: self.nb_dof_FEM]).tocsr()
-        # coo_c = coo.copy()
+        # index = np.where(self.F_i != 0)
+        # F_i = self.F_i[index]-1
+        # F_v = self.F_v[index].copy()
 
-        coo = coo_matrix(A_global[1:self.nb_dof_FEM,1: self.nb_dof_FEM]).tocsr()
-        print(max(A_i))
-        print(max(A_j))
-        coo = coo_matrix((A_v, (A_i, A_j)), shape=(self.nb_dof_FEM-1,self.nb_dof_FEM-1)).tocsr()
-
-
-        coo_c = coo.copy()
-
-
+        A = coo_matrix((A_v, (A_i, A_j)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
+        rhs = np.zeros(self.nb_dof_FEM-1,dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
-                # delta vector (in entities ?)
-                delta = np.zeros(_ent.nb_dofs, dtype=complex)
-                delta[_ent.dof_spec] = 1
 
                 index = np.where(_ent.rho_i != 0)
                 rho_i = _ent.rho_i[index]-1
                 rho_j = _ent.rho_j[index]
                 rho_v = _ent.rho_v[index]
-
                 rho_global = coo_matrix((rho_v, (rho_i, rho_j)),shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
 
-                _ = rho_global.multiply(_ent.Omega).multiply(rho_global.H)/_ent.period
-                coo += _
+                A += rho_global.multiply(_ent.Omega).multiply(rho_global.H)/_ent.period
+
 
                 rhs = rho_global[:,_ent.dof_spec] * _ent.Omega[_ent.dof_spec]
-                rhs += rho_global @ _ent.Omega @ delta
-                Omega = _ent.Omega[_ent.dof_spec]
-                D = _ent.period
+                rhs += rho_global @ _ent.Omega @ _ent.delta
+                # Omega = _ent.Omega[_ent.dof_spec]
+                # D = _ent.period
 
                 start = timeit.default_timer()
-                x = linsolve.spsolve(coo, rhs)
+                x = linsolve.spsolve(A, rhs)
                 stop = timeit.default_timer()
                 print(stop-start)
 
-                R_coo = rho_global.H @ x/_ent.period -delta
+                R_coo = rho_global.H @ x/_ent.period - _ent.delta
                 x = np.insert(x, 0, 0) # Insertion of the zero dof
 
 

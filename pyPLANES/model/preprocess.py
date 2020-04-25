@@ -165,11 +165,11 @@ def renumber_dofs(self):
     self.nb_dof_FEM = self.nb_dofs
     for _en in self.entities[1:]:
         if isinstance(_en, IncidentPwFem):
-            self.nb_dofs = renumber_dof(_en.dofs, self.nb_dofs)
-            _en.dofs0 = [d-self.nb_dof_FEM for d in _en.dofs]
+            _ = renumber_dof(_en.dofs, 0)
+            # _en.dofs0 = [d-self.nb_dof_FEM for d in _en.dofs]
         elif isinstance(_en, TransmissionPwFem):
-            self.nb_dofs = renumber_dof(_en.dofs, self.nb_dofs)
-            _en.dofs0 = [d-self.nb_dof_FEM for d in _en.dofs]
+            _ = renumber_dof(_en.dofs, 0)
+            # _en.dofs0 = [d-self.nb_dof_FEM for d in _en.dofs]
 
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:

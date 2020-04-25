@@ -366,9 +366,9 @@ class IncidentPwFem(FemEntity):
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
+        self.dofs = np.arange(1+2*nb_bloch_waves)
 
-    def append_linear_system(self, omega):
-        A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
+    def create_dynamical_matrices(self, omega):
         self.rho_i, self.rho_j, self.rho_v, self.delta_i, self.delta_v, self.rho_Omegau = [], [], [], [], [], []
         self.nb_dofs = len(self.dofs)
         self.Omega = np.zeros((self.nb_dofs ,self.nb_dofs), dtype=complex)
@@ -380,30 +380,13 @@ class IncidentPwFem(FemEntity):
                 F = imposed_pw_elementary_vector(_elem, kx)
                 dof_FEM, orient = dof_p_element(_elem)
                 dof_pw = [self.dofs[i_w]]*len(dof_FEM)
-                dof_pw0 = [self.dofs0[i_w]]*len(dof_FEM)
-                Omega_u = 1j*self.ky[i_w]/(Air.rho*omega**2)
                 _ = np.array(orient)*F
-                A_i.extend(dof_FEM)
-                A_j.extend(dof_pw)
-                A_v.extend(Omega_u*_)
-                A_i.extend(dof_pw)
-                A_j.extend(dof_FEM)
-                A_v.extend(np.conj(_))
                 self.rho_i.extend(dof_FEM)
-                self.rho_j.extend(dof_pw0)
+                self.rho_j.extend(dof_pw)
                 self.rho_v.extend(_)
-                if i_w == self.dof_spec:
-                    F_i.extend(dof_FEM)
-                    F_v.extend(Omega_u*_)
-        # append_orthogonality(self):
-            A_i.append(self.dofs[i_w])
-            A_j.append(self.dofs[i_w])
-            A_v.append(-self.period)
-        F_i.append(self.dofs[self.dof_spec])
-        F_v.append(self.period)
-        A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
 
-        return A_i, A_j, A_v, F_i, F_v
+                self.delta = np.zeros(self.nb_dofs, dtype=complex)
+                self.delta[self.dof_spec] = 1
 
 class TransmissionPwFem(FemEntity):
     def __init__(self, **kwargs):
