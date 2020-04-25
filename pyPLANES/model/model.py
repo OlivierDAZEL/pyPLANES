@@ -231,7 +231,6 @@ class Model():
         # print("self.nb_dofs={}".format(self.nb_dofs))
         # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
 
-        index = np.where((self.A_i*self.A_j*(self.A_i-534)*(self.A_j-534)) != 0)
         A_i = self.A_i[index]-1
         A_j = self.A_j[index]-1
         A_v = self.A_v[index].copy()
