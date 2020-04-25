@@ -242,84 +242,82 @@ class Model():
             F_global[int(_F_i)] += self.F_v[ii]
         print("Resolution of the linear system")
 
-        start = timeit.default_timer()
-        X = LA.solve(A_global[1:, 1:], F_global[1:])
-        stop = timeit.default_timer()
-        print(stop-start)
-        X = np.insert(X, 0, 0)
+        # start = timeit.default_timer()
+        # X = LA.solve(A_global[1:, 1:], F_global[1:])
+        # stop = timeit.default_timer()
+        # print(stop-start)
+        # X = np.insert(X, 0, 0)
+
         # Deletion of the zero dof
-        index = np.where(self.A_i*self.A_j != 0)
+
+
+        index = np.where((self.A_i*self.A_j*(self.A_i-534)*(self.A_j-534)) != 0)
         A_i = self.A_i[index]-1
         A_j = self.A_j[index]-1
         A_v = self.A_v[index].copy()
         index = np.where(self.F_i != 0)
         F_i = self.F_i[index]-1
-        F_j = np.zeros(len(F_i),dtype=int)
         F_v = self.F_v[index].copy()
+        # coo = coo_matrix(A_global[1:self.nb_dof_FEM,1: self.nb_dof_FEM]).tocsr()
+        # coo_c = coo.copy()
 
-        coo = coo_matrix((A_v, (A_i, A_j))).tocsr()
-        rhs =coo_matrix((F_v, (F_i,np.zeros(len(F_i),dtype=int))))
-        start = timeit.default_timer()
-        x = linsolve.spsolve(coo, rhs)
-        stop = timeit.default_timer()
-        print(stop-start)
-        x = np.insert(x, 0, 0) # Insertion of the zero dof
+        coo = coo_matrix(A_global[1:self.nb_dof_FEM,1: self.nb_dof_FEM]).tocsr()
+        print(max(A_i))
+        print(max(A_j))
+        coo = coo_matrix((A_v, (A_i, A_j)), shape=(self.nb_dof_FEM-1,self.nb_dof_FEM-1)).tocsr()
 
 
-        A_global2 = np.zeros((self.nb_dofs,self.nb_dofs),dtype=complex)
-        A_global2[:self.nb_dofs-1,:self.nb_dofs-1] += A_global[:self.nb_dofs-1,:self.nb_dofs-1].copy()
+        coo_c = coo.copy()
 
-        F_global2 = np.zeros(self.nb_dofs,dtype=complex)
-        F_global2[:self.nb_dofs-1] += F_global[:self.nb_dofs-1].copy()
 
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
                 # delta vector (in entities ?)
-                delta = np.zeros((_ent.nb_dofs,1),dtype=complex)
-                delta[_ent.dof_spec,0] = 1
+                delta = np.zeros(_ent.nb_dofs, dtype=complex)
+                delta[_ent.dof_spec] = 1
 
-                rho_i = _ent.rho_i
-                rho_j = _ent.rho_j+self.nb_dof_FEM
-                rho_v = _ent.rho_v
+                index = np.where(_ent.rho_i != 0)
+                rho_i = _ent.rho_i[index]-1
+                rho_j = _ent.rho_j[index]
+                rho_v = _ent.rho_v[index]
 
-                rho_global = coo_matrix((rho_v, (rho_i, rho_j)),shape=(self.nb_dofs,self.nb_dofs)).todense()
+                rho_global = coo_matrix((rho_v, (rho_i, rho_j)),shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
 
-                A_global2 += _ent.Omega[0,0]*rho_global
+                _ = rho_global.multiply(_ent.Omega).multiply(rho_global.H)/_ent.period
+                coo += _
 
+                rhs = rho_global[:,_ent.dof_spec] * _ent.Omega[_ent.dof_spec]
+                rhs += rho_global @ _ent.Omega @ delta
+                Omega = _ent.Omega[_ent.dof_spec]
+                D = _ent.period
 
-                A_global2 += rho_global.H
-                A_global2[-1,-1] = -_ent.period
-                F_global2[-1] = _ent.period
+                start = timeit.default_timer()
+                x = linsolve.spsolve(coo, rhs)
+                stop = timeit.default_timer()
+                print(stop-start)
 
-                X_2 = LA.solve(A_global2[1:, 1:], F_global2[1:])
-                X_2 = np.insert(X_2, 0, 0)#.reshape(self.nb_dof_FEM)
-                R = (np.conj(rho_global.T)/_ent.period)@X_2-delta.reshape(_ent.nb_dofs)
-
-        print(A_global[1,-1])
-        print(A_global2[1,-1])
-        print(LA.norm((A_global[1,:]-A_global2[1,:])))
-        print("R pyPLANES_conden= {}".format(X_2[-1]))
-        print("R pyPLANES_master= {}".format(X[-1]))
-        print("R pyPLANES_COO   = {}".format(x[-1]))
-
+                R_coo = rho_global.H @ x/_ent.period -delta
+                x = np.insert(x, 0, 0) # Insertion of the zero dof
 
 
 
 
+        # rho_global =rho_global.todense()
+
+        # A_FEM = np.zeros((self.nb_dofs-1, self.nb_dofs-1),dtype=complex)
+        # F_FEM = np.zeros(self.nb_dofs-1, dtype=complex)
+        # A_FEM[:-1,:-1] = A_global[1:-1, 1:-1]
+        # A_FEM[:-1,-1] = Omega*rho_global[:,0].reshape(533)
+        # F_FEM[:-1] = Omega*rho_global[:,0].reshape(533)
+        # A_FEM[-1, :-1 ] = np.conj(rho_global[:,0]).reshape(533)
+        # A_FEM[-1,-1] = - D
+        # F_FEM[-1] =  D
+        # x = LA.solve(A_FEM, F_FEM)
 
 
-
-
-
-        # print
-        # nb_R = self.nb_dofs-self.nb_dof_FEM
-        # A = A_global [:self.nb_dof_FEM,:self.nb_dof_FEM]
-
-        # rho = np.conj(A_global [self.nb_dof_FEM:self.nb_dofs,:self.nb_dof_FEM]).reshape((self.nb_dof_FEM,nb_R))
-
-        # Omega_u = 1j*self.ky/(Air.rho*omega**2)
-
-
+        # print("R pyPLANES_master= {}".format(X[-1]))
+        # print("R pyPLANES_tmp   = {}".format(x[-1]))
+        print("R pyPLANES_COO   = {}".format(R_coo))
 
 
 
@@ -327,28 +325,28 @@ class Model():
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
-                _vr.sol[i_dim] = X[_vr.dofs[i_dim]]
+                _vr.sol[i_dim] = x[_vr.dofs[i_dim]]
         for _ed in self.edges:
             for i_dim in range(4):
-                _ed.sol[i_dim] = X[_ed.dofs[i_dim]]
+                _ed.sol[i_dim] = x[_ed.dofs[i_dim]]
         for _fc in self.faces:
             for i_dim in range(4):
-                _fc.sol[i_dim] = X[_fc.dofs[i_dim]]
+                _fc.sol[i_dim] = x[_fc.dofs[i_dim]]
         for _bb in self.bubbles:
             for i_dim in range(4):
-                _bb.sol[i_dim] = X[_bb.dofs[i_dim]]
+                _bb.sol[i_dim] = x[_bb.dofs[i_dim]]
         # self.abs has been sent to 1 in the __init__ () of the model class
-        for _ent in self.entities[1:]:
-            if isinstance(_ent, IncidentPwFem):
-                _ent.sol = X[_ent.dofs]
-                # print("R pyPLANES_FEM  = {}".format(_ent.sol[0]))
-                # print(np.real(_ent.ky)*np.abs(_ent.sol**2))
-                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                self.abs -= np.abs(self.modulus_reflex)**2
-            elif isinstance(_ent, TransmissionPwFem):
-                _ent.sol = X[_ent.dofs]
-                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
-                self.abs -= self.modulus_trans**2
+        # for _ent in self.entities[1:]:
+        #     if isinstance(_ent, IncidentPwFem):
+        #         _ent.sol = X[_ent.dofs]
+        #         # print("R pyPLANES_FEM  = {}".format(_ent.sol[0]))
+        #         # print(np.real(_ent.ky)*np.abs(_ent.sol**2))
+        #         self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+        #         self.abs -= np.abs(self.modulus_reflex)**2
+        #     elif isinstance(_ent, TransmissionPwFem):
+        #         _ent.sol = X[_ent.dofs]
+        #         self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
+        #         self.abs -= self.modulus_trans**2
 
     def display_sol(self, p):
         if any(p.plot[3:]):

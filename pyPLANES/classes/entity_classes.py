@@ -382,21 +382,16 @@ class IncidentPwFem(FemEntity):
                 dof_pw = [self.dofs[i_w]]*len(dof_FEM)
                 dof_pw0 = [self.dofs0[i_w]]*len(dof_FEM)
                 Omega_u = 1j*self.ky[i_w]/(Air.rho*omega**2)
-
                 _ = np.array(orient)*F
-
                 A_i.extend(dof_FEM)
                 A_j.extend(dof_pw)
                 A_v.extend(Omega_u*_)
                 A_i.extend(dof_pw)
                 A_j.extend(dof_FEM)
                 A_v.extend(np.conj(_))
-
                 self.rho_i.extend(dof_FEM)
                 self.rho_j.extend(dof_pw0)
                 self.rho_v.extend(_)
-
-
                 if i_w == self.dof_spec:
                     F_i.extend(dof_FEM)
                     F_v.extend(Omega_u*_)
@@ -404,11 +399,9 @@ class IncidentPwFem(FemEntity):
             A_i.append(self.dofs[i_w])
             A_j.append(self.dofs[i_w])
             A_v.append(-self.period)
-
-
-
         F_i.append(self.dofs[self.dof_spec])
         F_v.append(self.period)
+        A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
 
         return A_i, A_j, A_v, F_i, F_v
 
