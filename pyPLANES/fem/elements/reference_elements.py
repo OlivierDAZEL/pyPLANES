@@ -36,6 +36,8 @@ from mpl_toolkits.mplot3d import axes3d
 from numpy.polynomial.legendre import leggauss
 import quadpy as quadpy
 
+import scipy.integrate as integrate
+
 
 
 class Ka:
@@ -65,10 +67,71 @@ class KaPw(Ka):
 
     def __str__(self):
         out = "KaPw of order {}".format(self.order)
-        return out
+        return outInt_analytical_Lobatto(n,k_prime)
 
     def int_lobatto_exponential(self, k):
         ''' Returns the vector of \dint{-1}{1} ln(xi)e^{-ik xi} dxi'''
+
+        # def lobatto(order,x):
+        #     if order == 0:
+        #         p_lobatto = 1-x
+        #         p_lobatto /= 2
+        #     elif order == 1:
+        #         p_lobatto = 1+x
+        #         p_lobatto /= 2
+        #     elif order == 2:
+        #         p_lobatto = -1+x**2
+        #         p_lobatto *= np.sqrt(3/2)/2
+        #     elif order == 3:
+        #         p_lobatto = x*(-1+x**2)
+        #         p_lobatto *= np.sqrt(5/2)/2
+        #     elif order == 4:
+        #         p_lobatto = 1+x**2*(-6+5*x**2)
+        #         p_lobatto *= np.sqrt(7/2)/8
+        #     elif order == 5:
+        #         p_lobatto = x*(3+x**2*(-10+7*x**2))
+        #         p_lobatto *= (3/8)*np.sqrt(2)
+        #     elif order == 6:
+        #         p_lobatto = (-1)+x**2*(15+x**2*((-35)+21*x**2))
+        #         p_lobatto *= (1/16)*np.sqrt(11/2)
+        #     elif order == 7:
+        #         p_lobatto = x*((-5)+x**2*(35+x**2*((-63)+33*x**2)))
+        #         p_lobatto *= (1/16)*np.sqrt(13/2)
+        #     elif order == 8:
+        #         p_lobatto = 5+x**2*((-140)+x**2*(630+x**2*((-924)+429*x**2)))
+        #         p_lobatto *= (1/128)*np.sqrt(15/2)
+        #     elif order == 9:
+        #         p_lobatto = x*(35+x**2*((-420)+x**2*(1386+x**2*((-1716)+715*x**2))))
+        #         p_lobatto *= (1/128)*np.sqrt(17/2)
+        #     elif order == 10:
+        #         p_lobatto = (-7)+x**2*(315+x**2*((-2310)+x**2*(6006+x**2*((-6435)+2431*x**2))))
+        #         p_lobatto *= (1/256)*np.sqrt(19/2)
+        #     elif order == 11:
+        #         p_lobatto = x*((-63)+x**2*(1155+x**2*((-6006)+x**2*(12870+x**2*((-12155)+4199*x**2)))))
+        #         p_lobatto *= (1/256)*np.sqrt(21/2)
+        #     elif order == 12:
+        #         p_lobatto = 21+x**2*((-1386)+x**2*(15015+x**2*((-60060)+x**2*(109395+x**2*((-92378)+29393*x**2)))))
+        #         p_lobatto *= (1/1024)*np.sqrt(23/2)
+        #     elif order == 13:
+        #         p_lobatto = x*(231+x**2*((-6006)+x**2*(45045+x**2*((-145860)+x**2*(230945+x**2*((-176358)+52003*x**2))))))
+        #         p_lobatto *= (5/1024)*np.sqrt2**(-1/2)
+        #     elif order == 14:
+        #         p_lobatto = (-33)+x**2*(3003+x**2*((-45045)+x**2*(255255+x**2*((-692835)+x**2*(969969+x**2*((-676039)+185725*x**2))))))
+        #         p_lobatto *= (3/2048)*np.sqrt(3/2)
+        #     elif order == 15:
+        #         p_lobatto = x*((-429)+x**2*(15015+x**2*((-153153)+x**2*(692835+x**2*((-1616615)+x**2*(2028117+x**2*((-1300075)+334305*x**2)))))))
+        #         p_lobatto *= (1/2048)*np.sqrt(29/2)
+        #     return p_lobatto
+
+        # def Int_numerical_Lobatto(_n,_k):
+        #     def funcos(xi):
+        #         return lobatto(_n, xi)*np.cos(_k*xi)
+        #     def funsin(xi):
+        #         return lobatto(_n, xi)*np.sin(_k*xi)
+        #     return integrate.quad(funcos, -1, 1)[0]-1j*integrate.quad(funsin, -1, 1)[0]
+
+
+
 
         n, m = self.Phi.shape
         out = np.zeros(n,dtype=complex)
@@ -80,9 +143,10 @@ class KaPw(Ka):
             ik = 1j*k
             out[0] = (np.exp(ik)/ik)+(1j*np.sin(k))/k**2
             out[1] =-(np.exp(-ik)/ik)-(1j*np.sin(k))/k**2
-            for _n in range(2,n):
+            for _n in range(2, n):
                 _ = [self.legendre_table[_n-1, j]*(np.exp(-ik)-np.exp(ik)*(-1)**(_n-1+j))/(ik)**j for j in range(_n) ]
                 out[_n] = (np.sum(_)/(k**2*np.sqrt(2./(2*_n-1))))
+                # out[_n] = Int_numerical_Lobatto(_n,k)
         return out
 
 class Kt:

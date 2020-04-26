@@ -62,8 +62,8 @@ def imposed_pw_elementary_vector(_elem, k):
     # print("Error on F ={}".format(np.linalg.norm(F-F_analytical)))
     # Integral on the real element
     F *= (h/2.)*np.exp(-1j*k*x_mid)
-    return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
-    # return F
+    # return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
+    return F
 
 def fluid_structure_interaction_elementary_matrix(_elem):
     coord_e = _elem.get_coordinates()

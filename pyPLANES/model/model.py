@@ -198,12 +198,13 @@ class Model():
         self.A_v = np.append(self.A_v, A_v)
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
+                # print("_ent.rho_i={}".format(_ent.rho_i))
                 for i_left, dof_left in enumerate(self.dof_left):
                     # Corresponding dof
                     dof_right = self.dof_right[i_left]
                     # Summation of the rows for the rho matrix
-                    index = np.where(_ent.rho_i == dof_right)
-                    _ent.rho_i[index] = dof_left
+                    index = np.where(_ent.rho_i == dof_right-1)
+                    _ent.rho_i[index] = dof_left-1
                     for _i in index:
                         _ent.rho_v[_i] /= self.delta_periodicity
 
@@ -228,65 +229,33 @@ class Model():
 
     def solve(self,f):
         omega = 2*np.pi*f
-        # print("self.nb_dofs={}".format(self.nb_dofs))
-        # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
+        print("self.nb_dofs={}".format(self.nb_dofs))
+        print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
 
+        index = np.where((self.A_i*self.A_j) != 0)
         A_i = self.A_i[index]-1
         A_j = self.A_j[index]-1
         A_v = self.A_v[index].copy()
-        # index = np.where(self.F_i != 0)
-        # F_i = self.F_i[index]-1
-        # F_v = self.F_v[index].copy()
 
         A = coo_matrix((A_v, (A_i, A_j)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
-        rhs = np.zeros(self.nb_dof_FEM-1,dtype=complex)
+        rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
 
-                index = np.where(_ent.rho_i != 0)
-                rho_i = _ent.rho_i[index]-1
-                rho_j = _ent.rho_j[index]
-                rho_v = _ent.rho_v[index]
-                rho_global = coo_matrix((rho_v, (rho_i, rho_j)),shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
+                rho_global = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)),shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
 
                 A += rho_global.multiply(_ent.Omega).multiply(rho_global.H)/_ent.period
 
 
                 rhs = rho_global[:,_ent.dof_spec] * _ent.Omega[_ent.dof_spec]
                 rhs += rho_global @ _ent.Omega @ _ent.delta
-                # Omega = _ent.Omega[_ent.dof_spec]
-                # D = _ent.period
-
-                start = timeit.default_timer()
-                x = linsolve.spsolve(A, rhs)
-                stop = timeit.default_timer()
-                print(stop-start)
-
-                R_coo = rho_global.H @ x/_ent.period - _ent.delta
-                x = np.insert(x, 0, 0) # Insertion of the zero dof
 
 
+        start = timeit.default_timer()
+        x = linsolve.spsolve(A, rhs)
+        stop = timeit.default_timer()
 
-
-        # rho_global =rho_global.todense()
-
-        # A_FEM = np.zeros((self.nb_dofs-1, self.nb_dofs-1),dtype=complex)
-        # F_FEM = np.zeros(self.nb_dofs-1, dtype=complex)
-        # A_FEM[:-1,:-1] = A_global[1:-1, 1:-1]
-        # A_FEM[:-1,-1] = Omega*rho_global[:,0].reshape(533)
-        # F_FEM[:-1] = Omega*rho_global[:,0].reshape(533)
-        # A_FEM[-1, :-1 ] = np.conj(rho_global[:,0]).reshape(533)
-        # A_FEM[-1,-1] = - D
-        # F_FEM[-1] =  D
-        # x = LA.solve(A_FEM, F_FEM)
-
-
-        # print("R pyPLANES_master= {}".format(X[-1]))
-        # print("R pyPLANES_tmp   = {}".format(x[-1]))
-        print("R pyPLANES_COO   = {}".format(R_coo))
-
-
-
+        x = np.insert(x, 0, 0) # Insertion of the zero dof
 
 
         for _vr in self.vertices[1:]:
@@ -302,13 +271,12 @@ class Model():
             for i_dim in range(4):
                 _bb.sol[i_dim] = x[_bb.dofs[i_dim]]
         # self.abs has been sent to 1 in the __init__ () of the model class
-        # for _ent in self.entities[1:]:
-        #     if isinstance(_ent, IncidentPwFem):
-        #         _ent.sol = X[_ent.dofs]
-        #         # print("R pyPLANES_FEM  = {}".format(_ent.sol[0]))
-        #         # print(np.real(_ent.ky)*np.abs(_ent.sol**2))
-        #         self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-        #         self.abs -= np.abs(self.modulus_reflex)**2
+        for _ent in self.entities[1:]:
+            if isinstance(_ent, IncidentPwFem):
+                _ent.sol = rho_global.H @ x[1:]/_ent.period - _ent.delta
+                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
+                self.abs -= np.abs(self.modulus_reflex)**2
         #     elif isinstance(_ent, TransmissionPwFem):
         #         _ent.sol = X[_ent.dofs]
         #         self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))

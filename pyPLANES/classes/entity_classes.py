@@ -74,7 +74,7 @@ class FemEntity(GmshEntity):
         pass
 
     def append_linear_system(self, omega):
-        pass
+        return [],[],[]
 
     def link_elem(self,n):
         self.elements.append(n)
@@ -381,7 +381,7 @@ class IncidentPwFem(FemEntity):
                 dof_FEM, orient = dof_p_element(_elem)
                 dof_pw = [self.dofs[i_w]]*len(dof_FEM)
                 _ = np.array(orient)*F
-                self.rho_i.extend(dof_FEM)
+                self.rho_i.extend([d-1 for d in dof_FEM])
                 self.rho_j.extend(dof_pw)
                 self.rho_v.extend(_)
 

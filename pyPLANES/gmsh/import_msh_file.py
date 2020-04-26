@@ -111,6 +111,7 @@ def entities(self, f, p):
                     _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p)
                 elif physical_tags["condition"] == "Periodicity" :
                     _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p)
+                    self.model_entities.append(_)
                 else:
                     raise NameError("FEM1D entity without physical condition")
         else: # No numerical model
@@ -287,7 +288,7 @@ def reference_element(key, order):
         if key[0] == 2:
             out = Kt(order, 2*order)
         elif key[0] == 1:
-            out = KaPw(order, 4*order)
+            out = KaPw(order, 3*order)
 
     return out
 

@@ -17,7 +17,7 @@ from mediapack import Air
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 00
+theta_d = 30.
 param.frequencies = (10., 5010., 1)
 param.name_project = "one_layer"
 
@@ -25,12 +25,12 @@ param.theta_d = theta_d
 L = 0.02
 d = 0.02
 # a = 0.008
-lcar = 0.002
+lcar = 0.05
 
 param.order = 2
 param.plot = [True, True, True, False, False, False]
 param.plot = [False]*6
-print(name_server)
+# print(name_server)
 # if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
 #     param.verbose = True
 
@@ -49,7 +49,6 @@ ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
 
 matrice = G.new_surface([ll_0.tag])
 
-
 G.new_physical(l_2, "condition=Rigid Wall")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
@@ -58,13 +57,12 @@ G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 
-option = "-2 -v 0"
+option = "-2 -v 0 "
 G.run_gmsh(option)
 
 model = Model(param)
 
 model.resolution(param)
-
 
 pem = from_yaml('pem_benchmark_1.yaml')
 param.solver_pymls = Solver()
@@ -75,8 +73,11 @@ param.solver_pymls.backing = backing.rigid
 param.S_PW = Solver_PW(param.solver_pymls, param)
 param.S_PW.resolution(param.theta_d)
 
+k = 2*np.pi*param.frequencies[0]/Air.c
+k3 = k * np.cos(theta_d*np.pi/180)
 
-
-
+Z = -1j*Air.Z*(k/k3)/np.tan(k3*L)
+R = (Z*k3-Air.Z*k)/(Z*k3+Air.Z*k)
+# print("R={}".format(R))
 
 
