@@ -187,16 +187,12 @@ def periodicity_initialisation(self):
     edges_left, edges_right = [], []
     for _en in self.model_entities:
         if _en.dim == 1:
-            print(_en)
             for _el in _en.elements:
                 _vertices_tag = [_v.tag for _v in _el.edges[0].vertices]
-                print(_vertices_tag)
                 if len(set(_vertices_tag).intersection(self.vertices_right)) == 2:
                     edges_right.append(_el.edges[0])
                 elif len(set(_vertices_tag).intersection(self.vertices_left)) == 2:
                     edges_left.append(_el.edges[0])
-    print(edges_left)
-    print(edges_right)
 
     # Determination of the correspondance between edges (we did not divide by two for the average of the position)
     y_left =  [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_left]
@@ -222,8 +218,6 @@ def periodicity_initialisation(self):
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
 
-    print(self.dof_left)
-    print(self.dof_right)
 
 
 def init_vec_frequencies(frequency):

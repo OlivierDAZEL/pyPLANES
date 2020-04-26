@@ -198,7 +198,6 @@ class Model():
         self.A_v = np.append(self.A_v, A_v)
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
-                # print("_ent.rho_i={}".format(_ent.rho_i))
                 for i_left, dof_left in enumerate(self.dof_left):
                     # Corresponding dof
                     dof_right = self.dof_right[i_left]
@@ -229,26 +228,19 @@ class Model():
 
     def solve(self,f):
         omega = 2*np.pi*f
-        print("self.nb_dofs={}".format(self.nb_dofs))
-        print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
+        # print("self.nb_dofs={}".format(self.nb_dofs))
+        # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
 
         index = np.where((self.A_i*self.A_j) != 0)
-        A_i = self.A_i[index]-1
-        A_j = self.A_j[index]-1
-        A_v = self.A_v[index].copy()
-
-        A = coo_matrix((A_v, (A_i, A_j)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
+        A = coo_matrix((self.A_v[index], (self.A_i[index]-1, self.A_j[index]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
         rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
-
                 rho_global = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)),shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
-
-                A += rho_global.multiply(_ent.Omega).multiply(rho_global.H)/_ent.period
-
-
-                rhs = rho_global[:,_ent.dof_spec] * _ent.Omega[_ent.dof_spec]
-                rhs += rho_global @ _ent.Omega @ _ent.delta
+                A += rho_global.dot(_ent.Omega).dot(rho_global.H)/_ent.period
+                rho_0 = rho_global[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
+                rhs += rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
+                rhs += rho_global.dot(_ent.Omega).dot(_ent.delta)
 
 
         start = timeit.default_timer()
@@ -273,9 +265,10 @@ class Model():
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
-                _ent.sol = rho_global.H @ x[1:]/_ent.period - _ent.delta
+                _ent.sol = rho_global.H .dot(x[1:])/_ent.period - _ent.delta
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
+                print("R_all   = {}".format((_ent.sol)))
+                print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
                 self.abs -= np.abs(self.modulus_reflex)**2
         #     elif isinstance(_ent, TransmissionPwFem):
         #         _ent.sol = X[_ent.dofs]
@@ -324,8 +317,6 @@ class Model():
                             y.extend(list(y_elem))
                             pr.extend(list(p_elem))
         if any(p.plot[3:]):
-            print(len(x))
-            print(len(y))
             triang = mtri.Triangulation(x, y)
             if p.plot[5]:
                 plt.figure(5)

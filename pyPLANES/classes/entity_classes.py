@@ -25,6 +25,7 @@
 import numpy as np
 from numpy import pi
 from itertools import product
+from scipy.sparse import csr_matrix
 
 from mediapack import Air
 
@@ -351,6 +352,10 @@ class IncidentPwFem(FemEntity):
         self.dofs, self.sol = [], []
         self.theta_d = kwargs["p"].theta_d
         self.kx, self.ky = [],[]
+        self.rho_i, self.rho_j, self.rho_v = [], [], []
+        self.nb_dofs = 0
+        self.Omega = None
+        self.dof_spec = None
 
     def __str__(self):
         # out = GmshEntity.__str__(self)
@@ -361,21 +366,23 @@ class IncidentPwFem(FemEntity):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
         nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+3
-        nb_bloch_waves = 0
+        # nb_bloch_waves = 3
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
         self.dofs = np.arange(1+2*nb_bloch_waves)
+        self.nb_dofs = len(self.dofs)
 
     def create_dynamical_matrices(self, omega):
-        self.rho_i, self.rho_j, self.rho_v, self.delta_i, self.delta_v, self.rho_Omegau = [], [], [], [], [], []
-        self.nb_dofs = len(self.dofs)
-        self.Omega = np.zeros((self.nb_dofs ,self.nb_dofs), dtype=complex)
-
+        self.rho_i, self.rho_j, self.rho_v = [], [], []
         self.dof_spec = int((self.nb_dofs-1)/2)
+
+        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
+
+
         for i_w, kx in enumerate(self.kx):
-            self.Omega[i_w, i_w] = 1j*self.ky[i_w]/(Air.rho*omega**2)
             for _elem in self.elements:
                 F = imposed_pw_elementary_vector(_elem, kx)
                 dof_FEM, orient = dof_p_element(_elem)
