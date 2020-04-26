@@ -49,19 +49,12 @@ def imposed_pw_elementary_vector(_elem, k):
     k_prime = k*h/2.
     K_ref = _elem.reference_element
     # Integration on the reference element
-    n, m = K_ref.Phi.shape
-    F = np.zeros(n, dtype=complex)
-    for ipg in range(m):
-        _Phi = K_ref.Phi[:, ipg].reshape(n)
-        F += K_ref.w[ipg]*_Phi*np.exp(-1j*k_prime*K_ref.xi[ipg])
-    # print("Validation")
-    # print("k_prime={}".format(k_prime))
-    # print("F_numerical= {}".format(F))
+    # n, m = K_ref.Phi.shape
+    # F = np.zeros(n, dtype=complex)
+    # for ipg in range(m):
+    #     _Phi = K_ref.Phi[:, ipg].reshape(n)
+    #     F += K_ref.w[ipg]*_Phi*np.exp(-1j*k_prime*K_ref.xi[ipg])
     F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
-    # print("F_analytical={}".format(F_analytical))
-    # print("Error on F ={}".format(np.linalg.norm(F-F_analytical)))
-    # Integral on the real element
-    # F *= (h/2.)*np.exp(-1j*k*x_mid)
     return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
     # return F
 

@@ -17,7 +17,7 @@ from mediapack import Air
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 30.
+theta_d = 80.
 param.frequencies = (10., 5010., 1)
 param.name_project = "one_layer"
 
@@ -25,11 +25,11 @@ param.theta_d = theta_d
 L = 0.02
 d = 0.02
 # a = 0.008
-lcar = 0.05
+lcar = 0.005
 
-param.order = 2
+param.order = 3
 param.plot = [True, True, True, False, False, False]
-param.plot = [False]*6
+# param.plot = [False]*6
 # print(name_server)
 # if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
 #     param.verbose = True
@@ -49,7 +49,8 @@ ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
 
 matrice = G.new_surface([ll_0.tag])
 
-G.new_physical(l_2, "condition=Rigid Wall")
+# G.new_physical(l_2, "condition=Rigid Wall")
+G.new_physical(l_2, "condition=Transmission")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
 G.new_physical(matrice, "mat=Air")

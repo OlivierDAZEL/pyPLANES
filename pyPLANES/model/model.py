@@ -144,14 +144,13 @@ class Model():
         self.A_j = np.array(self.A_j)
         self.A_v = np.array(self.A_v, dtype=complex)
         for _ent in self.model_entities:
-            if isinstance(_ent, IncidentPwFem):
+            if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
                 _ent.rho_i = np.array(_ent.rho_i)
                 _ent.rho_j = np.array(_ent.rho_j)
                 _ent.rho_v = np.array(_ent.rho_v, dtype=complex)
 
     def create_linear_system(self, f):
         print("Creation of the linear system for f={}".format(f))
-
         self.update_frequency(f)
         omega = 2*np.pi*f
         # Initialisation of the lists
@@ -197,7 +196,7 @@ class Model():
         self.A_j = np.append(self.A_j, A_j)
         self.A_v = np.append(self.A_v, A_v)
         for _ent in self.model_entities:
-            if isinstance(_ent, IncidentPwFem):
+            if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
                 for i_left, dof_left in enumerate(self.dof_left):
                     # Corresponding dof
                     dof_right = self.dof_right[i_left]
@@ -206,6 +205,7 @@ class Model():
                     _ent.rho_i[index] = dof_left-1
                     for _i in index:
                         _ent.rho_v[_i] /= self.delta_periodicity
+                    _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
 
     def resolution(self, p):
 
@@ -230,25 +230,23 @@ class Model():
         omega = 2*np.pi*f
         # print("self.nb_dofs={}".format(self.nb_dofs))
         # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
-
+        # Remonving entries of the first row and first column
         index = np.where((self.A_i*self.A_j) != 0)
         A = coo_matrix((self.A_v[index], (self.A_i[index]-1, self.A_j[index]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
         rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, IncidentPwFem):
-                rho_global = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)),shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
-                A += rho_global.dot(_ent.Omega).dot(rho_global.H)/_ent.period
-                rho_0 = rho_global[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
-                rhs += rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-                rhs += rho_global.dot(_ent.Omega).dot(_ent.delta)
+                A += _ent.rho.dot(_ent.Omega).dot(_ent.rho.H)/_ent.period
+                rho_0 = _ent.rho[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
+                rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
+            if isinstance(_ent, TransmissionPwFem):
+                A += _ent.rho.dot(_ent.Omega).dot(_ent.rho.H)/_ent.period
 
 
         start = timeit.default_timer()
         x = linsolve.spsolve(A, rhs)
         stop = timeit.default_timer()
-
         x = np.insert(x, 0, 0) # Insertion of the zero dof
-
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
@@ -265,15 +263,15 @@ class Model():
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
-                _ent.sol = rho_global.H .dot(x[1:])/_ent.period - _ent.delta
+                _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period
+                _ent.sol[_ent.dof_spec] -= 1
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R_all   = {}".format((_ent.sol)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
                 self.abs -= np.abs(self.modulus_reflex)**2
-        #     elif isinstance(_ent, TransmissionPwFem):
-        #         _ent.sol = X[_ent.dofs]
-        #         self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
-        #         self.abs -= self.modulus_trans**2
+            elif isinstance(_ent, TransmissionPwFem):
+                _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period
+                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
+                self.abs -= self.modulus_trans**2
 
     def display_sol(self, p):
         if any(p.plot[3:]):

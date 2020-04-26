@@ -344,44 +344,41 @@ class UnitDisplacementFem(FemEntity):
             self.F_i.append(_dof)
             self.F_v.append(_orient[ii]*F[ii])
 
-class IncidentPwFem(FemEntity):
+class PwFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.A_i, self.A_j, self.A_v = [], [], []
         self.F_i, self.F_v = [], []
-        self.dofs, self.sol = [], []
+        self.dofs = []
         self.theta_d = kwargs["p"].theta_d
+        # self.period = kwargs["p"].period
         self.kx, self.ky = [],[]
         self.rho_i, self.rho_j, self.rho_v = [], [], []
         self.nb_dofs = 0
         self.Omega = None
-        self.dof_spec = None
 
     def __str__(self):
         # out = GmshEntity.__str__(self)
-        out = "ImposedPw" + FemEntity.__str__(self)
+        out = "Pw" + FemEntity.__str__(self)
         return out
 
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+3
-        # nb_bloch_waves = 3
+        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+20
+        nb_bloch_waves = 0
+        print("nb_bloch_waves ={}".format(nb_bloch_waves))
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
         self.dofs = np.arange(1+2*nb_bloch_waves)
-        self.nb_dofs = len(self.dofs)
+        self.nb_dofs = 1+2*nb_bloch_waves
 
     def create_dynamical_matrices(self, omega):
         self.rho_i, self.rho_j, self.rho_v = [], [], []
-        self.dof_spec = int((self.nb_dofs-1)/2)
-
         _ = np.diag(1j*self.ky/(Air.rho*omega**2))
         self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
-
-
         for i_w, kx in enumerate(self.kx):
             for _elem in self.elements:
                 F = imposed_pw_elementary_vector(_elem, kx)
@@ -392,57 +389,29 @@ class IncidentPwFem(FemEntity):
                 self.rho_j.extend(dof_pw)
                 self.rho_v.extend(_)
 
-                self.delta = np.zeros(self.nb_dofs, dtype=complex)
-                self.delta[self.dof_spec] = 1
-
-class TransmissionPwFem(FemEntity):
+class IncidentPwFem(PwFem):
     def __init__(self, **kwargs):
-        FemEntity.__init__(self, **kwargs)
-        self.A_i, self.A_j, self.A_v = [], [], []
-        self.F_i, self.F_v = [], []
-        self.dofs = []
-        self.theta_d = kwargs["p"].theta_d
-        # self.period = kwargs["p"].period
-        self.kx, self.ky = [],[]
+        PwFem.__init__(self, **kwargs)
 
     def __str__(self):
         # out = GmshEntity.__str__(self)
-        out = "TransmissionPw" + FemEntity.__str__(self)
+        out = "Imposed" + PwFem.__str__(self)
         return out
 
     def update_frequency(self, omega):
-        k_air = omega/Air.c
-        k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10
-        # nb_bloch_waves = 0
+        PwFem.update_frequency(self, omega)
+        self.dof_spec = int((self.nb_dofs-1)/2)
 
-        _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
-        self.kx = k_x+_*(2*pi/self.period)
-        k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
-        self.ky = np.real(k_y)-1j*np.imag(k_y)
+class TransmissionPwFem(PwFem):
+    def __init__(self, **kwargs):
+        PwFem.__init__(self, **kwargs)
 
-    def append_linear_system(self, omega):
-        A_i, A_j, A_v, F_i, F_v = [], [], [], [], []
-        i_spec = int((len(self.dofs)-1)/2)
-        for i_w, kx in enumerate(self.kx):
-            for _elem in self.elements:
-                F = imposed_pw_elementary_vector(_elem, kx)
-                dof_FEM, orient = dof_p_element(_elem)
-                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
-                Omega_u = 1j*self.ky[i_w]/(Air.rho*omega**2)
-                _ = np.array(orient)*F
-                A_i.extend(dof_FEM)
-                A_j.extend(dof_pw)
-                A_v.extend(Omega_u*_)
-                A_i.extend(dof_pw)
-                A_j.extend(dof_FEM)
-                A_v.extend(np.conj(_))
-        # append_orthogonality(self):
-            A_i.append(self.dofs[i_w])
-            A_j.append(self.dofs[i_w])
-            A_v.append(-self.period)
+    def __str__(self):
+        # out = GmshEntity.__str__(self)
+        out = "Imposed" + PwFem.__str__(self)
+        return out
 
-        return A_i, A_j, A_v, F_i, F_v
+
 
 if __name__ == "__main__":
     pass

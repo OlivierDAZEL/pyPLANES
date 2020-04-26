@@ -10,16 +10,16 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 param = ModelParameter()
 theta_d = 0
-param.frequencies = (3235., 5010., 1)
+param.frequencies = (2000., 4500., 100)
 param.name_project = "metaporous_benchmark_7"
 
 param.theta_d = theta_d
 L = 0.02
 d = 0.02
 a = 0.008
-lcar = 0.002
+lcar = 0.0005
 param.verbose = True
-param.order = 4
+param.order = 3
 # param.plot = [False, False, False, True, True, True]
 param.plot = [False]*6
 
