@@ -40,7 +40,7 @@ import matplotlib.tri as mtri
 from mediapack import Air
 # from pymls import media
 
-from pyPLANES.classes.entity_classes import IncidentPwFem, EquivalentFluidFem, AirFem, Pem01Fem, Pem98Fem, TransmissionPwFem
+from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, EquivalentFluidFem, AirFem, Pem01Fem, Pem98Fem, TransmissionPwFem
 from pyPLANES.gmsh.import_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_files
@@ -108,6 +108,7 @@ class Model():
         self.nb_dofs = self.nb_dof_FEM
         for _ent in self.model_entities:
             _ent.update_frequency(omega)
+        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
 
 
     def __str__(self):
@@ -235,12 +236,21 @@ class Model():
         A = coo_matrix((self.A_v[index], (self.A_i[index]-1, self.A_j[index]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
         rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
         for _ent in self.model_entities:
-            if isinstance(_ent, IncidentPwFem):
+            if isinstance(_ent, PwFem):
                 A += _ent.rho.dot(_ent.Omega).dot(_ent.rho.H)/_ent.period
-                rho_0 = _ent.rho[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
-                rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-            if isinstance(_ent, TransmissionPwFem):
-                A += _ent.rho.dot(_ent.Omega).dot(_ent.rho.H)/_ent.period
+                if isinstance(_ent, IncidentPwFem):
+                    rho_0 = _ent.rho[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
+                    rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
+
+
+
+
+
+
+
+
+
+
 
 
         start = timeit.default_timer()
@@ -272,6 +282,7 @@ class Model():
                 _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
+        # print("abs pyPLANES_FEM   = {}".format(self.abs))
 
     def display_sol(self, p):
         if any(p.plot[3:]):

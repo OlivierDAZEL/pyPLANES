@@ -10,14 +10,14 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 param = ModelParameter()
 theta_d = 0
-param.frequencies = (2000., 4500., 100)
+param.frequencies = (10., 5010., 401)
 param.name_project = "metaporous_benchmark_7"
 
 param.theta_d = theta_d
 L = 0.02
 d = 0.02
 a = 0.008
-lcar = 0.0005
+lcar = 0.008/8
 param.verbose = True
 param.order = 3
 # param.plot = [False, False, False, True, True, True]
@@ -49,7 +49,7 @@ G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice, inclusion], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 
-option = "-2 "
+option = "-2 -v 0 "
 G.run_gmsh(option)
 
 model = Model(param)

@@ -365,9 +365,9 @@ class PwFem(FemEntity):
     def update_frequency(self, omega):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+20
-        nb_bloch_waves = 0
-        print("nb_bloch_waves ={}".format(nb_bloch_waves))
+        nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10)
+        nb_bloch_waves = 3
+        # print("nb_bloch_waves ={}".format(nb_bloch_waves))
         _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
@@ -378,6 +378,7 @@ class PwFem(FemEntity):
     def create_dynamical_matrices(self, omega):
         self.rho_i, self.rho_j, self.rho_v = [], [], []
         _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+        # print(self.nb_dofs)
         self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
         for i_w, kx in enumerate(self.kx):
             for _elem in self.elements:
@@ -392,6 +393,7 @@ class PwFem(FemEntity):
 class IncidentPwFem(PwFem):
     def __init__(self, **kwargs):
         PwFem.__init__(self, **kwargs)
+        self.dof_spec = None
 
     def __str__(self):
         # out = GmshEntity.__str__(self)
