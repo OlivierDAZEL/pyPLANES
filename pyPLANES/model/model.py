@@ -36,9 +36,7 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
-# from scipy.sparse import coo_matrix
 from mediapack import Air
-# from pymls import media
 
 from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, EquivalentFluidFem, AirFem, Pem01Fem, Pem98Fem, TransmissionPwFem
 from pyPLANES.gmsh.import_msh_file import load_msh_file
@@ -109,7 +107,6 @@ class Model():
         for _ent in self.model_entities:
             _ent.update_frequency(omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
-
 
     def __str__(self):
         out = "TBD"
@@ -207,6 +204,7 @@ class Model():
                     for _i in index:
                         _ent.rho_v[_i] /= self.delta_periodicity
                     _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
+                    _ent.rho_c = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
 
     def resolution(self, p):
 
@@ -229,9 +227,13 @@ class Model():
 
     def solve(self,f):
         omega = 2*np.pi*f
-        # print("self.nb_dofs={}".format(self.nb_dofs))
-        # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
+        print("self.nb_dofs={}".format(self.nb_dofs))
+        print("self.nb_dof_edges={}".format(self.nb_dof_edges))
+        print("self.nb_dof_faces={}".format(self.nb_dof_faces))
+        print("self.nb_dof_master={}".format(self.nb_dof_master))
+        print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
         # Remonving entries of the first row and first column
+        start = timeit.default_timer()
         index = np.where((self.A_i*self.A_j) != 0)
         A = coo_matrix((self.A_v[index], (self.A_i[index]-1, self.A_j[index]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
         rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
@@ -241,22 +243,37 @@ class Model():
                 if isinstance(_ent, IncidentPwFem):
                     rho_0 = _ent.rho[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
                     rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-
-
-
-
-
-
-
-
-
-
-
-
-        start = timeit.default_timer()
         x = linsolve.spsolve(A, rhs)
         stop = timeit.default_timer()
+        print("Elapsed time for linsolve           = {} ms".format((stop-start)*1e3))
         x = np.insert(x, 0, 0) # Insertion of the zero dof
+
+        start = timeit.default_timer()
+        index_A = np.where(((self.A_i*self.A_j) != 0) & (self.A_i < self.nb_dof_master) & (self.A_j < self.nb_dof_master))
+        index_B = np.where(((self.A_i*self.A_j) != 0) & (self.A_i < self.nb_dof_master) & (self.A_j >= self.nb_dof_master))
+        index_C = np.where(((self.A_i*self.A_j) != 0) & (self.A_i >= self.nb_dof_master) & (self.A_j < self.nb_dof_master))
+        index_D = np.where((self.A_i >= self.nb_dof_master) & (self.A_j >= self.nb_dof_master))
+        
+        A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
+        rhs = np.zeros(self.nb_dof_master-1, dtype=complex)
+        for _ent in self.model_entities:
+            if isinstance(_ent, PwFem):
+                A += _ent.rho_c.dot(_ent.Omega).dot(_ent.rho_c.H)/_ent.period
+                if isinstance(_ent, IncidentPwFem):
+                    rho_0 = _ent.rho_c[:, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
+                    rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
+        B = coo_matrix((self.A_v[index_B], (self.A_i[index_B]-1, self.A_j[index_B]-self.nb_dof_master)), shape=(self.nb_dof_master-1, self.nb_dofs_to_condense)).tocsr()
+
+        C = coo_matrix((self.A_v[index_C], (self.A_i[index_C]-self.nb_dof_master, self.A_j[index_C]-1)), shape=(self.nb_dofs_to_condense, self.nb_dof_master-1)).tocsc()
+        D = coo_matrix((self.A_v[index_D], (self.A_i[index_D]-self.nb_dof_master, self.A_j[index_D]-self.nb_dof_master)), shape=(self.nb_dofs_to_condense, self.nb_dofs_to_condense)).tocsc()
+        X_c = linsolve.spsolve(D, C)
+
+        A -= B.dot(X_c)
+        stop = timeit.default_timer()
+        x_c = linsolve.spsolve(A, rhs)
+        x_c = np.append(x_c, linsolve.spsolve(D, C.dot(x_c)))
+        x_c = np.insert(x_c, 0, 0) # Insertion of the zero dof
+        print("Elapsed time for linsolve condensed = {} ms".format((stop-start)*1e3))
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
@@ -277,6 +294,11 @@ class Model():
                 _ent.sol[_ent.dof_spec] -= 1
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
+                _ent.sol = _ent.rho.H .dot(x_c[1:])/_ent.period
+                _ent.sol[_ent.dof_spec] -= 1
+                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                print("R pyPLANES_FEM_cd= {}".format((_ent.sol[_ent.dof_spec])))
+
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
                 _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period

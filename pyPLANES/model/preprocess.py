@@ -154,22 +154,18 @@ def renumber_dofs(self):
         for i_dim in range(4):
             self.nb_dofs = renumber_dof(_ed.dofs[i_dim], self.nb_dofs)
     self.nb_dof_edges = self.nb_dofs
+    self.nb_dof_master = self.nb_dofs
     self.nb_master_dofs = self.nb_dofs
     for _fc in self.faces:
         for i_dim in range(4):
             self.nb_dofs = renumber_dof(_fc.dofs[i_dim], self.nb_dofs)
     self.nb_dof_faces = self.nb_dofs
+
     for _bb in self.bubbles:
         for i_dim in range(4):
             self.nb_dofs = renumber_dof(_bb.dofs[i_dim], self.nb_dofs)
     self.nb_dof_FEM = self.nb_dofs
-    for _en in self.entities[1:]:
-        if isinstance(_en, IncidentPwFem):
-            _ = renumber_dof(_en.dofs, 0)
-            # _en.dofs0 = [d-self.nb_dof_FEM for d in _en.dofs]
-        elif isinstance(_en, TransmissionPwFem):
-            _ = renumber_dof(_en.dofs, 0)
-            # _en.dofs0 = [d-self.nb_dof_FEM for d in _en.dofs]
+    self.nb_dofs_to_condense = self.nb_dofs - self.nb_dof_master
 
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
@@ -217,7 +213,6 @@ def periodicity_initialisation(self):
     _nz = np.where(_!=0)[0].tolist()
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
-
 
 
 def init_vec_frequencies(frequency):

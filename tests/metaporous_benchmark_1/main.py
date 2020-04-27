@@ -25,9 +25,9 @@ param.theta_d = theta_d
 L = 0.02
 d = 0.02
 # a = 0.008
-lcar = 0.005
+lcar = 0.002
 
-param.order = 4
+param.order = 3
 # param.plot = [True, True, True, False, False, False]
 param.plot = [False]*6
 # print(name_server)
