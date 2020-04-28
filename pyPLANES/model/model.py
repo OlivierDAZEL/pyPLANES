@@ -25,9 +25,8 @@ import os
 import platform
 import timeit
 
-
 from scipy.sparse.linalg.dsolve import linsolve
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csc_matrix, linalg as sla
 
 import numpy as np
 import numpy.linalg as LA
@@ -42,6 +41,8 @@ from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, EquivalentFlui
 from pyPLANES.gmsh.import_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_files
+
+
 
 class Model():
     def __init__(self, p):
@@ -141,6 +142,11 @@ class Model():
         self.A_i = np.array(self.A_i)
         self.A_j = np.array(self.A_j)
         self.A_v = np.array(self.A_v, dtype=complex)
+        self.A_i_c = np.array(self.A_i_c)
+        self.A_j_c = np.array(self.A_j_c)
+        self.A_v_c = np.array(self.A_v_c, dtype=complex)
+        self.F_i_c = np.array(self.F_i_c)
+        self.F_v_c = np.array(self.F_v_c, dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
                 _ent.rho_i = np.array(_ent.rho_i)
@@ -155,14 +161,41 @@ class Model():
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
         for _ent in self.model_entities:
-            if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
+            if isinstance(_ent, (PwFem)):
                 _ent.create_dynamical_matrices(omega)
             else: # only the matrix Matrix + RHS
                 _A_i, _A_j, _A_v = _ent.append_linear_system(omega)
                 self.extend_A(_A_i, _A_j, _A_v)
+
+        self.A_i_c = self.A_i.copy()
+        self.A_j_c = self.A_j.copy()
+        self.A_v_c = self.A_v.copy()
+        self.F_i_c = self.F_i.copy()
+        self.F_v_c = self.F_v.copy()
+
+        # Entries to add
+        i_A, j_A, v_A = [], [], [] # To add to the Matrix
+        i_T, j_T, v_T = [], [], [] #
+        for _ent in self.model_entities:
+            _i_A, _j_A, _v_A, _i_T, _j_T, _v_T = _ent.condensation(omega)
+            i_A.extend(_i_A)
+            j_A.extend(_j_A)
+            v_A.extend(_v_A)
+            i_T.extend(_i_T)
+            j_T.extend(_j_T)
+            v_T.extend(_v_T)
+
+        self.A_i_c.extend(i_A)
+        self.A_j_c.extend(j_A)
+        self.A_v_c.extend(v_A)
+        self.i_T = np.array(i_T)-self.nb_dof_master
+        self.j_T = np.array(j_T)
+        self.v_T = np.array(v_T)
+
+
         self.LS2numpy()
         self.apply_periodicity()
-
+        self.apply_periodicity_c()
     def apply_periodicity(self):
         A_i, A_j, A_v = [], [], []
         if self.dof_left != []:
@@ -206,6 +239,39 @@ class Model():
                     _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
                     _ent.rho_c = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
 
+
+    def apply_periodicity_c(self):
+        A_i, A_j, A_v = [], [], []
+        if self.dof_left != []:
+            for i_left, dof_left in enumerate(self.dof_left):
+                # Corresponding dof
+                dof_right = self.dof_right[i_left]
+                # Summation of the columns for the Matrix
+                index = np.where(self.A_j_c == dof_right)
+                self.A_j_c[index] = dof_left
+                for _i in index:
+                    self.A_v_c[_i] *= self.delta_periodicity
+                # Summation of the rows for the Matrix
+                index = np.where(self.A_i_c == dof_right)
+                self.A_i_c[index] = dof_left
+                for _i in index:
+                    self.A_v_c[_i] /= self.delta_periodicity
+                # Summation of the rows for the Matrix
+                index = np.where(self.F_i_c == dof_right)
+                self.F_i_c[index] = dof_left
+                for _i in index:
+                    self.F_v_c[_i] /= self.delta_periodicity
+                A_i.append(dof_right)
+                A_j.append(dof_left)
+                A_v.append(self.delta_periodicity)
+                A_i.append(dof_right)
+                A_j.append(dof_right)
+                A_v.append(-1)
+        self.A_i_c = np.append(self.A_i_c, A_i)
+        self.A_j_c = np.append(self.A_j_c, A_j)
+        self.A_v_c = np.append(self.A_v_c, A_v)
+
+
     def resolution(self, p):
 
         self.create_global_matrices()
@@ -227,11 +293,14 @@ class Model():
 
     def solve(self,f):
         omega = 2*np.pi*f
+        self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         print("self.nb_dofs={}".format(self.nb_dofs))
         print("self.nb_dof_edges={}".format(self.nb_dof_edges))
         print("self.nb_dof_faces={}".format(self.nb_dof_faces))
         print("self.nb_dof_master={}".format(self.nb_dof_master))
         print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
+        print("self.nb_dof_condensed={}".format(self.nb_dof_condensed))
+
         # Remonving entries of the first row and first column
         start = timeit.default_timer()
         index = np.where((self.A_i*self.A_j) != 0)
@@ -245,35 +314,33 @@ class Model():
                     rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
         x = linsolve.spsolve(A, rhs)
         stop = timeit.default_timer()
-        print("Elapsed time for linsolve           = {} ms".format((stop-start)*1e3))
         x = np.insert(x, 0, 0) # Insertion of the zero dof
+        print("Elapsed time for linsolve           = {} ms".format((stop-start)*1e3))
 
         start = timeit.default_timer()
-        index_A = np.where(((self.A_i*self.A_j) != 0) & (self.A_i < self.nb_dof_master) & (self.A_j < self.nb_dof_master))
-        index_B = np.where(((self.A_i*self.A_j) != 0) & (self.A_i < self.nb_dof_master) & (self.A_j >= self.nb_dof_master))
-        index_C = np.where(((self.A_i*self.A_j) != 0) & (self.A_i >= self.nb_dof_master) & (self.A_j < self.nb_dof_master))
-        index_D = np.where((self.A_i >= self.nb_dof_master) & (self.A_j >= self.nb_dof_master))
-        
-        A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
+        index_A = np.where(((self.A_i_c*self.A_j_c) != 0) & (self.A_i_c < self.nb_dof_master) & (self.A_j_c < self.nb_dof_master))
+
+        A = coo_matrix((self.A_v_c[index_A], (self.A_i_c[index_A]-1, self.A_j_c[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
         rhs = np.zeros(self.nb_dof_master-1, dtype=complex)
+
+        T = coo_matrix((self.v_T, (self.i_T, self.j_T)), shape=(self.nb_dof_condensed, self.nb_dof_master)).tocsr()
+
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                A += _ent.rho_c.dot(_ent.Omega).dot(_ent.rho_c.H)/_ent.period
+                rho = _ent.rho[:self.nb_dof_master-1, :]
+                A += rho.dot(_ent.Omega).dot(rho.H)/_ent.period
                 if isinstance(_ent, IncidentPwFem):
-                    rho_0 = _ent.rho_c[:, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
+                    rho_0 = _ent.rho[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
                     rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-        B = coo_matrix((self.A_v[index_B], (self.A_i[index_B]-1, self.A_j[index_B]-self.nb_dof_master)), shape=(self.nb_dof_master-1, self.nb_dofs_to_condense)).tocsr()
+        X = linsolve.spsolve(A, rhs)
+        X = np.insert(X, 0, 0)
 
-        C = coo_matrix((self.A_v[index_C], (self.A_i[index_C]-self.nb_dof_master, self.A_j[index_C]-1)), shape=(self.nb_dofs_to_condense, self.nb_dof_master-1)).tocsc()
-        D = coo_matrix((self.A_v[index_D], (self.A_i[index_D]-self.nb_dof_master, self.A_j[index_D]-self.nb_dof_master)), shape=(self.nb_dofs_to_condense, self.nb_dofs_to_condense)).tocsc()
-        X_c = linsolve.spsolve(D, C)
+        x_c = list(T@X)
+        x_c =np.insert(X,-1, x_c)
 
-        A -= B.dot(X_c)
         stop = timeit.default_timer()
-        x_c = linsolve.spsolve(A, rhs)
-        x_c = np.append(x_c, linsolve.spsolve(D, C.dot(x_c)))
-        x_c = np.insert(x_c, 0, 0) # Insertion of the zero dof
-        print("Elapsed time for linsolve condensed = {} ms".format((stop-start)*1e3))
+        print("Elapsed time for linsolve cd        = {} ms".format((stop-start)*1e3))
+
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
@@ -305,6 +372,7 @@ class Model():
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
+
 
     def display_sol(self, p):
         if any(p.plot[3:]):

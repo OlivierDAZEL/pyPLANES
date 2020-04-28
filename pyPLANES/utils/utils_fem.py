@@ -27,10 +27,18 @@ import numpy as np
 from scipy.special import legendre
 
 
+def dof_p_linear_system_master(_elem):
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[3][:3] + _elem.dofs[3][3] + _elem.dofs[3][4] +_elem.dofs[3][5])
+
+def dof_p_linear_system_to_condense(_elem):
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[3][6])
+
 
 def dof_p_element(_elem):
-    dof, orient = dof_element(_elem, 3)
-    return dof, orient
+    dof, orient,local = dof_element(_elem, 3)
+    return dof, orient, local
 
 
 def dof_u_element(_elem):
@@ -59,13 +67,22 @@ def dof_element(_elem, i_field):
             orient.append(_elem.edges_orientation[_e]**k)
         # Orientation of the (unique) face
         orient += [1] * int((order-1)*(order-2)/2)
+        
+        local =dict()
+        local["dof_m"] = slice(3*order)
+        local["dof_c"] = slice(3*order,3*order+int(((order-1)*(order-2))/2))
+        local["orient_m"] = np.diag(orient[:3*order])
+        local["orient_c"] = np.diag(orient[3*order: 3*order+int(((order-1)*(order-2))/2)])
+
+
     elif _elem.typ == 1:
         # dof = dofs of the 2 vertices + of the edge
         dof = _elem.dofs[i_field][0:2]+_elem.dofs[i_field][2]
         orient = [1]*2 # Orientation of the vertices
         # Orientation of the edges
         orient.extend(_elem.edges_orientation[0]**np.arange(order-1))
-    return dof, orient
+        local = None
+    return dof, orient, local
 
 def create_legendre_table(n):
     out = np.zeros((n, n))
