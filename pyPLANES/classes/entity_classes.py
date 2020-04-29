@@ -36,7 +36,7 @@ from mediapack import Air
 from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices
 from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector
 from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element
-from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master
+from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system
 
 
 class GmshEntity():
@@ -73,17 +73,18 @@ class FemEntity(GmshEntity):
         related_elements = [_el.tag for _el in self.elements]
         out  += "related elements={}\n".format(related_elements)
         return out
+
     def condensation(self, omega):
         return [], [], [], [], [], []
 
     def update_frequency(self, omega):
         pass
 
-    def append_global_matrices(self, _elem):
+    def create_elementary_matrices(self, _elem):
         pass
 
     def append_linear_system(self, omega):
-        return [],[],[]
+        return [], [], [], [], [], []
 
     def link_elem(self,n):
         self.elements.append(n)
@@ -103,55 +104,51 @@ class AirFem(FemEntity):
         # Elementary matrices
         H, Q = fluid_elementary_matrices(_elem)
         dof_p, orient_p, elem_dof = dof_p_element(_elem)
+        nb_dof = len(dof_p)
         # Orientation of the elementary matrices
         H = orient_p @ H @ orient_p
         Q = orient_p @ Q @ orient_p
 
         dof_m, dof_c = elem_dof["dof_m"], elem_dof["dof_c"]
 
-        _elem.H_cm = H[dof_c, dof_m]
-        _elem.H_mc = H[dof_m, dof_c]
-        _elem.H_cc = H[dof_c, dof_c]
-        _elem.Q_cm = Q[dof_c, dof_m]
-        _elem.Q_mc = Q[dof_m, dof_c]
-        _elem.Q_cc = Q[dof_c, dof_c]
+        _elem.H_mm = H[elem_dof["dof_m"], elem_dof["dof_m"]]
+        _elem.H_cm = H[elem_dof["dof_c"], elem_dof["dof_m"]]
+        _elem.H_mc = H[elem_dof["dof_m"], elem_dof["dof_c"]]
+        _elem.H_cc = H[elem_dof["dof_c"], elem_dof["dof_c"]]
+        _elem.Q_mm = Q[elem_dof["dof_m"], elem_dof["dof_m"]]
+        _elem.Q_cm = Q[elem_dof["dof_c"], elem_dof["dof_m"]]
+        _elem.Q_mc = Q[elem_dof["dof_m"], elem_dof["dof_c"]]
+        _elem.Q_cc = Q[elem_dof["dof_c"], elem_dof["dof_c"]]
 
-        for ii, jj in product(range(len(dof_p)), range(len(dof_p))):
-            self.H_i.append(dof_p[ii])
-            self.H_j.append(dof_p[jj])
-            self.H_v.append(H[ii, jj])
-            self.Q_i.append(dof_p[ii])
-            self.Q_j.append(dof_p[jj])
-            self.Q_v.append(Q[ii, jj])
+        # self.H_i.extend(list(chain.from_iterable([[_d]*nb_dof for _d in dof_p])))
+        # self.H_j.extend(list(dof_p)*nb_dof)
+        # self.H_v.extend(list(H[dof_m, dof_m].flatten()))
+        # self.Q_i.extend(list(chain.from_iterable([[_d]*nb_dof for _d in dof_p])))
+        # self.Q_j.extend(list(dof_p)*nb_dof)
+        # self.Q_v.extend(list(Q[dof_m, dof_m].flatten()))
+
 
     def append_linear_system(self, omega):
-        A_i = self.H_i.copy()
-        A_j = self.H_j.copy()
-        A_v = list(np.array(self.H_v)/(self.mat.rho*omega**2))
-        A_i.extend(self.Q_i)
-        A_j.extend(self.Q_j)
-        A_v.extend(-np.array(self.Q_v)/(self.mat.K))
-        return A_i, A_j, A_v
-
-    def condensation(self, omega):
-        i_A, j_A, v_A =[], [], []
-        i_T, j_T, v_T =[], [], []
+        A_i, A_j, A_v =[], [], []
+        # Translation matrix to compute internal dofs
+        T_i, T_j, T_v =[], [], []
         for _e in self.elements:
+            Mat = _e.H_mm/(self.mat.rho*omega**2) - _e.Q_mm/self.mat.K
             dof_master = dof_p_linear_system_master(_e)
             dof_condense = dof_p_linear_system_to_condense(_e)
             n_m, n_c = len(dof_master), len(dof_condense)
             Di = LA.inv((_e.H_cc/(self.mat.rho*omega**2))-(_e.Q_cc/(self.mat.K)))
             CC = (_e.H_cm/(self.mat.rho*omega**2))-(_e.Q_cm/(self.mat.K)).reshape((n_c, n_m))
             BB = (_e.H_mc/(self.mat.rho*omega**2))-(_e.Q_mc/(self.mat.K)).reshape((n_m, n_c))
-            i_T.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_condense])))
-            j_T.extend(list(dof_master)*n_c)
+            T_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_condense])))
+            T_j.extend(list(dof_master)*n_c)
             _ = np.array(-Di.dot(CC))
-            v_T.extend(_.flatten())
-            i_A.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_master])))
-            j_A.extend(list(dof_master)*n_m)
-            _ = np.array(BB.dot(_))
-            v_A.extend(_.flatten())
-        return i_A, j_A, v_A, i_T, j_T, v_T
+            T_v.extend(_.flatten())
+            A_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_master])))
+            A_j.extend(list(dof_master)*n_m)
+            _ = Mat-np.array(BB.dot(_))
+            A_v.extend(_.flatten())
+        return A_i, A_j, A_v, T_i, T_j, T_v
 
 class Pem98Fem(FemEntity):
     def __init__(self, **kwargs):
@@ -172,63 +169,94 @@ class Pem98Fem(FemEntity):
     def update_frequency(self, omega):
         self.mat.update_frequency(omega)
 
-    def append_global_matrices(self, _elem):
-        dof_u, orient_u = dof_u_element(_elem)
-        dof_p, orient_p = dof_p_element(_elem)
+    def create_elementary_matrices(self, _elem):
+        dof_u, orient_u, elem_dof_u = dof_u_element(_elem)
+        dof_p, orient_p, elem_dof_p = dof_p_element(_elem)
         M, K_0, K_1, H, Q, C = pem98_elementary_matrices(_elem)
-        for ii, jj in product(range(len(dof_u)), range(len(dof_u))):
-            self.K_0_i.append(dof_u[ii])
-            self.K_0_j.append(dof_u[jj])
-            self.K_0_v.append(orient_u[ii]*orient_u[jj]*K_0[ii, jj])
-            self.K_1_i.append(dof_u[ii])
-            self.K_1_j.append(dof_u[jj])
-            self.K_1_v.append(orient_u[ii]*orient_u[jj]*K_1[ii, jj])
-            self.M_i.append(dof_u[ii])
-            self.M_j.append(dof_u[jj])
-            self.M_v.append(orient_u[ii]*orient_u[jj]*M[ii, jj])
-        for ii, jj in product(range(len(dof_p)), range(len(dof_p))):
-            self.H_i.append(dof_p[ii])
-            self.H_j.append(dof_p[jj])
-            self.H_v.append(orient_p[ii]*orient_p[jj]*H[ii, jj])
-            self.Q_i.append(dof_p[ii])
-            self.Q_j.append(dof_p[jj])
-            self.Q_v.append(orient_p[ii]*orient_p[jj]*Q[ii, jj])
-        for ii, jj in product(range(len(dof_u)), range(len(dof_p))):
-            self.C_i.append(dof_u[ii])
-            self.C_j.append(dof_p[jj])
-            self.C_v.append(orient_u[ii]*orient_p[jj]*C[ii, jj])
+
+        _elem.M =   orient_u @ M   @ orient_u
+        _elem.K_0 = orient_u @ K_0 @ orient_u
+        _elem.K_1 = orient_u @ K_1 @ orient_u
+        _elem.H =   orient_p @ H   @ orient_p
+        _elem.Q =   orient_p @ Q   @ orient_p
+        _elem.C =   orient_u @ C   @ orient_p
+        dof_up_m = dof_up_linear_system_master(_elem)
+        dof_up_c = dof_up_linear_system_to_condense(_elem)
+
+        dof_up = dof_up_linear_system(_elem)
+
+        n_m, n_c = len(dof_up_m), len(dof_up_c)
+        n_u_m, n_p_m = int(2*n_m/3), int(n_m/3)
+        n_u_c, n_p_c = int(2*n_c/3), int(n_c/3)
+        n_p = n_p_m +n_p_c
+        n_up = n_m + n_c
+        # print(_e.K_0.shape)
+        # print("n_u_m={}".format(n_u_m))
+    # Renumbering of the elementary matrices to separate master and condensed dofs
+        # new_order = list(range(n_p_m))
+        # new_order += [d+n_p for d in new_order]
+        # new_order += list(range(n_p_m, n_p)) +list(range(n_p+n_p_m,2*n_p))
+        # _elem.M = _elem.M[:, new_order][new_order]
+        # _elem.K_0 = _elem.K_0[:, new_order][new_order]
+        # _elem.K_1 = _elem.K_1[:, new_order][new_order]
+        # _elem.C = _elem.C[:, :][new_order]
+        print(np.diag(_elem.M))
+
+
+
     def append_linear_system(self, omega):
-        # print(self.mat.name)
-        # print("K_eq_til={}".format(self.mat.K_eq_til))
-        # print("P_tilde={}".format(self.mat.P_til))
-        # print("Q_tilde={}".format(self.mat.Q_til))
-        # print("R_tilde={}".format(self.mat.R_til))
-        # print("N={}".format(self.mat.N))
-        # print("rho_11_tilde={}".format(self.mat.rho_11_til))
-        # print("rho_12_tilde={}".format(self.mat.rho_12_til))
-        # print("rho_22_tilde={}".format(self.mat.rho_22_til))
-        A_i = self.K_0_i.copy()
-        A_j = self.K_0_j.copy()
-        A_v = list(self.mat.P_hat*np.array(self.K_0_v))
-        A_i.extend(self.K_1_i)
-        A_j.extend(self.K_1_j)
-        A_v.extend(self.mat.N*np.array(self.K_1_v))
-        A_i.extend(self.M_i)
-        A_j.extend(self.M_j)
-        A_v.extend(-omega**2*self.mat.rho_til*np.array(self.M_v))
-        A_i.extend(self.H_i)
-        A_j.extend(self.H_j)
-        A_v.extend(np.array(self.H_v)/(self.mat.rho_eq_til*omega**2))
-        A_i.extend(self.Q_i)
-        A_j.extend(self.Q_j)
-        A_v.extend(-np.array(self.Q_v)/(self.mat.K_eq_til))
-        A_i.extend(self.C_i)
-        A_j.extend(self.C_j)
-        A_v.extend(-self.mat.gamma_til*np.array(self.C_v))
-        A_i.extend(self.C_j)
-        A_j.extend(self.C_i)
-        A_v.extend(-self.mat.gamma_til*np.array(self.C_v))
-        return A_i, A_j, A_v
+
+        A_i, A_j, A_v =[], [], []
+        # Translation matrix to compute internal dofs
+        T_i, T_j, T_v =[], [], []
+        for _e in self.elements:
+
+            dof_up_m = dof_up_linear_system_master(_e)
+            dof_up_c = dof_up_linear_system_to_condense(_e)
+
+            dof_up = dof_up_linear_system(_e)
+
+            n_m, n_c = len(dof_up_m), len(dof_up_c)
+            n_u_m, n_p_m = int(2*n_m/3), int(n_m/3)
+            n_u_c, n_p_c = int(2*n_c/3), int(n_c/3)
+            n_p = n_p_m +n_p_c
+            n_up = n_m + n_c
+
+            l_u_m = slice(n_u_m)
+            l_p_m = slice(n_p_m)
+            l_u_c = slice(n_u_m, n_u_m+n_u_c)
+            l_p_c = slice(n_p_m, n_p_m+n_p_c)
+
+            # Dynamic matrices
+            uu = self.mat.P_hat*_e.K_0+self.mat.N*_e.K_1-omega**2*self.mat.rho_til*_e.M
+            up = -self.mat.gamma_til*_e.C
+            pu = -self.mat.gamma_til*(_e.C.T)
+            pp = _e.H/(self.mat.rho_eq_til*omega**2)- _e.Q/(self.mat.K_eq_til)
+
+            mm = np.block([[uu[l_u_m, l_u_m], up[l_u_m, l_p_m]], [pu[l_p_m, l_u_m], pp[l_p_m, l_p_m]]])
+            cm = np.block([[uu[l_u_c, l_u_m], up[l_u_c, l_p_m]], [pu[l_p_c, l_u_m], pp[l_p_c, l_p_m]]])
+            mc = np.block([[uu[l_u_m, l_u_c], up[l_u_m, l_p_c]], [pu[l_p_m, l_u_c], pp[l_p_m, l_p_c]]])
+            cc = np.block([[uu[l_u_c, l_u_c], up[l_u_c, l_p_c]], [pu[l_p_c, l_u_c], pp[l_p_c, l_p_c]]])
+
+            t = -LA.inv(cc)@cm
+            mm += mc@t
+
+            T_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_up_c])))
+            T_j.extend(list(dof_up_m)*n_c)
+            T_v.extend(t.flatten())
+
+            # A_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_up_m])))
+            # A_j.extend(list(dof_up_m)*n_m)
+            # A_v.extend(mm.flatten())
+
+            m = np.block([[uu, up],[pu, pp]])
+
+            A_i.extend(list(chain.from_iterable([[_d]*n_up for _d in dof_up])))
+            A_j.extend(list(dof_up)*n_up)
+            A_v.extend(m.flatten())
+
+
+        return A_i, A_j, A_v, T_i, T_j, T_v
 
 class RigidWallFem(FemEntity):
     def __init__(self, **kwargs):
@@ -427,7 +455,7 @@ class PwFem(FemEntity):
                 F = imposed_pw_elementary_vector(_elem, kx)
                 dof_FEM, orient, _ = dof_p_element(_elem)
                 dof_pw = [self.dofs[i_w]]*len(dof_FEM)
-                _ = np.array(orient)*F
+                _ = orient@F
                 self.rho_i.extend([d-1 for d in dof_FEM])
                 self.rho_j.extend(dof_pw)
                 self.rho_v.extend(_)

@@ -17,19 +17,19 @@ from mediapack import Air
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 80.
-param.frequencies = (340., 5010., 1)
+theta_d = 0.
+param.frequencies = (15., 5010., 1)
 param.name_project = "one_layer"
 
 param.theta_d = theta_d
-L = 0.02
-d = 0.02
+L = 0.05
+d = 0.5
 # a = 0.008
-lcar = 0.001
+lcar = 0.05
 
 param.order = 3
-param.plot = [True, True, True, False, False, False]
-param.plot = [False]*6
+param.plot = [False, True, True, False, False, False]
+# param.plot = [False]*6
 # print(name_server)
 # if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
 #     param.verbose = True
@@ -53,7 +53,8 @@ G.new_physical(l_2, "condition=Rigid Wall")
 # G.new_physical(l_2, "condition=Transmission")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
-G.new_physical(matrice, "mat=Air")
+# G.new_physical(matrice, "mat=Air")
+G.new_physical(matrice, "mat=pem_benchmark_1")
 G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
@@ -68,7 +69,7 @@ model.resolution(param)
 pem = from_yaml('pem_benchmark_1.yaml')
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(Air, L),
+    Layer(pem, d),
 ]
 param.solver_pymls.backing = backing.rigid
 
@@ -83,3 +84,4 @@ R = (Z*k3-Air.Z*k)/(Z*k3+Air.Z*k)
 # print("R={}".format(R))
 
 
+plt.show()

@@ -61,6 +61,7 @@ class Model():
         self.nb_edges, self.nb_faces, self.nb_bubbles = 0, 0, 0
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
+        self.T_i, self.T_j, self.T_v = [], [], []
         self.outfile = None
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
         if hasattr(p, "materials_directory"):
@@ -113,12 +114,12 @@ class Model():
         out = "TBD"
         return out
 
-    def create_global_matrices(self):
+    def create_elementary_matrices(self):
         '''Creation of global shape matrices: These matrices are the shape matrices and are frequency independent'''
         print("Creation of global shape matrices")
         for _ent in self.model_entities:
                 for _el in _ent.elements:
-                    _ent.append_global_matrices(_el)
+                    _ent.create_elementary_matrices(_el)
 
     def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
         self.A_i.extend(_A_i)
@@ -136,14 +137,26 @@ class Model():
         self.A_j.extend(_A_j)
         self.A_v.extend(_A_v)
 
+    def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
+        self.T_i.extend(_T_i)
+        self.T_j.extend(_T_j)
+        self.T_v.extend(_T_v)
+
     def LS2numpy(self):
         self.F_i = np.array(self.F_i)
         self.F_v = np.array(self.F_v, dtype=complex)
         self.A_i = np.array(self.A_i)
         self.A_j = np.array(self.A_j)
         self.A_v = np.array(self.A_v, dtype=complex)
+        self.T_i = np.array(self.T_i)-self.nb_dof_master
+        self.T_j = np.array(self.T_j)
+        self.T_v = np.array(self.T_v, dtype=complex)
+
         for _ent in self.model_entities:
-            if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
+            if isinstance(_ent, PwFem):
                 _ent.rho_i = np.array(_ent.rho_i)
                 _ent.rho_j = np.array(_ent.rho_j)
                 _ent.rho_v = np.array(_ent.rho_v, dtype=complex)
@@ -159,28 +172,8 @@ class Model():
             if isinstance(_ent, (PwFem)):
                 _ent.create_dynamical_matrices(omega)
             else: # only the matrix Matrix + RHS
-                _A_i, _A_j, _A_v = _ent.append_linear_system(omega)
-                self.extend_A(_A_i, _A_j, _A_v)
-
-        # Entries to add
-        i_A, j_A, v_A = [], [], [] # To add to the Matrix
-        i_T, j_T, v_T = [], [], [] #
-        for _ent in self.model_entities:
-            _i_A, _j_A, _v_A, _i_T, _j_T, _v_T = _ent.condensation(omega)
-            i_A.extend(_i_A)
-            j_A.extend(_j_A)
-            v_A.extend(_v_A)
-            i_T.extend(_i_T)
-            j_T.extend(_j_T)
-            v_T.extend(_v_T)
-
-        self.A_i.extend(i_A)
-        self.A_j.extend(j_A)
-        self.A_v.extend(v_A)
-        self.T_i = np.array(i_T)-self.nb_dof_master
-        self.T_j = np.array(j_T)
-        self.T_v = np.array(v_T)
-
+                _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
+                self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
 
         self.LS2numpy()
         self.apply_periodicity()
@@ -227,13 +220,13 @@ class Model():
                     for _i in index:
                         _ent.rho_v[_i] /= self.delta_periodicity
                     _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
-                    _ent.rho_c = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
+                    # _ent.rho_c = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
 
 
 
     def resolution(self, p):
 
-        self.create_global_matrices()
+        self.create_elementary_matrices()
         for f in self.frequencies:
             self.create_linear_system(f)
             self.solve(f)
@@ -261,25 +254,32 @@ class Model():
         print("self.nb_dof_condensed={}".format(self.nb_dof_condensed))
 
         start = timeit.default_timer()
-        index_A = np.where(((self.A_i*self.A_j) != 0) & (self.A_i < self.nb_dof_master) & (self.A_j < self.nb_dof_master))
 
-        A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
-        rhs = np.zeros(self.nb_dof_master-1, dtype=complex)
+        # index_A = np.where(((self.A_i*self.A_j) != 0) & (self.A_i < self.nb_dof_master) & (self.A_j < self.nb_dof_master))
+        # A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
+        # rhs = np.zeros(self.nb_dof_master-1, dtype=complex)
+
+        index_A = np.where(((self.A_i*self.A_j) != 0) )
+        A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
+        rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
+
 
         T = coo_matrix((self.T_v, (self.T_i, self.T_j)), shape=(self.nb_dof_condensed, self.nb_dof_master)).tocsr()
 
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                rho = _ent.rho[:self.nb_dof_master-1, :]
+                # rho = _ent.rho[:self.nb_dof_master-1, :]
+                rho = _ent.rho[:, :]
                 A += rho.dot(_ent.Omega).dot(rho.H)/_ent.period
                 if isinstance(_ent, IncidentPwFem):
-                    rho_0 = _ent.rho[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
+                    # rho_0 = _ent.rho[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
+                    rho_0 = _ent.rho[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
                     rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
         X = linsolve.spsolve(A, rhs)
-        X = np.insert(X, 0, 0)
+        x = np.insert(X, 0, 0)
 
-        x_c = list(T@X)
-        x =np.insert(X,-1, x_c)
+        # x_c = list(T@X)
+        # x =np.insert(X, -1, x_c)
 
         stop = timeit.default_timer()
         print("Elapsed time for linsolve cd        = {} ms".format((stop-start)*1e3))
@@ -304,10 +304,6 @@ class Model():
                 _ent.sol[_ent.dof_spec] -= 1
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
-                # _ent.sol = _ent.rho.H .dot(x_c[1:])/_ent.period
-                # _ent.sol[_ent.dof_spec] -= 1
-                # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                # print("R pyPLANES_FEM_cd= {}".format((_ent.sol[_ent.dof_spec])))
 
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
@@ -366,7 +362,7 @@ class Model():
             self.display_mesh()
             plt.colorbar()
             plt.axis('equal')
-        plt.show()
+        # plt.show()
 
     def display_mesh(self):
         x_vertices =[_nd.coord[0] for _nd in self.vertices[1:]]

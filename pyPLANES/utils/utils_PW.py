@@ -300,6 +300,7 @@ class Solver_PW():
                 # plt.plot(x_start+x_f, np.imag(ut), 'k')
             x_start += _layer.thickness
 
+
 def PEM_SV(mat,ky):
     ''' S={0:\hat{\sigma}_{xy}, 1:u_x^s, 2:u_x^t, 3:\hat{\sigma}_{xx}, 4:p, 5:u_y^s}'''
     kx_1 = np.sqrt(mat.delta_1**2-ky**2)
