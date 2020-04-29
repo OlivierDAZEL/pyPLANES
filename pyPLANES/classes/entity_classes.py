@@ -96,28 +96,33 @@ class AirFem(FemEntity):
         self.Q_i, self.Q_j, self.Q_v = [], [], []
 
     def __str__(self):
-        # out = GmshEntity.__str__(self)
         out = "Air" + FemEntity.__str__(self)
         return out
 
     def append_global_matrices(self, _elem):
+        # Elementary matrices
         H, Q = fluid_elementary_matrices(_elem)
-        dof_p, orient_p, local = dof_p_element(_elem)
-        dof_m, dof_c = local["dof_m"], local["dof_c"]
-        _elem.H_cm = local["orient_c"]@H[dof_c, dof_m]@local["orient_m"]
-        _elem.H_mc = local["orient_m"]@H[dof_m, dof_c]@local["orient_c"]
-        _elem.H_cc = local["orient_c"]@H[dof_c, dof_c]@local["orient_c"]
-        _elem.Q_cm = local["orient_c"]@Q[dof_c, dof_m]@local["orient_m"]
-        _elem.Q_mc = local["orient_m"]@Q[dof_m, dof_c]@local["orient_c"]
-        _elem.Q_cc = local["orient_c"]@Q[dof_c, dof_c]@local["orient_c"]
+        dof_p, orient_p, elem_dof = dof_p_element(_elem)
+        # Orientation of the elementary matrices
+        H = orient_p @ H @ orient_p
+        Q = orient_p @ Q @ orient_p
+
+        dof_m, dof_c = elem_dof["dof_m"], elem_dof["dof_c"]
+
+        _elem.H_cm = H[dof_c, dof_m]
+        _elem.H_mc = H[dof_m, dof_c]
+        _elem.H_cc = H[dof_c, dof_c]
+        _elem.Q_cm = Q[dof_c, dof_m]
+        _elem.Q_mc = Q[dof_m, dof_c]
+        _elem.Q_cc = Q[dof_c, dof_c]
 
         for ii, jj in product(range(len(dof_p)), range(len(dof_p))):
             self.H_i.append(dof_p[ii])
             self.H_j.append(dof_p[jj])
-            self.H_v.append(orient_p[ii]*orient_p[jj]*H[ii, jj])
+            self.H_v.append(H[ii, jj])
             self.Q_i.append(dof_p[ii])
             self.Q_j.append(dof_p[jj])
-            self.Q_v.append(orient_p[ii]*orient_p[jj]*Q[ii, jj])
+            self.Q_v.append(Q[ii, jj])
 
     def append_linear_system(self, omega):
         A_i = self.H_i.copy()
@@ -134,29 +139,18 @@ class AirFem(FemEntity):
         for _e in self.elements:
             dof_master = dof_p_linear_system_master(_e)
             dof_condense = dof_p_linear_system_to_condense(_e)
-            # print(dof_master)
-            # print(dof_condense)
             n_m, n_c = len(dof_master), len(dof_condense)
-            # print("n_m={}".format(n_m))
-            # print("n_c={}".format(n_c))
             Di = LA.inv((_e.H_cc/(self.mat.rho*omega**2))-(_e.Q_cc/(self.mat.K)))
-            # print(Di)
             CC = (_e.H_cm/(self.mat.rho*omega**2))-(_e.Q_cm/(self.mat.K)).reshape((n_c, n_m))
             BB = (_e.H_mc/(self.mat.rho*omega**2))-(_e.Q_mc/(self.mat.K)).reshape((n_m, n_c))
-            # print(list(chain.from_iterable([[_d]*n_m for _d in dof_condense])))
             i_T.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_condense])))
-            # print(list(dof_master)*n_c)
             j_T.extend(list(dof_master)*n_c)
             _ = np.array(-Di.dot(CC))
-            # print(_.shape)
             v_T.extend(_.flatten())
-            # print((list(chain.from_iterable([[_d]*n_m for _d in dof_master]))))
-            # print(list(dof_master)*n_m)
             i_A.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_master])))
             j_A.extend(list(dof_master)*n_m)
             _ = np.array(BB.dot(_))
             v_A.extend(_.flatten())
-            # print(_.shape)
         return i_A, j_A, v_A, i_T, j_T, v_T
 
 class Pem98Fem(FemEntity):

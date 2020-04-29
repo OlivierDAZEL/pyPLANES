@@ -37,9 +37,8 @@ def dof_p_linear_system_to_condense(_elem):
 
 
 def dof_p_element(_elem):
-    dof, orient,local = dof_element(_elem, 3)
-    return dof, orient, local
-
+    dof, orient, elem_dof = dof_element(_elem, 3)
+    return dof, orient, elem_dof
 
 def dof_u_element(_elem):
     dof_ux, orient_ux = dof_element(_elem, 0)
@@ -67,12 +66,12 @@ def dof_element(_elem, i_field):
             orient.append(_elem.edges_orientation[_e]**k)
         # Orientation of the (unique) face
         orient += [1] * int((order-1)*(order-2)/2)
-        
-        local =dict()
-        local["dof_m"] = slice(3*order)
-        local["dof_c"] = slice(3*order,3*order+int(((order-1)*(order-2))/2))
-        local["orient_m"] = np.diag(orient[:3*order])
-        local["orient_c"] = np.diag(orient[3*order: 3*order+int(((order-1)*(order-2))/2)])
+        orient = np.diag(orient)
+        elem_dof =dict()
+        elem_dof["dof_m"] = slice(3*order)
+        elem_dof["dof_c"] = slice(3*order, 3*order+int(((order-1)*(order-2))/2))
+        elem_dof["orient_m"] = np.diag(orient[:3*order])
+        elem_dof["orient_c"] = np.diag(orient[3*order: 3*order+int(((order-1)*(order-2))/2)])
 
 
     elif _elem.typ == 1:
@@ -81,8 +80,8 @@ def dof_element(_elem, i_field):
         orient = [1]*2 # Orientation of the vertices
         # Orientation of the edges
         orient.extend(_elem.edges_orientation[0]**np.arange(order-1))
-        local = None
-    return dof, orient, local
+        elem_dof = None
+    return dof, orient, elem_dof
 
 def create_legendre_table(n):
     out = np.zeros((n, n))

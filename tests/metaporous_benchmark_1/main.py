@@ -17,17 +17,17 @@ from mediapack import Air
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 0.
-param.frequencies = (3400., 5010., 1)
+theta_d = 80.
+param.frequencies = (340., 5010., 1)
 param.name_project = "one_layer"
 
 param.theta_d = theta_d
 L = 0.02
 d = 0.02
 # a = 0.008
-lcar = 0.0005
+lcar = 0.001
 
-param.order = 5
+param.order = 3
 param.plot = [True, True, True, False, False, False]
 param.plot = [False]*6
 # print(name_server)
@@ -71,6 +71,7 @@ param.solver_pymls.layers = [
     Layer(Air, L),
 ]
 param.solver_pymls.backing = backing.rigid
+
 param.S_PW = Solver_PW(param.solver_pymls, param)
 param.S_PW.resolution(param.theta_d)
 
