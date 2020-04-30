@@ -17,19 +17,19 @@ from mediapack import Air
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 80.
-param.frequencies = (10., 5010., 1)
+theta_d = 40.
+param.frequencies = (1500., 5010., 1)
 param.name_project = "one_layer"
 
 param.theta_d = theta_d
-L = 0.05
-d = 0.05
+L = 0.01
+d = 0.1
 # a = 0.008
-lcar = 0.05
+lcar = 0.005
 
-param.order = 6
+param.order = 4
 param.plot = [False, True, True, False, False, False]
-param.plot = [False]*6
+# param.plot = [False]*6
 # print(name_server)
 # if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
 #     param.verbose = True

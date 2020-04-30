@@ -61,6 +61,7 @@ class Model():
         self.nb_edges, self.nb_faces, self.nb_bubbles = 0, 0, 0
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
+        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         self.outfile = None
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
@@ -138,9 +139,9 @@ class Model():
         self.A_v.extend(_A_v)
 
     def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
+        self.A_i_c.extend(_A_i)
+        self.A_j_c.extend(_A_j)
+        self.A_v_c.extend(_A_v)
         self.T_i.extend(_T_i)
         self.T_j.extend(_T_j)
         self.T_v.extend(_T_v)
@@ -148,22 +149,22 @@ class Model():
     def LS2numpy(self):
         self.F_i = np.array(self.F_i)
         self.F_v = np.array(self.F_v, dtype=complex)
-        self.A_i = np.array(self.A_i)
-        self.A_j = np.array(self.A_j)
-        self.A_v = np.array(self.A_v, dtype=complex)
         self.T_i = np.array(self.T_i)-self.nb_dof_master
         self.T_j = np.array(self.T_j)
         self.T_v = np.array(self.T_v, dtype=complex)
+        self.A_i_c = np.array(self.A_i_c)
+        self.A_j_c = np.array(self.A_j_c)
+        self.A_v_c = np.array(self.A_v_c, dtype=complex)
+
 
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                _ent.rho_i = np.array(_ent.rho_i)
-                _ent.rho_j = np.array(_ent.rho_j)
-                _ent.rho_v = np.array(_ent.rho_v, dtype=complex)
+                _ent.rho_i_c = np.array(_ent.rho_i)
+                _ent.rho_j_c = np.array(_ent.rho_j)
+                _ent.rho_v_c = np.array(_ent.rho_v, dtype=complex)
 
     def create_linear_system(self, f):
         print("Creation of the linear system for f={}".format(f))
-        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.update_frequency(f)
         omega = 2*np.pi*f
         # Initialisation of the lists
@@ -173,21 +174,20 @@ class Model():
             if isinstance(_ent, (PwFem)):
                 _ent.create_dynamical_matrices(omega)
             else: # only the matrix Matrix + RHS
-                _A_i, _A_j, _A_v, _A_i_c, _A_j_c, _A_v_c, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
-                self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
-
-                self.A_i_c.extend(_A_i_c)
-                self.A_j_c.extend(_A_j_c)
-                self.A_v_c.extend(_A_v_c)
-
+                _A_i_c, _A_j_c, _A_v_c, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
+                self.extend_AT(_A_i_c, _A_j_c, _A_v_c, _T_i, _T_j, _T_v)
 
         self.LS2numpy()
-        self.A_i_c = np.array(self.A_i_c)
-        self.A_j_c = np.array(self.A_j_c)
-        self.A_v_c = np.array(self.A_v_c, dtype=complex)
+
 
         self.apply_periodicity()
-        # self.A_i, self.A_j, self.A_v = None, None, None
+
+
+
+
+
+
+    def apply_periodicity(self):
         A_i, A_j, A_v = [], [], []
         if self.dof_left != []:
             for i_left, dof_left in enumerate(self.dof_left):
@@ -215,10 +215,7 @@ class Model():
         self.A_v_c = np.append(self.A_v_c, A_v)
 
         for _ent in self.model_entities:
-            if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
-                _ent.rho_i_c = _ent.rho_i.copy()
-                _ent.rho_j_c = _ent.rho_j.copy()
-                _ent.rho_v_c = _ent.rho_v.copy()
+            if isinstance(_ent, PwFem):
                 for i_left, dof_left in enumerate(self.dof_left):
                     # Corresponding dof
                     dof_right = self.dof_right[i_left]
@@ -228,56 +225,6 @@ class Model():
                     for _i in index:
                         _ent.rho_v_c[_i] /= self.delta_periodicity
                     _ent.rho_c = coo_matrix((_ent.rho_v_c, (_ent.rho_i_c, _ent.rho_j_c)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
-
-
-
-
-
-    def apply_periodicity(self):
-        A_i, A_j, A_v = [], [], []
-        if self.dof_left != []:
-            for i_left, dof_left in enumerate(self.dof_left):
-                # Corresponding dof
-                dof_right = self.dof_right[i_left]
-                # Summation of the columns for the Matrix
-                index = np.where(self.A_j == dof_right)
-                self.A_j[index] = dof_left
-                for _i in index:
-                    self.A_v[_i] *= self.delta_periodicity
-                # Summation of the rows for the Matrix
-                index = np.where(self.A_i == dof_right)
-                self.A_i[index] = dof_left
-                for _i in index:
-                    self.A_v[_i] /= self.delta_periodicity
-                # Summation of the rows for the Matrix
-                index = np.where(self.F_i == dof_right)
-                self.F_i[index] = dof_left
-                for _i in index:
-                    self.F_v[_i] /= self.delta_periodicity
-                A_i.append(dof_right)
-                A_j.append(dof_left)
-                A_v.append(self.delta_periodicity)
-                A_i.append(dof_right)
-                A_j.append(dof_right)
-                A_v.append(-1)
-        self.A_i = np.append(self.A_i, A_i)
-        self.A_j = np.append(self.A_j, A_j)
-        self.A_v = np.append(self.A_v, A_v)
-        for _ent in self.model_entities:
-            if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
-                for i_left, dof_left in enumerate(self.dof_left):
-                    # Corresponding dof
-                    dof_right = self.dof_right[i_left]
-                    # Summation of the rows for the rho matrix
-                    index = np.where(_ent.rho_i == dof_right-1)
-                    _ent.rho_i[index] = dof_left-1
-                    for _i in index:
-                        _ent.rho_v[_i] /= self.delta_periodicity
-                    # _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
-                    _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_FEM-1, _ent.nb_dofs)).tocsr()
-
-
-                    # _ent.rho_c = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
 
 
 
@@ -316,66 +263,46 @@ class Model():
         A_c = coo_matrix((self.A_v_c[index_A_c], (self.A_i_c[index_A_c]-1, self.A_j_c[index_A_c]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
         rhs_c = np.zeros(self.nb_dof_master-1, dtype=complex)
 
-        index_A = np.where(((self.A_i*self.A_j) != 0) )
-        A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
-        rhs = np.zeros(self.nb_dof_FEM-1, dtype=complex)
-
-
         T = coo_matrix((self.T_v, (self.T_i, self.T_j)), shape=(self.nb_dof_condensed, self.nb_dof_master)).tocsr()
 
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                rho_c = _ent.rho[:self.nb_dof_master-1, :]
-                rho = _ent.rho[:, :]
-                A += rho.dot(_ent.Omega).dot(rho.H)/_ent.period
+                rho_c = _ent.rho_c[:self.nb_dof_master-1, :]
                 A_c += rho_c.dot(_ent.Omega).dot(rho_c.H)/_ent.period
                 if isinstance(_ent, IncidentPwFem):
-                    rho_0_c = _ent.rho[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
+                    rho_0_c = _ent.rho_c[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
                     rhs_c += 2*rho_0_c*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-                    rho_0 = _ent.rho[:, _ent.dof_spec].toarray().reshape(self.nb_dof_FEM-1)
-                    rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-        X = linsolve.spsolve(A, rhs)
-        x = np.insert(X, 0, 0)
-        # print("X={}".format(X))
-
         X_c = linsolve.spsolve(A_c, rhs_c)
         X_c = np.insert(X_c, 0, 0)
-        # x = X
-        # print("x  ={}".format(x[3]))
-        # print("X_c={}".format(X_c[3]))
         x_c = T@X_c
-        # print(x_c.shape)
         x_c = np.insert(x_c, 0, X_c)
-        # print(x_c.shape)
-
-        # print("x={}".format(x[-1]))
         stop = timeit.default_timer()
         print("Elapsed time for linsolve cd        = {} ms".format((stop-start)*1e3))
 
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
-                _vr.sol[i_dim] = x[_vr.dofs[i_dim]]
+                _vr.sol[i_dim] = x_c[_vr.dofs[i_dim]]
         for _ed in self.edges:
             for i_dim in range(4):
-                _ed.sol[i_dim] = x[_ed.dofs[i_dim]]
+                _ed.sol[i_dim] = x_c[_ed.dofs[i_dim]]
         for _fc in self.faces:
             for i_dim in range(4):
-                _fc.sol[i_dim] = x[_fc.dofs[i_dim]]
+                _fc.sol[i_dim] = x_c[_fc.dofs[i_dim]]
         for _bb in self.bubbles:
             for i_dim in range(4):
-                _bb.sol[i_dim] = x[_bb.dofs[i_dim]]
+                _bb.sol[i_dim] = x_c[_bb.dofs[i_dim]]
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
-                _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period
-                _ent.sol[_ent.dof_spec] -= 1
-                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
-                self.abs -= np.abs(self.modulus_reflex)**2
-                _ent.sol_c = _ent.rho.H .dot(x_c[1:])/_ent.period
+                # _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period
+                # _ent.sol[_ent.dof_spec] -= 1
+                # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                # print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
+                # self.abs -= np.abs(self.modulus_reflex)**2
+                _ent.sol_c = _ent.rho_c.H .dot(x_c[1:self.nb_dof_master])/_ent.period
                 _ent.sol_c[_ent.dof_spec] -= 1
-                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol_c**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM cd= {}".format((_ent.sol_c[_ent.dof_spec])))
                 self.abs -= np.abs(self.modulus_reflex)**2
 

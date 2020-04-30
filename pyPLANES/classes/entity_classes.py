@@ -84,7 +84,7 @@ class FemEntity(GmshEntity):
         pass
 
     def append_linear_system(self, omega):
-        return [], [], [], [], [], [], [], [], []
+        return [], [], [], [], [], []
 
     def link_elem(self,n):
         self.elements.append(n)
@@ -282,10 +282,7 @@ class Pem98Fem(FemEntity):
             A_j_c.extend(list(dof_up_m)*n_m)
             A_v_c.extend(mm_c.flatten())
 
-
-
-
-        return A_i, A_j, A_v, A_i_c, A_j_c, A_v_c, T_i, T_j, T_v
+        return A_i_c, A_j_c, A_v_c, T_i, T_j, T_v
 
 class RigidWallFem(FemEntity):
     def __init__(self, **kwargs):
