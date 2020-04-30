@@ -23,13 +23,13 @@
 #
 import numpy as np
 
-# from pymls.media import Air
+from mediapack import Air
 from mediapack.utils import from_yaml
 
 from pyPLANES.fem.elements.reference_elements import Ka, KaPw, Kt
 from pyPLANES.classes.fem_classes import Vertex, Element
 from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, Pem98Fem, \
-        AirFem, TransmissionPwFem
+        FluidFem, TransmissionPwFem
 
 
 
@@ -129,12 +129,12 @@ def entities(self, f, p):
             if physical_tags["model"].startswith("FEM"):
                 if "mat" in physical_tags.keys():
                     if physical_tags["mat"].split()[0] == "Air":
-                        _ = AirFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p)
+                        _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=Air)
                         self.model_entities.append(_)
                     else:
                         mat = from_yaml(self.materials_directory + physical_tags["mat"].split()[0] +".yaml")
                         if mat.MODEL == "eqf":
-                            _ = EqfFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
+                            _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
                             self.model_entities.append(_)
                         elif mat.MODEL == "pem":
                             if physical_tags["model"] == "FEM01":

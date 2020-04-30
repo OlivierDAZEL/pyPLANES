@@ -89,7 +89,7 @@ class FemEntity(GmshEntity):
     def link_elem(self,n):
         self.elements.append(n)
 
-class AirFem(FemEntity):
+class FluidFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.mat = Air()

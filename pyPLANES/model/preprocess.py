@@ -27,7 +27,7 @@ import numpy as np
 import itertools
 
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import IncidentPwFem, TransmissionPwFem, AirFem, EquivalentFluidFem, RigidWallFem, Pem98Fem, Pem01Fem
+from pyPLANES.classes.entity_classes import IncidentPwFem, TransmissionPwFem, FluidFem, RigidWallFem, Pem98Fem, Pem01Fem
 # import sys
 # import itertools
 
@@ -85,7 +85,7 @@ def create_lists(self, p):
 def activate_dofs(self):
     for _en in self.entities[1:]:
         if _en.dim == 2:
-            if isinstance(_en, (EquivalentFluidFem, AirFem)):
+            if isinstance(_en, FluidFem):
                 for _el in _en.elements:
                     for _v in _el.vertices:
                         _v.dofs[3] = 1
