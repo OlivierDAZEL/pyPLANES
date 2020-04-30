@@ -63,6 +63,23 @@ def dof_u_element(_elem):
     orient = np.diag(orient_ux + orient_uy)
     return dof, orient, elem_dof
 
+def orient_element(_elem,f="p"):
+    order = _elem.reference_element.order
+    if _elem.typ == 2:
+        # Orientation of the vertices
+        orient = [1, 1, 1]
+        # Orientation of the edges
+        for _e, k in product(range(3), range(order-1)):
+            orient.append(_elem.edges_orientation[_e]**k)
+        # Orientation of the (unique) face
+        orient += [1] * int((order-1)*(order-2)/2)
+    if f == "u": # Duplication of the orientation for the two directions
+        orient *= 2
+    return np.diag(orient)
+
+
+
+
 def local_dofs(_elem, field = "p"):
     order = _elem.reference_element.order
     if _elem.typ == 2:

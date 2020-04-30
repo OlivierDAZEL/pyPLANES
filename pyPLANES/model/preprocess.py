@@ -230,6 +230,14 @@ def init_vec_frequencies(frequency):
     #     frequency.nb=frequency.nb(1)*frequency.nb(2);
     return frequencies
 
+def elementary_matrices(self):
+    '''Creation of elementary matrices in the elements'''
+    print("Creation of global shape matrices")
+    for _ent in self.model_entities:
+            for _el in _ent.elements:
+                _ent.elementary_matrices(_el)
+
+
 def preprocess(self, p):
     print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
@@ -248,4 +256,5 @@ def preprocess(self, p):
     print("Affectation of dofs to the elements")
     affect_dofs_to_elements(self)
     periodicity_initialisation(self)
-    # print("Creation of voids shape global matrices")
+    print("Creation of voids shape global matrices")
+    elementary_matrices(self)

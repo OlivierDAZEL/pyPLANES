@@ -35,7 +35,7 @@ from mediapack import Air
 
 from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices
 from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector
-from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element
+from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element, orient_element
 from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system
 
 
@@ -80,7 +80,7 @@ class FemEntity(GmshEntity):
     def update_frequency(self, omega):
         pass
 
-    def create_elementary_matrices(self, _elem):
+    def elementary_matrices(self, _elem):
         pass
 
     def append_linear_system(self, omega):
@@ -100,7 +100,7 @@ class AirFem(FemEntity):
         out = "Air" + FemEntity.__str__(self)
         return out
 
-    def append_global_matrices(self, _elem):
+    def elementary_matrices(self, _elem):
         # Elementary matrices
         H, Q = fluid_elementary_matrices(_elem)
         dof_p, orient_p, elem_dof = dof_p_element(_elem)
@@ -169,120 +169,67 @@ class Pem98Fem(FemEntity):
     def update_frequency(self, omega):
         self.mat.update_frequency(omega)
 
-    def create_elementary_matrices(self, _elem):
-        dof_u, orient_u, elem_dof_u = dof_u_element(_elem)
-        dof_p, orient_p, elem_dof_p = dof_p_element(_elem)
-        M, K_0, K_1, H, Q, C = pem98_elementary_matrices(_elem)
-
-        _elem.M =   orient_u @ M   @ orient_u
-        _elem.K_0 = orient_u @ K_0 @ orient_u
-        _elem.K_1 = orient_u @ K_1 @ orient_u
-        _elem.H =   orient_p @ H   @ orient_p
-        _elem.Q =   orient_p @ Q   @ orient_p
-        _elem.C =   orient_u @ C   @ orient_p
-        dof_up_m = dof_up_linear_system_master(_elem)
-        dof_up_c = dof_up_linear_system_to_condense(_elem)
-
-        dof_up = dof_up_linear_system(_elem)
-
-        n_m, n_c = len(dof_up_m), len(dof_up_c)
-        n_u_m, n_p_m = int(2*n_m/3), int(n_m/3)
-        n_u_c, n_p_c = int(2*n_c/3), int(n_c/3)
-        n_p = n_p_m +n_p_c
-        n_up = n_m + n_c
-        # print(_e.K_0.shape)
-        # print("n_u_m={}".format(n_u_m))
-    # Renumbering of the elementary matrices to separate master and condensed dofs
-        new_order = list(range(n_p_m))
-        new_order += [d+n_p for d in new_order]
-        new_order += list(range(n_p_m, n_p)) +list(range(n_p+n_p_m,2*n_p))
-        _elem.M_reordered = _elem.M[:, new_order][new_order]
-        _elem.K_0_reordered = _elem.K_0[:, new_order][new_order]
-        _elem.K_1_reordered = _elem.K_1[:, new_order][new_order]
-        _elem.C_reordered = _elem.C[:, :][new_order]
-        # print(np.diag(_elem.M))
-        # print(np.diag(_elem.M_reordered))
-
+    def elementary_matrices(self, _el):
+        orient_p = orient_element(_el)
+        orient_u = orient_element(_el, "u")
+        M, K_0, K_1, H, Q, C = pem98_elementary_matrices(_el)
+        # Orientation of the matrices elementary matrices
+        _el.M =   orient_u @ M   @ orient_u
+        _el.K_0 = orient_u @ K_0 @ orient_u
+        _el.K_1 = orient_u @ K_1 @ orient_u
+        _el.H =   orient_p @ H   @ orient_p
+        _el.Q =   orient_p @ Q   @ orient_p
+        _el.C =   orient_u @ C   @ orient_p
+        # Renumbering of the elementary matrices to separate master and condensed dofs
+        nb_m_SF = _el.reference_element.nb_m_SF
+        nb_SF = _el.reference_element.nb_SF
+        _ = list(range(nb_m_SF))
+        _ += [d+nb_SF for d in _]
+        _ += list(range(nb_m_SF, nb_SF)) +list(range(nb_SF+nb_m_SF, 2*nb_SF))
+        _el.M = _el.M[:, _][_]
+        _el.K_0 = _el.K_0[:, _][_]
+        _el.K_1 = _el.K_1[:, _][_]
+        _el.C = _el.C[:, :][_]
 
     def append_linear_system(self, omega):
-
         A_i, A_j, A_v =[], [], []
-        A_i_c, A_j_c, A_v_c =[], [], []
-
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
-        for _e in self.elements:
-
-
-            dof_up_m = dof_up_linear_system_master(_e)
-            dof_up_c = dof_up_linear_system_to_condense(_e)
-            dof_up = dof_up_linear_system(_e)
-
-            n_m, n_c = len(dof_up_m), len(dof_up_c)
-            n_u_m, n_p_m = int(2*n_m/3), int(n_m/3)
-            n_u_c, n_p_c = int(2*n_c/3), int(n_c/3)
-            n_u = n_u_m +n_u_c
-            n_p = n_p_m +n_p_c
-            n_up = n_m + n_c
-
-            # print("n_u_m={}".format(n_u_m))
-            # print("n_p_m={}".format(n_p_m))
-            # print("n_u_c={}".format(n_u_c))
-            # print("n_p_c={}".format(n_p_c))
-            # print("n_u={}".format(n_u))
-            # print("n_p={}".format(n_p))
-
-            # Without condensation
-
-            # Dynamic matrices
-            uu = self.mat.P_hat*_e.K_0+self.mat.N*_e.K_1-omega**2*self.mat.rho_til*_e.M
-            up = -self.mat.gamma_til*_e.C
-            pu = -self.mat.gamma_til*(_e.C.T)
-            pp = _e.H/(self.mat.rho_eq_til*omega**2)- _e.Q/(self.mat.K_eq_til)
-
-            m = np.block([[uu, up], [pu, pp]])
-
-            A_i.extend(list(chain.from_iterable([[_d]*n_up for _d in dof_up])))
-            A_j.extend(list(dof_up)*n_up)
-            A_v.extend(m.flatten())
-
-
+        for _el in self.elements:
+            nb_m_SF = _el.reference_element.nb_m_SF
+            nb_SF = _el.reference_element.nb_SF
             # With condensation
             # Based on reordered matrix
-            uu_c = self.mat.P_hat*_e.K_0_reordered+self.mat.N*_e.K_1_reordered-omega**2*self.mat.rho_til*_e.M_reordered
-            up_c = -self.mat.gamma_til*_e.C_reordered
-            pu_c = -self.mat.gamma_til*(_e.C_reordered.T)
-            pp_c = _e.H/(self.mat.rho_eq_til*omega**2)- _e.Q/(self.mat.K_eq_til)
-            # real dofs
-            # print("dof_up_m = {}".format(dof_up_m))
-            # print("dof_up_c = {}".format(dof_up_c))
-            # print("dof_up = {}".format(dof_up))
+            uu = self.mat.P_hat*_el.K_0+self.mat.N*_el.K_1-omega**2*self.mat.rho_til*_el.M
+            up = -self.mat.gamma_til*_el.C
+            pu = -self.mat.gamma_til*(_el.C.T)
+            pp = _el.H/(self.mat.rho_eq_til*omega**2)- _el.Q/(self.mat.K_eq_til)
 
+            l_u_m = slice(2*nb_m_SF)
+            l_p_m = slice(nb_m_SF)
+            l_u_c = slice(2*nb_m_SF, 2*nb_SF)
+            l_p_c = slice(nb_m_SF, nb_SF)
 
-            l_u_m = slice(n_u_m)
-            l_p_m = slice(n_p_m)
-            l_u_c = slice(n_u_m, n_u_m+n_u_c)
-            l_p_c = slice(n_p_m, n_p_m+n_p_c)
+            mm = np.block([[uu[l_u_m, l_u_m], up[l_u_m, l_p_m]], [pu[l_p_m, l_u_m], pp[l_p_m, l_p_m]]])
+            cm = np.block([[uu[l_u_c, l_u_m], up[l_u_c, l_p_m]], [pu[l_p_c, l_u_m], pp[l_p_c, l_p_m]]])
+            mc = np.block([[uu[l_u_m, l_u_c], up[l_u_m, l_p_c]], [pu[l_p_m, l_u_c], pp[l_p_m, l_p_c]]])
+            cc = np.block([[uu[l_u_c, l_u_c], up[l_u_c, l_p_c]], [pu[l_p_c, l_u_c], pp[l_p_c, l_p_c]]])
 
+            t = -LA.inv(cc)@cm
+            mm += mc@t
 
+            dof_up_m = dof_up_linear_system_master(_el)
+            dof_up_c = dof_up_linear_system_to_condense(_el)
 
-            mm_c = np.block([[uu_c[l_u_m, l_u_m], up_c[l_u_m, l_p_m]], [pu_c[l_p_m, l_u_m], pp_c[l_p_m, l_p_m]]])
-            cm_c = np.block([[uu_c[l_u_c, l_u_m], up_c[l_u_c, l_p_m]], [pu_c[l_p_c, l_u_m], pp_c[l_p_c, l_p_m]]])
-            mc_c = np.block([[uu_c[l_u_m, l_u_c], up_c[l_u_m, l_p_c]], [pu_c[l_p_m, l_u_c], pp_c[l_p_m, l_p_c]]])
-            cc_c = np.block([[uu_c[l_u_c, l_u_c], up_c[l_u_c, l_p_c]], [pu_c[l_p_c, l_u_c], pp_c[l_p_c, l_p_c]]])
-
-            t = -LA.inv(cc_c)@cm_c
-            mm_c += mc_c@t
-
-            T_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_up_c])))
-            T_j.extend(list(dof_up_m)*n_c)
+            T_i.extend(list(chain.from_iterable([[_d]*(3*nb_m_SF) for _d in dof_up_c])))
+            T_j.extend(list(dof_up_m)*(3*(nb_SF-nb_m_SF)))
             T_v.extend(t.flatten())
 
-            A_i_c.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_up_m])))
-            A_j_c.extend(list(dof_up_m)*n_m)
-            A_v_c.extend(mm_c.flatten())
+            A_i.extend(list(chain.from_iterable([[_d]*(3*nb_m_SF) for _d in dof_up_m])))
+            A_j.extend(list(dof_up_m)*(3*nb_m_SF))
+            A_v.extend(mm.flatten())
 
-        return A_i_c, A_j_c, A_v_c, T_i, T_j, T_v
+        return A_i, A_j, A_v, T_i, T_j, T_v
 
 class RigidWallFem(FemEntity):
     def __init__(self, **kwargs):

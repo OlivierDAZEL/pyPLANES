@@ -160,9 +160,12 @@ class Kt:
         self.nb_v = 3
         self.nb_e = 3*(order-1)
         self.nb_f = int(((order-1)*(order-2))/2)
-        # print("self.nb_v,e,f")
-        # print("({},{},{})".format(self.nb_v, self.nb_e, self.nb_f))
-        self.nb_SF = self.nb_v+self.nb_e+self.nb_f
+        # Number of master shape functions
+        self.nb_m_SF = self.nb_v+ self.nb_e
+        # Number of slave shape functions (to condense)
+        self.nb_s_SF = self.nb_f
+        self.nb_SF = self.nb_m_SF+self.nb_s_SF
+
         self.Phi, self.dPhi = shape_functions_Kt(self.xi_1,self.xi_2,self.order)
 
         # For plots
