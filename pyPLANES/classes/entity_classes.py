@@ -100,66 +100,53 @@ class AirFem(FemEntity):
         out = "Air" + FemEntity.__str__(self)
         return out
 
-    def elementary_matrices(self, _elem):
+    def elementary_matrices(self, _el):
         # Elementary matrices
-        H, Q = fluid_elementary_matrices(_elem)
-        dof_p, orient_p, elem_dof = dof_p_element(_elem)
-        nb_dof = len(dof_p)
-        # Orientation of the elementary matrices
-        H = orient_p @ H @ orient_p
-        Q = orient_p @ Q @ orient_p
-
-        dof_m, dof_c = elem_dof["dof_m"], elem_dof["dof_c"]
-
-        _elem.H_mm = H[elem_dof["dof_m"], elem_dof["dof_m"]]
-        _elem.H_cm = H[elem_dof["dof_c"], elem_dof["dof_m"]]
-        _elem.H_mc = H[elem_dof["dof_m"], elem_dof["dof_c"]]
-        _elem.H_cc = H[elem_dof["dof_c"], elem_dof["dof_c"]]
-        _elem.Q_mm = Q[elem_dof["dof_m"], elem_dof["dof_m"]]
-        _elem.Q_cm = Q[elem_dof["dof_c"], elem_dof["dof_m"]]
-        _elem.Q_mc = Q[elem_dof["dof_m"], elem_dof["dof_c"]]
-        _elem.Q_cc = Q[elem_dof["dof_c"], elem_dof["dof_c"]]
-
-        # self.H_i.extend(list(chain.from_iterable([[_d]*nb_dof for _d in dof_p])))
-        # self.H_j.extend(list(dof_p)*nb_dof)
-        # self.H_v.extend(list(H[dof_m, dof_m].flatten()))
-        # self.Q_i.extend(list(chain.from_iterable([[_d]*nb_dof for _d in dof_p])))
-        # self.Q_j.extend(list(dof_p)*nb_dof)
-        # self.Q_v.extend(list(Q[dof_m, dof_m].flatten()))
+        H, Q = fluid_elementary_matrices(_el)
+        orient_p = orient_element(_el)
+        _el.H =   orient_p @ H   @ orient_p
+        _el.Q =   orient_p @ Q   @ orient_p
 
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v =[], [], []
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
-        for _e in self.elements:
-            Mat = _e.H_mm/(self.mat.rho*omega**2) - _e.Q_mm/self.mat.K
-            dof_master = dof_p_linear_system_master(_e)
-            dof_condense = dof_p_linear_system_to_condense(_e)
-            n_m, n_c = len(dof_master), len(dof_condense)
-            Di = LA.inv((_e.H_cc/(self.mat.rho*omega**2))-(_e.Q_cc/(self.mat.K)))
-            CC = (_e.H_cm/(self.mat.rho*omega**2))-(_e.Q_cm/(self.mat.K)).reshape((n_c, n_m))
-            BB = (_e.H_mc/(self.mat.rho*omega**2))-(_e.Q_mc/(self.mat.K)).reshape((n_m, n_c))
-            T_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_condense])))
-            T_j.extend(list(dof_master)*n_c)
-            _ = np.array(-Di.dot(CC))
-            T_v.extend(_.flatten())
-            A_i.extend(list(chain.from_iterable([[_d]*n_m for _d in dof_master])))
-            A_j.extend(list(dof_master)*n_m)
-            _ = Mat-np.array(BB.dot(_))
-            A_v.extend(_.flatten())
+        for _el in self.elements:
+            nb_m_SF = _el.reference_element.nb_m_SF
+            nb_SF = _el.reference_element.nb_SF
+            # With condensation
+            # Based on reordered matrix
+            pp = _el.H/(self.mat.rho*omega**2)- _el.Q/(self.mat.K)
+
+            l_p_m = slice(nb_m_SF)
+            l_p_c = slice(nb_m_SF, nb_SF)
+
+            mm = pp[l_p_m, l_p_m]
+            cm = pp[l_p_c, l_p_m]
+            mc = pp[l_p_m, l_p_c]
+            cc = pp[l_p_c, l_p_c]
+
+            t = -LA.inv(cc)@cm
+            mm += mc@t
+
+            dof_p_m = dof_p_linear_system_master(_el)
+            dof_p_c = dof_p_linear_system_to_condense(_el)
+
+            T_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in dof_p_c])))
+            T_j.extend(list(dof_p_m)*((nb_SF-nb_m_SF)))
+            T_v.extend(t.flatten())
+
+            A_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in dof_p_m])))
+            A_j.extend(list(dof_p_m)*(nb_m_SF))
+            A_v.extend(mm.flatten())
+
         return A_i, A_j, A_v, T_i, T_j, T_v
 
 class Pem98Fem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
-        self.K_0_i, self.K_0_j, self.K_0_v = [], [], []
-        self.K_1_i, self.K_1_j, self.K_1_v = [], [], []
-        self.M_i, self.M_j, self.M_v = [], [], []
-        self.H_i, self.H_j, self.H_v = [], [], []
-        self.Q_i, self.Q_j, self.Q_v = [], [], []
-        self.C_i, self.C_j, self.C_v = [], [], []
 
     def __str__(self):
         # out = GmshEntity.__str__(self)

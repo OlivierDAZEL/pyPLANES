@@ -70,8 +70,8 @@ class Model():
         else:
             self.materials_directory = ""
         load_msh_file(self, p)
-        preprocess(self, p)
         initialisation_out_files(self, p)
+        preprocess(self, p)
 
     def print_entities(self):
         for _ in self.entities:
@@ -115,8 +115,6 @@ class Model():
         out = "TBD"
         return out
 
-
-
     def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
         self.A_i.extend(_A_i)
         self.A_j.extend(_A_j)
@@ -141,7 +139,7 @@ class Model():
         self.T_j.extend(_T_j)
         self.T_v.extend(_T_v)
 
-    def LS2numpy(self):
+    def linear_system_2_numpy(self):
         self.F_i = np.array(self.F_i)
         self.F_v = np.array(self.F_v, dtype=complex)
         self.T_i = np.array(self.T_i)-self.nb_dof_master
@@ -170,8 +168,7 @@ class Model():
             else: # only the matrix Matrix + RHS
                 _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
                 self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
-
-        self.LS2numpy()
+        self.linear_system_2_numpy()
         self.apply_periodicity()
 
 
@@ -215,9 +212,11 @@ class Model():
                     _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
 
     def resolution(self, p):
+        if p.verbose:
+            print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:
             self.create_linear_system(f)
-            self.solve(f)
+            self.solve()
             write_out_files(self)
             # if self.verbose:
                 # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
@@ -231,15 +230,8 @@ class Model():
         if name_server == "il-calc1":
             os.system(mail)
 
-    def solve(self,f):
-        omega = 2*np.pi*f
+    def solve(self):
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
-        # print("self.nb_dofs={}".format(self.nb_dofs))
-        # print("self.nb_dof_edges={}".format(self.nb_dof_edges))
-        # print("self.nb_dof_faces={}".format(self.nb_dof_faces))
-        # print("self.nb_dof_master={}".format(self.nb_dof_master))
-        # print("self.nb_dof_FEM={}".format(self.nb_dof_FEM))
-        # print("self.nb_dof_condensed={}".format(self.nb_dof_condensed))
 
         start = timeit.default_timer()
 
@@ -256,12 +248,15 @@ class Model():
                 if isinstance(_ent, IncidentPwFem):
                     rho_0 = _ent.rho[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
                     rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
-
+        # Resolution of the sparse linear system
         X = linsolve.spsolve(A, rhs)
+        # Concatenation of the first (zero) dof at the begining of the vector
         X = np.insert(X, 0, 0)
+        # Concatenation of the slave dofs at the end of the vector
         X = np.insert(T@X, 0, X)
         stop = timeit.default_timer()
-        print("Elapsed time for linsolve cd        = {} ms".format((stop-start)*1e3))
+        if self.verbose:
+            print("Elapsed time for linsolve = {} ms".format((stop-start)*1e3))
 
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
@@ -278,24 +273,16 @@ class Model():
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
-                # _ent.sol = _ent.rho.H .dot(x[1:])/_ent.period
-                # _ent.sol[_ent.dof_spec] -= 1
-                # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                # print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
-                # self.abs -= np.abs(self.modulus_reflex)**2
                 _ent.sol = _ent.rho.H .dot(X[1:self.nb_dof_master])/_ent.period
                 _ent.sol[_ent.dof_spec] -= 1
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R pyPLANES_FEM cd= {}".format((_ent.sol[_ent.dof_spec])))
+                print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
                 self.abs -= np.abs(self.modulus_reflex)**2
-
-
             elif isinstance(_ent, TransmissionPwFem):
                 _ent.sol = _ent.rho.H .dot(X[1:])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
-
 
     def display_sol(self, p):
         if any(p.plot[3:]):
