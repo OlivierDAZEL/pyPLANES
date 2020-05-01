@@ -28,7 +28,7 @@ from mediapack.utils import from_yaml
 
 from pyPLANES.fem.elements.reference_elements import Ka, KaPw, Kt
 from pyPLANES.classes.fem_classes import Vertex, Element
-from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, Pem98Fem, \
+from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, PemFem, \
         FluidFem, TransmissionPwFem
 
 
@@ -136,12 +136,8 @@ def entities(self, f, p):
                         if mat.MODEL == "eqf":
                             _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
                             self.model_entities.append(_)
-                        elif mat.MODEL == "pem":
-                            if physical_tags["model"] == "FEM01":
-                                _ = Pem01Fem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
-                                self.model_entities.append(_)
-                            else:
-                                _ = Pem98Fem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
+                        else:
+                                _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
                                 self.model_entities.append(_)
         self.entities.append(_)
     for __ in range(num_volumes):

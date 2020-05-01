@@ -47,16 +47,8 @@ def imposed_pw_elementary_vector(_elem, k):
     h = LA.norm(coord_e[:, 1]-coord_e[:, 0])
     x_mid = min(coord_e[0, :]) + h/2.
     k_prime = k*h/2.
-    K_ref = _elem.reference_element
-    # Integration on the reference element
-    # n, m = K_ref.Phi.shape
-    # F = np.zeros(n, dtype=complex)
-    # for ipg in range(m):
-    #     _Phi = K_ref.Phi[:, ipg].reshape(n)
-    #     F += K_ref.w[ipg]*_Phi*np.exp(-1j*k_prime*K_ref.xi[ipg])
     F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
     return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
-    # return F
 
 def fluid_structure_interaction_elementary_matrix(_elem):
     coord_e = _elem.get_coordinates()
@@ -67,5 +59,4 @@ def fluid_structure_interaction_elementary_matrix(_elem):
         _Phi = K_ref.Phi[:, ipg].reshape(n)
         M += K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
     M *= LA.norm(coord_e[:, 1]-coord_e[:, 0])/2.
-
     return M

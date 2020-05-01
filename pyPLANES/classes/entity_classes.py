@@ -143,7 +143,7 @@ class FluidFem(FemEntity):
 
         return A_i, A_j, A_v, T_i, T_j, T_v
 
-class Pem98Fem(FemEntity):
+class PemFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
@@ -235,109 +235,6 @@ class PeriodicityFem(FemEntity):
         # out = GmshEntity.__str__(self)
         out = "Periodicity" + FemEntity.__str__(self)
         return out
-
-class EquivalentFluidFem(FemEntity):
-    def __init__(self, **kwargs):
-        FemEntity.__init__(self, **kwargs)
-        self.mat = kwargs["mat"]
-        self.H_i, self.H_j, self.H_v = [], [], []
-        self.Q_i, self.Q_j, self.Q_v = [], [], []
-
-    def __str__(self):
-        # out = GmshEntity.__str__(self)
-        out = "EquivalentFluid" + FemEntity.__str__(self)
-        return out
-
-    def update_frequency(self,omega):
-        self.mat.update_frequency(omega)
-    def append_global_matrices(self, _elem, Reference_Element):
-        H, Q = fluid_elem(_elem.coorde, Reference_Element)
-        dof_p = dof_pr_triangle(_elem)
-        orient_p = orient_triangle(_elem)
-        for ii, jj in product(range(len(dof_p)), range(len(dof_p))):
-            self.H_i.append(dof_p[ii])
-            self.H_j.append(dof_p[jj])
-            self.H_v.append(orient_p[ii]*orient_p[jj]*H[ii, jj])
-            self.Q_i.append(dof_p[ii])
-            self.Q_j.append(dof_p[jj])
-            self.Q_v.append(orient_p[ii]*orient_p[jj]*Q[ii, jj])
-    def append_linear_system(self,p,_elem=None):
-        A_i = self.H_i.copy()
-        A_j = self.H_j.copy()
-        A_v = np.array(self.H_v)/(self.mat.rho*p.omega**2)
-        A_i.extend(self.Q_i)
-        A_j.extend(self.Q_j)
-        A_v.extend(-np.array(self.Q_v)/(self.mat.K))
-        return A_i, A_j, A_v
-
-class Pem01Fem(FemEntity):
-    def __init__(self, **kwargs):
-        FemEntity.__init__(self, **kwargs)
-        self.mat = kwargs["mat"]
-        self.K_0_i, self.K_0_j, self.K_0_v = [], [], []
-        self.K_1_i, self.K_1_j, self.K_1_v = [], [], []
-        self.M_i, self.M_j, self.M_v = [], [], []
-        self.H_i, self.H_j, self.H_v = [], [], []
-        self.Q_i, self.Q_j, self.Q_v = [], [], []
-        self.C_i, self.C_j, self.C_v = [], [], []
-
-    def __str__(self):
-        # out = GmshEntity.__str__(self)
-        out = "Pem01" + FemEntity.__str__(self)
-        return out
-
-    def update_frequency(self,omega):
-        self.mat.update_frequency(omega)
-    def append_global_matrices(self, _elem, Reference_Element):
-        dof_u = dof_u_triangle(_elem)
-        dof_p = dof_pr_triangle(_elem)
-        orient_p = orient_triangle(_elem)
-        orient_u = 3*orient_p
-        M, K_0, K_1, H, Q, C = pem01_elem(_elem.coorde, Reference_Element)
-        for ii, jj in product(range(len(dof_u)), range(len(dof_u))):
-            self.K_0_i.append(dof_u[ii])
-            self.K_0_j.append(dof_u[jj])
-            self.K_0_v.append(orient_u[ii]*orient_u[jj]*K_0[ii, jj])
-            self.K_1_i.append(dof_u[ii])
-            self.K_1_j.append(dof_u[jj])
-            self.K_1_v.append(orient_u[ii]*orient_u[jj]*K_1[ii, jj])
-            self.M_i.append(dof_u[ii])
-            self.M_j.append(dof_u[jj])
-            self.M_v.append(orient_u[ii]*orient_u[jj]*M[ii, jj])
-        for ii, jj in product(range(len(dof_p)), range(len(dof_p))):
-            self.H_i.append(dof_p[ii])
-            self.H_j.append(dof_p[jj])
-            self.H_v.append(orient_p[ii]*orient_p[jj]*H[ii, jj])
-            self.Q_i.append(dof_p[ii])
-            self.Q_j.append(dof_p[jj])
-            self.Q_v.append(orient_p[ii]*orient_p[jj]*Q[ii, jj])
-        for ii, jj in product(range(len(dof_u)), range(len(dof_p))):
-            self.C_i.append(dof_u[ii])
-            self.C_j.append(dof_p[jj])
-            self.C_v.append(orient_u[ii]*orient_p[jj]*C[ii, jj])
-    def append_linear_system(self, omega):
-        A_i = self.K_0_i.copy()
-        A_j = self.K_0_j.copy()
-        A_v = list(self.mat.P_hat*np.array(self.K_0_v))
-        A_i.extend(self.K_1_i)
-        A_j.extend(self.K_1_j)
-        A_v.extend(self.mat.N*np.array(self.K_1_v))
-        A_i.extend(self.M_i)
-        A_j.extend(self.M_j)
-        A_v.extend(-omega**2*self.mat.rho_til*np.array(self.M_v))
-        A_i.extend(self.H_i)
-        A_j.extend(self.H_j)
-        A_v.extend(np.array(self.H_v)/(self.mat.rho_eq_til*omega**2))
-        A_i.extend(self.Q_i)
-        A_j.extend(self.Q_j)
-        A_v.extend(-np.array(self.Q_v)/(self.mat.K_eq_til))
-        A_i.extend(self.C_i)
-        A_j.extend(self.C_j)
-        A_v.extend(-self.mat.gamma_til*np.array(self.C_v))
-        A_i.extend(self.C_j)
-        A_j.extend(self.C_i)
-        A_v.extend(-self.mat.gamma_til*np.array(self.C_v))
-        return A_i, A_j, A_v
 
 class ElasticSolidFem(FemEntity):
     def __init__(self, **kwargs):
@@ -442,8 +339,6 @@ class TransmissionPwFem(PwFem):
         # out = GmshEntity.__str__(self)
         out = "Imposed" + PwFem.__str__(self)
         return out
-
-
 
 if __name__ == "__main__":
     pass

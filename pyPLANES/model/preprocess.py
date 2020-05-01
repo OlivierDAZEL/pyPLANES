@@ -27,7 +27,7 @@ import numpy as np
 import itertools
 
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import IncidentPwFem, TransmissionPwFem, FluidFem, RigidWallFem, Pem98Fem, Pem01Fem
+from pyPLANES.classes.entity_classes import IncidentPwFem, TransmissionPwFem, FluidFem, RigidWallFem, PemFem
 # import sys
 # import itertools
 
@@ -93,7 +93,7 @@ def activate_dofs(self):
                         _e.dofs[3] = [1]*len(_e.dofs[3])
                     for _f in _el.faces:
                         _f.dofs[3] = [1]*len(_f.dofs[3])
-            elif isinstance(_en, (Pem98Fem, Pem01Fem)):
+            elif isinstance(_en, PemFem):
                 for _el in _en.elements:
                     for _v in _el.vertices:
                         _v.dofs[0:4] = [1, 1, 1, 1]

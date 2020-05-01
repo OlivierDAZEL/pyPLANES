@@ -37,7 +37,7 @@ import matplotlib.tri as mtri
 
 from mediapack import Air
 
-from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, FluidFem, Pem01Fem, Pem98Fem, TransmissionPwFem
+from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, FluidFem, PemFem, TransmissionPwFem
 from pyPLANES.gmsh.import_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_files
@@ -302,7 +302,7 @@ class Model():
                             x.extend(list(x_elem))
                             y.extend(list(y_elem))
                             pr.extend(list(p_elem))
-            elif isinstance(_en, (Pem98Fem, Pem01Fem)):
+            elif isinstance(_en, PemFem):
                 if any(p.plot): # Plot of pressure  == True
                     for _elem in _en.elements:
                         x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])

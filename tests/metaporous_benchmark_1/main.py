@@ -53,8 +53,8 @@ G.new_physical(l_2, "condition=Rigid Wall")
 # G.new_physical(l_2, "condition=Transmission")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
-G.new_physical(matrice, "mat=Air")
-# G.new_physical(matrice, "mat=pem_benchmark_1")
+# G.new_physical(matrice, "mat=Air")
+G.new_physical(matrice, "mat=pem_benchmark_1")
 G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
@@ -69,7 +69,7 @@ model.resolution(param)
 pem = from_yaml('pem_benchmark_1.yaml')
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(Air, d),
+    Layer(pem, d),
 ]
 param.solver_pymls.backing = backing.rigid
 
