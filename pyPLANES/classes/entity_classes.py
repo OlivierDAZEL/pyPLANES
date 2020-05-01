@@ -27,8 +27,8 @@ import numpy.linalg as LA
 from numpy import pi
 from itertools import chain
 
+from scipy.sparse import coo_matrix
 
-from itertools import product
 from scipy.sparse import csr_matrix
 
 from mediapack import Air
@@ -295,7 +295,8 @@ class PwFem(FemEntity):
         nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10)
         nb_bloch_waves = 3
         # print("nb_bloch_waves ={}".format(nb_bloch_waves))
-        _ = np.arange(-nb_bloch_waves, nb_bloch_waves+1)
+        _ = np.array([0] + list(range(-nb_bloch_waves,0)) + list(range(1,nb_bloch_waves+1)))
+
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
@@ -317,24 +318,25 @@ class PwFem(FemEntity):
                 self.phi_j.extend(dof_pw)
                 self.phi_v.extend(_)
 
-class IncidentPwFem(PwFem):
-    def __init__(self, **kwargs):
-        PwFem.__init__(self, **kwargs)
-        self.dof_spec = None
+    def apply_periodicity(self, nb_dof_m, dof_left, dof_right, delta):
+        for i_left, _dof_left in enumerate(dof_left):
+            # Corresponding dof
+            _dof_right = dof_right[i_left]
+            # Summation of the rows for the phi matrix
+            index = np.where(self.phi_i == _dof_right-1)
+            self.phi_i[index] = _dof_left-1
+            for _i in index:
+                self.phi_v[_i] /= delta
+            self.phi = coo_matrix((self.phi_v, (self.phi_i, self.phi_j)), shape=(nb_dof_m-1, self.nb_dofs)).tocsr()
 
+
+class IncidentPwFem(PwFem):
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Imposed" + PwFem.__str__(self)
         return out
 
-    def update_frequency(self, omega):
-        PwFem.update_frequency(self, omega)
-        self.dof_spec = int((self.nb_dofs-1)/2)
-
 class TransmissionPwFem(PwFem):
-    def __init__(self, **kwargs):
-        PwFem.__init__(self, **kwargs)
-
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Imposed" + PwFem.__str__(self)

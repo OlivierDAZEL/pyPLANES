@@ -40,7 +40,7 @@ from mediapack import Air
 from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, FluidFem, PemFem, TransmissionPwFem
 from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
-from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_files
+from pyPLANES.utils.utils_io import initialisation_out_files, write_out_files, display_sol
 
 
 
@@ -72,33 +72,6 @@ class Model():
         load_msh_file(self, p)
         initialisation_out_files(self, p)
         preprocess(self, p)
-
-    def print_entities(self):
-        for _ in self.entities:
-            print(_)
-
-    def print_elements(self):
-        for _ in self.elements[1:]:
-            print(_)
-
-    def print_vertices(self):
-        for _ in self.vertices[1:]:
-            print(_)
-
-    def print_edges(self):
-        for _ in self.edges:
-            print(_)
-
-    def print_faces(self):
-        for _ in self.faces:
-            print(_)
-
-    def print_model_entities(self):
-        for _ in self.model_entities:
-            print(_)
-
-    def print_reference_elements(self):
-        print(self.reference_elements)
 
     def update_frequency(self, f):
         self.current_frequency = f
@@ -201,15 +174,8 @@ class Model():
 
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                for i_left, dof_left in enumerate(self.dof_left):
-                    # Corresponding dof
-                    dof_right = self.dof_right[i_left]
-                    # Summation of the rows for the phi matrix
-                    index = np.where(_ent.phi_i == dof_right-1)
-                    _ent.phi_i[index] = dof_left-1
-                    for _i in index:
-                        _ent.phi_v[_i] /= self.delta_periodicity
-                    _ent.phi = coo_matrix((_ent.phi_v, (_ent.phi_i, _ent.phi_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
+                _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
+
 
     def resolution(self, p):
         if p.verbose:
@@ -222,7 +188,7 @@ class Model():
                 # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
                 # print("|abs pyPLANES_FEM| = {}".format(self.abs))
             if any(p.plot):
-                self .display_sol(p)
+                display_sol(self, p)
         self.outfile.close()
         self.resfile.close()
         name_server = platform.node()
@@ -234,7 +200,6 @@ class Model():
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
 
         start = timeit.default_timer()
-
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
         rhs = np.zeros(self.nb_dof_master-1, dtype=complex)
@@ -246,8 +211,8 @@ class Model():
                 phi = _ent.phi[:self.nb_dof_master-1, :]
                 A += phi.dot(_ent.Omega).dot(phi.H)/_ent.period
                 if isinstance(_ent, IncidentPwFem):
-                    phi_0 = _ent.phi[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
-                    rhs += 2*phi_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
+                    phi_0 = _ent.phi[:self.nb_dof_master-1, 0].toarray().reshape(self.nb_dof_master-1)
+                    rhs += 2*phi_0*_ent.Omega[0, 0]
         # Resolution of the sparse linear system
         X = linsolve.spsolve(A, rhs)
         # Concatenation of the first (zero) dof at the begining of the vector
@@ -274,72 +239,15 @@ class Model():
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
                 _ent.sol = _ent.phi.H .dot(X[1:self.nb_dof_master])/_ent.period
-                _ent.sol[_ent.dof_spec] -= 1
+                _ent.sol[0] -= 1
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
+                print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
                 _ent.sol = _ent.phi.H .dot(X[1:self.nb_dof_master])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
-
-    def display_sol(self, p):
-        if any(p.plot[3:]):
-            x, y, u_x, u_y, pr = [], [], [], [], []
-        for _en in self.entities:
-            if isinstance(_en, FluidFem):
-                if any(p.plot[2::3]): # Plot of pressure  == True
-                    for _elem in _en.elements:
-                        x_elem, y_elem, p_elem = _elem.display_sol(3)
-                        p_elem = p_elem[:, 0]
-                        p_elem *= np.exp(1j*self.kx*x_elem)
-                        if p.plot[2]:
-                            plt.figure(2)
-                            plt.plot(y_elem, np.abs(p_elem), 'r+')
-                            plt.plot(y_elem, np.imag(p_elem), 'm.')
-                        if p.plot[5]:
-                            x.extend(list(x_elem))
-                            y.extend(list(y_elem))
-                            pr.extend(list(p_elem))
-            elif isinstance(_en, PemFem):
-                if any(p.plot): # Plot of pressure  == True
-                    for _elem in _en.elements:
-                        x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
-                        ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
-                        uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
-                        p_elem = f_elem[:, 2]*np.exp(1j*self.kx*x_elem)
-                        if p.plot[0]:
-                            plt.figure(0)
-                            plt.plot(y_elem, np.abs(ux_elem), 'r+')
-                            plt.plot(y_elem, np.imag(ux_elem), 'm.')
-                        if p.plot[1]:
-                            plt.figure(1)
-                            plt.plot(y_elem, np.abs(uy_elem), 'r+')
-                            plt.plot(y_elem, np.imag(uy_elem), 'm.')
-                        if p.plot[2]:
-                            plt.figure(2)
-                            plt.plot(y_elem, np.abs(p_elem), 'r+')
-                            plt.plot(y_elem, np.imag(p_elem), 'm.')
-                        if p.plot[5]:
-                            x.extend(list(x_elem))
-                            y.extend(list(y_elem))
-                            pr.extend(list(p_elem))
-        if any(p.plot[3:]):
-            triang = mtri.Triangulation(x, y)
-            if p.plot[5]:
-                plt.figure(5)
-                plt.tricontourf(triang, np.abs(pr), 40, cmap=cm.jet)
-            self.display_mesh()
-            plt.colorbar()
-            plt.axis('equal')
-        # plt.show()
-
-    def display_mesh(self):
-        x_vertices =[_nd.coord[0] for _nd in self.vertices[1:]]
-        y_vertices =[_nd.coord[1] for _nd in self.vertices[1:]]
-        tri_vertices = mtri.Triangulation(x_vertices, y_vertices)
-        plt.triplot(tri_vertices, 'ko-', lw=0.5, ms=2)
 
 
 

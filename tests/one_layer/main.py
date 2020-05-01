@@ -29,7 +29,7 @@ lcar = 0.01
 
 param.order = 4
 param.plot = [False, True, True, False, False, False]
-# param.plot = [False]*6
+param.plot = [False]*6
 
 if name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
     param.verbose = True
