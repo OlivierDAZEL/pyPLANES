@@ -279,7 +279,7 @@ class Model():
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
-                _ent.sol = _ent.rho.H .dot(X[1:])/_ent.period
+                _ent.sol = _ent.rho.H .dot(X[1:self.nb_dof_master])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))

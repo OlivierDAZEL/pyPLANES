@@ -1,5 +1,7 @@
 import sys
-sys.path.insert(0,"../../pyPLANES")
+import platform
+
+sys.path.insert(0, "../..")
 
 import numpy as np
 
@@ -9,22 +11,28 @@ from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 from pymls import from_yaml, Solver, Layer, backing
+from mediapack import Air
+
+name_server = platform.node()
+
+param = ModelParameter()
+param.theta_d = 40.
+param.frequencies = (150., 5010., 1)
+param.name_project = "one_layer"
+
+L = 0.05
+d = 0.05
+lcar = 0.01
+
+param.order = 4
+param.plot = [False, True, True, False, False, False]
+# param.plot = [False]*6
+# print(name_server)
+if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
+    param.verbose = True
 
 
-
-p = ModelParameter()
-p.frequency = (10., 50., 1)
-p.name_project = "one_layer"
-p.theta_d = 30
-L = 0.1
-d = 0.1
-lcar = 0.02
-
-p.order = 5
-p.plot = [False, False, False, False, False, True]
-
-
-G = Gmsh(p.name_project)
+G = Gmsh(param.name_project)
 
 p_0 = G.new_point(0, 0, lcar/2)
 p_1 = G.new_point(L, 0,lcar*2)
@@ -51,20 +59,20 @@ G.run_gmsh(option)
 
 
 
-foam2 = from_yaml("foam2.yaml")
-p.solver_pymls = Solver()
-p.solver_pymls.layers = [
-    Layer(foam2, d),
+
+
+
+
+model = Model(param)
+model.resolution(param)
+
+
+
+pem = from_yaml('foam2.yaml')
+param.solver_pymls = Solver()
+param.solver_pymls.layers = [
+    Layer(pem, d),
 ]
-p.solver_pymls.backing = backing.transmission
-p.S_PW = Solver_PW(p.solver_pymls, p)
-
-
-p.gmsh_file = p.name_project
-
-
-model = Model(p)
-model.resolution(p)
-
-
-
+param.solver_pymls.backing = backing.transmission
+param.S_PW = Solver_PW(param.solver_pymls, param)
+param.S_PW.resolution(param.theta_d)

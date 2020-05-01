@@ -17,7 +17,7 @@ from mediapack import Air
 name_server = platform.node()
 
 param = ModelParameter()
-theta_d = 40.
+param.theta_d = 40.
 param.frequencies = (1500., 5010., 1)
 param.name_project = "one_layer"
 
