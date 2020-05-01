@@ -28,10 +28,7 @@ from mediapack.utils import from_yaml
 
 from pyPLANES.fem.elements.reference_elements import Ka, KaPw, Kt
 from pyPLANES.classes.fem_classes import Vertex, Element
-from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, PemFem, \
-        FluidFem, TransmissionPwFem
-
-
+from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, PemFem, FluidFem, TransmissionPwFem
 
 def load_msh_file(self, p):
     print("Reading "+ p.name_project + ".msh")
@@ -58,7 +55,6 @@ def load_msh_file(self, p):
             _ = f.readline()
             if _.strip() != "$End"+ tag:
                 raise NameError("Error in GMSH file importation at tag:" +tag)
-
 
 def dict_physical_tags(self, _list):
     ''' create a dict from gmsh file physical tags.
@@ -272,7 +268,6 @@ def periodic(self, f):
             for _ent in self.entities:
                 if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
                     _ent.period = period
-
 
 def reference_element(key, order):
     if isinstance(key, int):

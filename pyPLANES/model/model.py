@@ -38,7 +38,7 @@ import matplotlib.tri as mtri
 from mediapack import Air
 
 from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, FluidFem, PemFem, TransmissionPwFem
-from pyPLANES.gmsh.import_msh_file import load_msh_file
+from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_outfiles import initialisation_out_files, write_out_files
 
