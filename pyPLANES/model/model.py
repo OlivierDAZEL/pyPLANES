@@ -150,9 +150,9 @@ class Model():
         self.A_v = np.array(self.A_v, dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                _ent.rho_i = np.array(_ent.rho_i)
-                _ent.rho_j = np.array(_ent.rho_j)
-                _ent.rho_v = np.array(_ent.rho_v, dtype=complex)
+                _ent.phi_i = np.array(_ent.phi_i)
+                _ent.phi_j = np.array(_ent.phi_j)
+                _ent.phi_v = np.array(_ent.phi_v, dtype=complex)
 
     def create_linear_system(self, f):
         print("Creation of the linear system for f={}".format(f))
@@ -204,12 +204,12 @@ class Model():
                 for i_left, dof_left in enumerate(self.dof_left):
                     # Corresponding dof
                     dof_right = self.dof_right[i_left]
-                    # Summation of the rows for the rho matrix
-                    index = np.where(_ent.rho_i == dof_right-1)
-                    _ent.rho_i[index] = dof_left-1
+                    # Summation of the rows for the phi matrix
+                    index = np.where(_ent.phi_i == dof_right-1)
+                    _ent.phi_i[index] = dof_left-1
                     for _i in index:
-                        _ent.rho_v[_i] /= self.delta_periodicity
-                    _ent.rho = coo_matrix((_ent.rho_v, (_ent.rho_i, _ent.rho_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
+                        _ent.phi_v[_i] /= self.delta_periodicity
+                    _ent.phi = coo_matrix((_ent.phi_v, (_ent.phi_i, _ent.phi_j)), shape=(self.nb_dof_master-1, _ent.nb_dofs)).tocsr()
 
     def resolution(self, p):
         if p.verbose:
@@ -243,11 +243,11 @@ class Model():
 
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
-                rho = _ent.rho[:self.nb_dof_master-1, :]
-                A += rho.dot(_ent.Omega).dot(rho.H)/_ent.period
+                phi = _ent.phi[:self.nb_dof_master-1, :]
+                A += phi.dot(_ent.Omega).dot(phi.H)/_ent.period
                 if isinstance(_ent, IncidentPwFem):
-                    rho_0 = _ent.rho[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
-                    rhs += 2*rho_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
+                    phi_0 = _ent.phi[:self.nb_dof_master-1, _ent.dof_spec].toarray().reshape(self.nb_dof_master-1)
+                    rhs += 2*phi_0*_ent.Omega[_ent.dof_spec, _ent.dof_spec]
         # Resolution of the sparse linear system
         X = linsolve.spsolve(A, rhs)
         # Concatenation of the first (zero) dof at the begining of the vector
@@ -273,13 +273,13 @@ class Model():
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
-                _ent.sol = _ent.rho.H .dot(X[1:self.nb_dof_master])/_ent.period
+                _ent.sol = _ent.phi.H .dot(X[1:self.nb_dof_master])/_ent.period
                 _ent.sol[_ent.dof_spec] -= 1
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[_ent.dof_spec])))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
-                _ent.sol = _ent.rho.H .dot(X[1:self.nb_dof_master])/_ent.period
+                _ent.sol = _ent.phi.H .dot(X[1:self.nb_dof_master])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))

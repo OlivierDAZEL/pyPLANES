@@ -4,14 +4,17 @@ import platform
 sys.path.insert(0, "../..")
 
 import numpy as np
+import matplotlib.pyplot as plt
+
+from pymls import from_yaml, Solver, Layer, backing
+from mediapack import Air
 
 from pyPLANES.model.model import Model
 from pyPLANES.classes.model_classes import ModelParameter
 from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
-from pymls import from_yaml, Solver, Layer, backing
-from mediapack import Air
+
 
 name_server = platform.node()
 
@@ -27,10 +30,9 @@ lcar = 0.01
 param.order = 4
 param.plot = [False, True, True, False, False, False]
 # param.plot = [False]*6
-# print(name_server)
-if name_server in ["oliviers-macbook-pro.home","Oliviers-MacBook-Pro.local"]:
-    param.verbose = True
 
+if name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
+    param.verbose = True
 
 G = Gmsh(param.name_project)
 
@@ -57,16 +59,8 @@ G.new_periodicity(l_1, l_3, (L, 0, 0))
 option = "-2 "
 G.run_gmsh(option)
 
-
-
-
-
-
-
 model = Model(param)
 model.resolution(param)
-
-
 
 pem = from_yaml('foam2.yaml')
 param.solver_pymls = Solver()
@@ -76,3 +70,6 @@ param.solver_pymls.layers = [
 param.solver_pymls.backing = backing.transmission
 param.S_PW = Solver_PW(param.solver_pymls, param)
 param.S_PW.resolution(param.theta_d)
+
+if any(param.plot):
+    plt.show()

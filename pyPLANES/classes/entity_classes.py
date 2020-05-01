@@ -147,7 +147,7 @@ class PemFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
-
+        self.formulation98 = True
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Pem98" + FemEntity.__str__(self)
@@ -280,7 +280,7 @@ class PwFem(FemEntity):
         self.theta_d = kwargs["p"].theta_d
         # self.period = kwargs["p"].period
         self.kx, self.ky = [],[]
-        self.rho_i, self.rho_j, self.rho_v = [], [], []
+        self.phi_i, self.phi_j, self.phi_v = [], [], []
         self.nb_dofs = 0
         self.Omega = None
 
@@ -303,7 +303,7 @@ class PwFem(FemEntity):
         self.nb_dofs = 1+2*nb_bloch_waves
 
     def create_dynamical_matrices(self, omega):
-        self.rho_i, self.rho_j, self.rho_v = [], [], []
+        self.phi_i, self.phi_j, self.phi_v = [], [], []
         _ = np.diag(1j*self.ky/(Air.rho*omega**2))
         # print(self.nb_dofs)
         self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
@@ -313,9 +313,9 @@ class PwFem(FemEntity):
                 dof_FEM, orient, _ = dof_p_element(_elem)
                 dof_pw = [self.dofs[i_w]]*len(dof_FEM)
                 _ = orient@F
-                self.rho_i.extend([d-1 for d in dof_FEM])
-                self.rho_j.extend(dof_pw)
-                self.rho_v.extend(_)
+                self.phi_i.extend([d-1 for d in dof_FEM])
+                self.phi_j.extend(dof_pw)
+                self.phi_v.extend(_)
 
 class IncidentPwFem(PwFem):
     def __init__(self, **kwargs):
