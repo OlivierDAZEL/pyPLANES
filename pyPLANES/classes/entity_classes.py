@@ -27,9 +27,7 @@ import numpy.linalg as LA
 from numpy import pi
 from itertools import chain
 
-from scipy.sparse import coo_matrix
-
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
 
@@ -303,31 +301,34 @@ class PwFem(FemEntity):
         self.dofs = np.arange(1+2*nb_bloch_waves)
         self.nb_dofs = 1+2*nb_bloch_waves
 
-    def create_dynamical_matrices(self, omega):
-        self.phi_i, self.phi_j, self.phi_v = [], [], []
-        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
-        # print(self.nb_dofs)
-        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
-        for i_w, kx in enumerate(self.kx):
-            for _elem in self.elements:
-                F = imposed_pw_elementary_vector(_elem, kx)
-                dof_FEM, orient, _ = dof_p_element(_elem)
-                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
-                _ = orient@F
-                self.phi_i.extend([d-1 for d in dof_FEM])
-                self.phi_j.extend(dof_pw)
-                self.phi_v.extend(_)
+    # def create_dynamical_matrices(self, omega, n_m):
+    #     self.phi_i, self.phi_j, self.phi_v = [], [], []
+    #     _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+    #     # print(self.nb_dofs)
+    #     self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
+    #     phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+    #     for i_w, kx in enumerate(self.kx):
+    #         for _elem in self.elements:
+    #             F = imposed_pw_elementary_vector(_elem, kx)
+    #             dof_FEM, orient, _ = dof_p_element(_elem)
+    #             dof_pw = [self.dofs[i_w]]*len(dof_FEM)
+    #             _ = orient@F
+    #             phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
+    #     A = (phi@self.Omega@phi.H/self.period).tocoo()
+    #     _ = phi.tocoo()
+    #     self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
+    #     F = (2*phi@self.Omega[:,0]).tocoo()
+    #     return A, F
 
     def apply_periodicity(self, nb_dof_m, dof_left, dof_right, delta):
         for i_left, _dof_left in enumerate(dof_left):
             # Corresponding dof
             _dof_right = dof_right[i_left]
-            # Summation of the rows for the phi matrix
-            index = np.where(self.phi_i == _dof_right-1)
-            self.phi_i[index] = _dof_left-1
+            index = np.where(self.phi_i == _dof_right)
+            self.phi_i[index] = _dof_left
             for _i in index:
                 self.phi_v[_i] /= delta
-            self.phi = coo_matrix((self.phi_v, (self.phi_i, self.phi_j)), shape=(nb_dof_m-1, self.nb_dofs)).tocsr()
+        self.phi = coo_matrix((self.phi_v, (self.phi_i, self.phi_j)), shape=(nb_dof_m, self.nb_dofs)).tocsr()
 
 
 class IncidentPwFem(PwFem):
@@ -335,12 +336,48 @@ class IncidentPwFem(PwFem):
         # out = GmshEntity.__str__(self)
         out = "Imposed" + PwFem.__str__(self)
         return out
+    def create_dynamical_matrices(self, omega, n_m):
+        self.phi_i, self.phi_j, self.phi_v = [], [], []
+        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+        # print(self.nb_dofs)
+        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
+        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+        for i_w, kx in enumerate(self.kx):
+            for _elem in self.elements:
+                F = imposed_pw_elementary_vector(_elem, kx)
+                dof_FEM, orient, _ = dof_p_element(_elem)
+                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
+                _ = orient@F
+                phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
+        A = (phi@self.Omega@phi.H/self.period).tocoo()
+        _ = phi.tocoo()
+        self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
+        F = (2*phi@self.Omega[:,0]).tocoo()
+        return A, F
+
 
 class TransmissionPwFem(PwFem):
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Imposed" + PwFem.__str__(self)
         return out
-
+    def create_dynamical_matrices(self, omega, n_m):
+        self.phi_i, self.phi_j, self.phi_v = [], [], []
+        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+        # print(self.nb_dofs)
+        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
+        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+        for i_w, kx in enumerate(self.kx):
+            for _elem in self.elements:
+                F = imposed_pw_elementary_vector(_elem, kx)
+                dof_FEM, orient, _ = dof_p_element(_elem)
+                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
+                _ = orient@F
+                phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
+        A = (phi@self.Omega@phi.H/self.period).tocoo()
+        _ = phi.tocoo()
+        self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
+        F = 0*(2*phi@self.Omega[:,0]).tocoo()
+        return A, F
 if __name__ == "__main__":
     pass
