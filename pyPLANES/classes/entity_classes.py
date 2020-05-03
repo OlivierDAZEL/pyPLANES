@@ -31,7 +31,7 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
 
-from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices
+from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices, pem01_elementary_matrices
 from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector
 from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element, orient_element
 from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system
@@ -42,21 +42,45 @@ class GmshEntity():
         self.dim = kwargs["dim"]
         self.tag = kwargs["tag"]
         self.physical_tags = kwargs["physical_tags"]
+        entities = kwargs["entities"]
         if "condition" not in list(self.physical_tags.keys()):
             self.physical_tags["condition"] = None
         if "model" not in list(self.physical_tags.keys()):
             self.physical_tags["model"] = None
         if self.dim == 2:
-            self.bounding_curves = kwargs["bounding_curves"]
+            self.neighbours = [] # Neighbouring 2D entities, will be filled in preprocess
+            self.bounding_curves = [entities[abs(_e)-1] for _e in kwargs["bounding_curves"]]
+            for _e in self.bounding_curves:
+                _e.neighbouring_surfaces.append(self)
         elif self.dim == 1:
-            self.bounding_points = kwargs["bounding_points"]
+            self.neighbouring_surfaces = []
+            self.bounding_points = [entities[abs(_e)-1] for _e in kwargs["bounding_points"]]
+            for _e in self.bounding_points:
+                _e.neighbouring_curves.append(self)
         elif self.dim == 0:
+            self.neighbouring_curves = []
             self.x = kwargs["x"]
             self.y = kwargs["y"]
             self.z = kwargs["z"]
+            self.neighbours = []
     def __str__(self):
         out = "Entity / tag={} / dim= {}\n".format(self.tag, self.dim)
         out += "Physical tags={}\n".format(self.physical_tags)
+        if self.dim == 0:
+            out += "Belongs to curves "
+            for _c in self.neighbouring_curves:
+                out += "{} ({}) ".format(_c.tag,_c.physical_tags["condition"])
+            out += "\n"
+        if self.dim == 1:
+            out += "Related points "
+            for _b in self.bounding_points:
+                out += "{} ({}) ".format(_b.tag,_b.physical_tags["condition"])
+            out += "\n"
+        if self.dim == 2:
+            out += "Related curves "
+            for _c in self.bounding_curves:
+                out += "{} ({}) ".format(_c.tag,_c.physical_tags["condition"])
+            out += "\n"
         return out
 
 class FemEntity(GmshEntity):
@@ -68,8 +92,8 @@ class FemEntity(GmshEntity):
         # out = GmshEntity.__str__(self)
         out = "Fem" + GmshEntity.__str__(self)
         out += "order:{}\n".format(self.order)
-        related_elements = [_el.tag for _el in self.elements]
-        out  += "related elements={}\n".format(related_elements)
+        # related_elements = [_el.tag for _el in self.elements]
+        # out  += "related elements={}\n".format(related_elements)
         return out
 
     def condensation(self, omega):
@@ -148,7 +172,7 @@ class PemFem(FemEntity):
         self.formulation98 = True
     def __str__(self):
         # out = GmshEntity.__str__(self)
-        out = "Pem98" + FemEntity.__str__(self)
+        out = "Pem" + FemEntity.__str__(self)
         return out
 
     def update_frequency(self, omega):
@@ -157,7 +181,10 @@ class PemFem(FemEntity):
     def elementary_matrices(self, _el):
         orient_p = orient_element(_el)
         orient_u = orient_element(_el, "u")
-        M, K_0, K_1, H, Q, C = pem98_elementary_matrices(_el)
+        if self.formulation98:
+            M, K_0, K_1, H, Q, C = pem98_elementary_matrices(_el)
+        else:
+            M, K_0, K_1, H, Q, C, C2 = pem01_elementary_matrices(_el)
         # Orientation of the matrices elementary matrices
         _el.M =   orient_u @ M   @ orient_u
         _el.K_0 = orient_u @ K_0 @ orient_u
@@ -165,6 +192,8 @@ class PemFem(FemEntity):
         _el.H =   orient_p @ H   @ orient_p
         _el.Q =   orient_p @ Q   @ orient_p
         _el.C =   orient_u @ C   @ orient_p
+        if not self.formulation98:
+            _el.C2 =   orient_u @ C2   @ orient_p
         # Renumbering of the elementary matrices to separate master and condensed dofs
         nb_m_SF = _el.reference_element.nb_m_SF
         nb_SF = _el.reference_element.nb_SF
@@ -175,6 +204,8 @@ class PemFem(FemEntity):
         _el.K_0 = _el.K_0[:, _][_]
         _el.K_1 = _el.K_1[:, _][_]
         _el.C = _el.C[:, :][_]
+        if not self.formulation98:
+            _el.C2 = _el.C2[:, :][_]
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v =[], [], []
@@ -186,8 +217,12 @@ class PemFem(FemEntity):
             # With condensation
             # Based on reordered matrix
             uu = self.mat.P_hat*_el.K_0+self.mat.N*_el.K_1-omega**2*self.mat.rho_til*_el.M
-            up = -self.mat.gamma_til*_el.C
-            pu = -self.mat.gamma_til*(_el.C.T)
+            if self.formulation98:
+                up = -self.mat.gamma_til*_el.C
+                pu = -self.mat.gamma_til*(_el.C.T)
+            else:
+                up = -(self.mat.gamma_til+1)*_el.C-_el.C2
+                pu = -(self.mat.gamma_til+1)*(_el.C.T)-_el.C2.T
             pp = _el.H/(self.mat.rho_eq_til*omega**2)- _el.Q/(self.mat.K_eq_til)
 
             l_u_m = slice(2*nb_m_SF)
@@ -294,31 +329,12 @@ class PwFem(FemEntity):
         nb_bloch_waves = 3
         # print("nb_bloch_waves ={}".format(nb_bloch_waves))
         _ = np.array([0] + list(range(-nb_bloch_waves,0)) + list(range(1,nb_bloch_waves+1)))
-
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
         self.dofs = np.arange(1+2*nb_bloch_waves)
         self.nb_dofs = 1+2*nb_bloch_waves
 
-    # def create_dynamical_matrices(self, omega, n_m):
-    #     self.phi_i, self.phi_j, self.phi_v = [], [], []
-    #     _ = np.diag(1j*self.ky/(Air.rho*omega**2))
-    #     # print(self.nb_dofs)
-    #     self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
-    #     phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
-    #     for i_w, kx in enumerate(self.kx):
-    #         for _elem in self.elements:
-    #             F = imposed_pw_elementary_vector(_elem, kx)
-    #             dof_FEM, orient, _ = dof_p_element(_elem)
-    #             dof_pw = [self.dofs[i_w]]*len(dof_FEM)
-    #             _ = orient@F
-    #             phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
-    #     A = (phi@self.Omega@phi.H/self.period).tocoo()
-    #     _ = phi.tocoo()
-    #     self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
-    #     F = (2*phi@self.Omega[:,0]).tocoo()
-    #     return A, F
 
     def apply_periodicity(self, nb_dof_m, dof_left, dof_right, delta):
         for i_left, _dof_left in enumerate(dof_left):
@@ -329,6 +345,18 @@ class PwFem(FemEntity):
             for _i in index:
                 self.phi_v[_i] /= delta
         self.phi = coo_matrix((self.phi_v, (self.phi_i, self.phi_j)), shape=(nb_dof_m, self.nb_dofs)).tocsr()
+
+class TmPwFem(PwFem):
+    def __init__(self, **kwargs):
+        PwFem.__init__(self, **kwargs)
+        self.nb_fields = 2
+
+
+
+    def __str__(self):
+        # out = GmshEntity.__str__(self)
+        out = "Tw" + PwFem.__str__(self)
+        return out
 
 
 class IncidentPwFem(PwFem):
@@ -355,7 +383,6 @@ class IncidentPwFem(PwFem):
         F = (2*phi@self.Omega[:,0]).tocoo()
         return A, F
 
-
 class TransmissionPwFem(PwFem):
     def __str__(self):
         # out = GmshEntity.__str__(self)
@@ -379,5 +406,51 @@ class TransmissionPwFem(PwFem):
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
         F = 0*(2*phi@self.Omega[:,0]).tocoo()
         return A, F
-if __name__ == "__main__":
-    pass
+
+class IncidentTmPwFem(TmPwFem):
+    def __str__(self):
+        # out = GmshEntity.__str__(self)
+        out = "Imposed" + TmPwFem.__str__(self)
+        return out
+    def create_dynamical_matrices(self, omega, n_m):
+        self.phi_i, self.phi_j, self.phi_v = [], [], []
+        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+        # print(self.nb_dofs)
+        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
+        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+        for i_w, kx in enumerate(self.kx):
+            for _elem in self.elements:
+                F = imposed_pw_elementary_vector(_elem, kx)
+                dof_FEM, orient, _ = dof_p_element(_elem)
+                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
+                _ = orient@F
+                phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
+        A = (phi@self.Omega@phi.H/self.period).tocoo()
+        _ = phi.tocoo()
+        self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
+        F = (2*phi@self.Omega[:,0]).tocoo()
+        return A, F
+
+class TransmissionTmPwFem(PwFem):
+    def __str__(self):
+        # out = GmshEntity.__str__(self)
+        out = "Imposed" + TmPwFem.__str__(self)
+        return out
+    def create_dynamical_matrices(self, omega, n_m):
+        self.phi_i, self.phi_j, self.phi_v = [], [], []
+        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
+        # print(self.nb_dofs)
+        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
+        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+        for i_w, kx in enumerate(self.kx):
+            for _elem in self.elements:
+                F = imposed_pw_elementary_vector(_elem, kx)
+                dof_FEM, orient, _ = dof_p_element(_elem)
+                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
+                _ = orient@F
+                phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
+        A = (phi@self.Omega@phi.H/self.period).tocoo()
+        _ = phi.tocoo()
+        self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
+        F = 0*(2*phi@self.Omega[:,0]).tocoo()
+        return A, F

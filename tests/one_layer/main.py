@@ -14,7 +14,7 @@ from pyPLANES.classes.model_classes import ModelParameter
 from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
-
+from pyPLANES.utils.utils_io import print_entities
 
 name_server = platform.node()
 
@@ -56,10 +56,12 @@ G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 
-option = "-2 "
+option = "-2 -v 0 "
 G.run_gmsh(option)
 
 model = Model(param)
+
+# print_entities(model)
 model.resolution(param)
 
 pem = from_yaml('foam2.yaml')

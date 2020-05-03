@@ -37,7 +37,7 @@ import matplotlib.tri as mtri
 
 from mediapack import Air
 
-from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, FluidFem, PemFem, TransmissionPwFem
+from pyPLANES.classes.entity_classes import *
 from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_io import initialisation_out_files, write_out_files, display_sol
@@ -249,7 +249,17 @@ class Model():
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 self.abs -= np.abs(self.modulus_reflex)**2
+            elif isinstance(_ent, IncidentTmPwFem):
+                _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
+                _ent.sol[0] -= 1
+                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
+                self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
+                _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
+                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
+                self.abs -= self.modulus_trans**2
+            elif isinstance(_ent, TransmissionTmPwFem):
                 _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2

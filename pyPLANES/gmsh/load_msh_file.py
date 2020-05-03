@@ -28,7 +28,7 @@ from mediapack.utils import from_yaml
 
 from pyPLANES.fem.elements.reference_elements import Ka, KaPw, Kt
 from pyPLANES.classes.fem_classes import Vertex, Element
-from pyPLANES.classes.entity_classes import GmshEntity, FemEntity, IncidentPwFem, PeriodicityFem, RigidWallFem, PemFem, FluidFem, TransmissionPwFem
+from pyPLANES.classes.entity_classes import *
 
 def load_msh_file(self, p):
     print("Reading "+ p.name_project + ".msh")
@@ -85,7 +85,7 @@ def entities(self, f, p):
         x, y, z = float(_f[1]), float(_f[2]), float(_f[3])
         num_physical_tags = int(_f[4])
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
-        _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z)
+        _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z, entities=self.entities)
         self.entities.append(_)
     for _icurve in range(num_curves):
         _f = f.readline().split()
@@ -98,20 +98,20 @@ def entities(self, f, p):
         if "model" in physical_tags.keys():
             if physical_tags["model"] == "FEM1D":
                 if physical_tags["condition"] == "Incident_PW":
-                    _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p)
+                    _ = IncidentTmPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"] == "Transmission":
-                    _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p)
+                    _ = TransmissionTmPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"] == "Rigid Wall" :
-                    _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p)
+                    _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                 elif physical_tags["condition"] == "Periodicity" :
-                    _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p)
+                    _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 else:
                     raise NameError("FEM1D entity without physical condition")
         else: # No numerical model
-            _ = GmshEntity(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points)
+            _ = GmshEntity(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
         self.entities.append(_)
     for _surf in range(num_surfaces):
         _f = f.readline().split()
@@ -125,15 +125,15 @@ def entities(self, f, p):
             if physical_tags["model"].startswith("FEM"):
                 if "mat" in physical_tags.keys():
                     if physical_tags["mat"].split()[0] == "Air":
-                        _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=Air)
+                        _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=Air, entities=self.entities)
                         self.model_entities.append(_)
                     else:
                         mat = from_yaml(self.materials_directory + physical_tags["mat"].split()[0] +".yaml")
                         if mat.MODEL == "eqf":
-                            _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
+                            _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
                             self.model_entities.append(_)
                         else:
-                                _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat)
+                                _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
                                 self.model_entities.append(_)
         self.entities.append(_)
     for __ in range(num_volumes):
@@ -219,7 +219,7 @@ def elements(self, f, p):
         # Initialise the reference element key with an integer = element
         reference_element_key = element_type
         # Change the key for PW to have higher quadratures
-        if isinstance(self.entities[self.entity_tag[entity_tag]], (IncidentPwFem, TransmissionPwFem)):
+        if isinstance(self.entities[self.entity_tag[entity_tag]], PwFem):
             reference_element_key = (element_type, "PW")
         if reference_element_key not in self.reference_elements.keys():
             self.reference_elements[reference_element_key] = reference_element(reference_element_key, p.order)
@@ -266,7 +266,7 @@ def periodic(self, f):
             # period is defined on both the model and entities
             self.period = period
             for _ent in self.entities:
-                if isinstance(_ent, (IncidentPwFem, TransmissionPwFem)):
+                if isinstance(_ent, PwFem):
                     _ent.period = period
 
 def reference_element(key, order):

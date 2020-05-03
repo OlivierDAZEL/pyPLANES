@@ -112,8 +112,6 @@ def elas_elem(coord_e, K_ref):
     return vm, vk0, vk1
 
 
-
-
 def pem98_elementary_matrices(elem):
 
     coord_e = elem.get_coordinates()
@@ -173,13 +171,16 @@ def pem98_elementary_matrices(elem):
 
     return vm, vk0, vk1, vh, vq, vc
 
-def pem01_elem(coord_e, K_ref):
+def pem01_elementary_matrices(elem):
 
+    coord_e = elem.get_coordinates()
+    K_ref = elem.reference_element
     n, m = K_ref.Phi.shape
-    vm = np.zeros((3*n, 3*n))
-    vk0 = np.zeros((3*n, 3*n))
-    vk1 = np.zeros((3*n, 3*n))
-    vc = np.zeros((3*n, n))
+    vm = np.zeros((2*n, 2*n))
+    vk0 = np.zeros((2*n, 2*n))
+    vk1 = np.zeros((2*n, 2*n))
+    vc = np.zeros((2*n, n))
+    vc2 = np.zeros((2*n, n))
     vh = np.zeros((n, n))
     vq = np.zeros((n, n))
 
@@ -204,15 +205,19 @@ def pem01_elem(coord_e, K_ref):
         _weight = K_ref.w[ipg] * LA.det(J)
 
         Gd = LA.solve(J, _dPhi)
-        eps = np.zeros((3, 3*n))
+        eps = np.zeros((3, 2*n))
         eps[0, 0:n] = Gd[0, :] # eps_xx = \dpar{ux}{x}
         eps[1, n:2*n] = Gd[1, :] # eps_yy = \dpar{uy}{y}
         eps[2, 0:n] = Gd[1, :]
         eps[2, n:2*n] = Gd[0, :] # eps_yz = \dpar{uz}{y}+ \dpar{uy}{z}
 
-        Phi_u = np.zeros((2, 3*n))
+        Phi_u = np.zeros((2, 2*n))
         Phi_u[0, 0:n] = _Phi
         Phi_u[1, n:2*n] = _Phi
+
+        div_u = np.zeros((1, 2*n))
+        div_u[0, 0:n] = Gd[0, :] # eps_xx = \dpar{ux}{x}
+        div_u[0, n:2*n] = Gd[1, :] # eps_yy = \dpar{uy}{y}
 
         D_0, D_1 = np.zeros((3, 3)), np.zeros((3, 3))
         D_0[0, 0:2] = 1.
@@ -225,7 +230,8 @@ def pem01_elem(coord_e, K_ref):
         vk1 += _weight*LA.multi_dot([eps.T, D_1, eps])
         vm += _weight*np.dot(Phi_u.T, Phi_u)
         vc += _weight*np.dot(Phi_u.T, Gd)
+        vc2 += _weight*np.dot(div_u.T, _Phi)
         vh += _weight*np.dot(Gd.T, Gd)
         vq += _weight*np.dot(_Phi.T, _Phi)
 
-    return vm, vk0, vk1, vh, vq, vc
+    return vm, vk0, vk1, vh, vq, vc, vc2

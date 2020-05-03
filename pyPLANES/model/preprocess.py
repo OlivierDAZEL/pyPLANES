@@ -27,7 +27,7 @@ import numpy as np
 import itertools
 
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import IncidentPwFem, TransmissionPwFem, FluidFem, RigidWallFem, PemFem
+from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem
 # import sys
 # import itertools
 
@@ -107,11 +107,7 @@ def activate_dofs(self):
                         _f.dofs[1] = [1]*len(_f.dofs[1])
                         _f.dofs[2] = [1]*len(_f.dofs[2])
                         _f.dofs[3] = [1]*len(_f.dofs[3])
-        elif _en.dim ==1:
-            if isinstance(_en, IncidentPwFem):
-                _en.dofs = [1]
-            elif isinstance(_en, TransmissionPwFem):
-                _en.dofs = [1]
+
 
 def desactivate_dofs_dimension(self):
     if self.dim < 3:
@@ -237,14 +233,30 @@ def elementary_matrices(self):
             for _el in _ent.elements:
                 _ent.elementary_matrices(_el)
 
+def check_model(self):
+    ''' TBD '''
+    unfinished = True
+    while unfinished:
+        unfinished = False
+        for _e in self.entities:
+            if _e.dim ==1:
+                if len(_e.neighbouring_surfaces)==2:
+                    print(_e.neighbouring_surfaces)
+    for _e in self.model_entities:
+        if isinstance(_e, PwFem):
+            for s in _e.neighbouring_surfaces:
+                if isinstance(s, PemFem):
+                   s.formulation98 = False
+                   print(s.formulation98)
 
 def preprocess(self, p):
     if p.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
+    check_model(self)
     self.frequencies = init_vec_frequencies(p.frequencies)
     # Creation of edges and faces
+    print("Checking the model")
     create_lists(self, p)
-
     print("Activation of dofs")
     activate_dofs(self)
     print("Desactivation of orders")
