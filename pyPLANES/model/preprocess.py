@@ -264,7 +264,7 @@ def check_model(self, p):
             if _e.dim == 2:
                 if isinstance(_e, PemFem):
                     _e.formulation98 = True
-                    # _e.formulation98 = False
+                    _e.formulation98 = False
 
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
@@ -278,9 +278,14 @@ def check_model(self, p):
                     elif (isinstance(s, ElasticFem)):
                         _e.nb_R = 2
                         _e.typ = "Elastic"
-                    elif (isinstance(s, PemFem) and (s.formulation98)):
-                        _e.nb_R = 2
-                        _e.typ = "Biot98"
+                    elif isinstance(s, PemFem):
+                        if s.formulation98:
+                            _e.nb_R = 2
+                            _e.typ = "Biot98"
+                        else:
+                            _e.nb_R = 3
+                            _e.typ = "Biot01"
+
 
 
 

@@ -187,20 +187,21 @@ class PemFem(FemEntity):
         else:
             M, K_0, K_1, H, Q, C, C2 = pem01_elementary_matrices(_el)
         # Orientation of the matrices elementary matrices
-        _el.M =   orient_u @ M   @ orient_u
+        _el.M = orient_u @ M   @ orient_u
         _el.K_0 = orient_u @ K_0 @ orient_u
         _el.K_1 = orient_u @ K_1 @ orient_u
-        _el.H =   orient_p @ H   @ orient_p
-        _el.Q =   orient_p @ Q   @ orient_p
-        _el.C =   orient_u @ C   @ orient_p
+        _el.H = orient_p @ H   @ orient_p
+        _el.Q = orient_p @ Q   @ orient_p
+        _el.C = orient_u @ C   @ orient_p
         if not self.formulation98:
-            _el.C2 =   orient_u @ C2   @ orient_p
-        # Renumbering of the elementary matrices to separate master and condensed dofs
+            _el.C2 = orient_u @ C2   @ orient_p
+        # Separate of master and condensed dofs
         nb_m_SF = _el.reference_element.nb_m_SF
         nb_SF = _el.reference_element.nb_SF
         _ = list(range(nb_m_SF))
         _ += [d+nb_SF for d in _]
         _ += list(range(nb_m_SF, nb_SF)) +list(range(nb_SF+nb_m_SF, 2*nb_SF))
+        # Renumbering of the elementary matrices
         _el.M = _el.M[:, _][_]
         _el.K_0 = _el.K_0[:, _][_]
         _el.K_1 = _el.K_1[:, _][_]
@@ -366,8 +367,8 @@ class PwFem(FemEntity):
         self.ky = np.real(k_y)-1j*np.imag(k_y)
         self.dofs = np.arange(1+2*nb_bloch_waves)
         self.nb_dofs = 1+2*nb_bloch_waves
-        self.dofs_TM = np.arange(2+4*nb_bloch_waves)
-        self.nb_dofs_TM = 2+4*nb_bloch_waves
+        self.dofs_TM = np.arange(self.nb_R*(1+2*nb_bloch_waves))
+        self.nb_dofs_TM = self.nb_R*(1+2*nb_bloch_waves)
 
     def apply_periodicity(self, nb_dof_m, dof_left, dof_right, delta):
         for i_left, _dof_left in enumerate(dof_left):
@@ -403,6 +404,11 @@ class IncidentPwFem(PwFem):
             weak = np.array([0, -1j*ky/(Air.rho*om**2)])
             # u_x and p
             orth = np.array([0, 1.])
+        elif self.typ == "Biot01":
+            # sigma_xy^t and sigma_yy^t and u_t-u_s
+            weak = np.array([0, -1., -1j*ky/(Air.rho*om**2)])
+            # u_x^s and u_y^s and p
+            orth = np.array([0, 0, 1.])
         else:
             raise ValueError("Unknown typ")
         return weak, orth
@@ -421,6 +427,11 @@ class IncidentPwFem(PwFem):
             Omega_l_weak = np.array([[0, 0], [1j*ky/(Air.rho*om**2), 0]])
             # u_x and p
             Omega_l_orth = np.array([[0, 1], [1, 0]])
+        elif self.typ == "Biot01":
+            # sigma_xy^t, sigma_yt^t and u_t-u_s^y
+            Omega_l_weak = np.array([[0, 0, 0], [-1., 0, 0], [1j*ky/(Air.rho*om**2), 0, -1]])
+            # u_x, u_y and p
+            Omega_l_orth = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
         else:
             raise ValueError("Unknown typ")
 
@@ -446,6 +457,7 @@ class IncidentPwFem(PwFem):
             tau_l, eta_l = self.get_tau_eta(self.ky[_l], omega)
             if _l == 0:
                 tau_0 = tau_l
+                print(tau_0)
             # dofs for eta and tau matrices
             dof_r, dof_c = self.get_wave_dofs(_l)
             self.eta_TM += coo_matrix((eta_l.flatten(), (dof_r, dof_c)), shape=(self.nb_dofs_TM, self.nb_dofs_TM))
@@ -473,14 +485,24 @@ class IncidentPwFem(PwFem):
                     _ = orient_ux@phi_l
                     phi += coo_matrix((_, (dof_ux, dof_1)), shape=(n_m, self.nb_dofs_TM))
                     phi += coo_matrix((_, (dof_p, dof_2)), shape=(n_m, self.nb_dofs_TM))
+                elif self.typ == "Biot01":
+                    dof_ux, orient_ux = dof_ux_element(_elem)
+                    dof_uy, orient_uy = dof_uy_element(_elem)
+                    dof_p, orient_p, _ = dof_p_element(_elem)
+                    dof_1 = [self.dofs_TM[self.nb_R*_l]]*len(dof_uy)
+                    dof_2 = [self.dofs_TM[self.nb_R*_l+1]]*len(dof_uy)
+                    dof_3 = [self.dofs_TM[self.nb_R*_l+2]]*len(dof_uy)
+                    _ = orient_uy@phi_l
+                    phi += coo_matrix((_, (dof_ux, dof_1)), shape=(n_m, self.nb_dofs_TM))
+                    phi += coo_matrix((_, (dof_uy, dof_2)), shape=(n_m, self.nb_dofs_TM))
+                    phi += coo_matrix((_, (dof_p, dof_3)), shape=(n_m, self.nb_dofs_TM))
                 else:
                    raise ValueError("Unknown typ")
                 # print(len(dof_ux))
 
-        # tau = tau.tocoo()
+
         A_TM = -(phi@tau@phi.H/self.period).tocoo()
         F_TM = np.zeros(self.nb_dofs_TM, dtype=complex)
-
         F_TM[:self.nb_R] = Omega_0_weak-tau_0@self.Omega_0_orth
 
         F_TM = coo_matrix((phi@F_TM).reshape(n_m, 1))
