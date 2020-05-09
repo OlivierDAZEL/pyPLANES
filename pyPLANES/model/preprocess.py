@@ -272,9 +272,9 @@ def check_model(self, p):
                 pass
             else:
                 for s in _e.neighbouring_surfaces:
-                    if isinstance(s, Air):
+                    if isinstance(s, (Air, FluidFem)):
                         _e.nb_R = 1
-                        _e.typ = "Airborne"
+                        _e.typ = "Fluid"
                     elif (isinstance(s, ElasticFem)):
                         _e.nb_R = 2
                         _e.typ = "Elastic"
