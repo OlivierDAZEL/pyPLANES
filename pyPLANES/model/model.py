@@ -263,21 +263,7 @@ class Model():
                 # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 self.abs -= np.abs(self.modulus_reflex)**2
-            elif isinstance(_ent, IncidentTmPwFem):
-                _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
-                _ent.sol[0] -= _ent.Omega_0[3]
-                _ent.sol[1] -= _ent.Omega_0[1]
-                _ent.sol = _ent.eta@_ent.sol
-                print("_ent.sol")
-                print(_ent.sol)
-                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
-                self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
-                _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
-                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
-                self.abs -= self.modulus_trans**2
-            elif isinstance(_ent, TransmissionTmPwFem):
                 _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2

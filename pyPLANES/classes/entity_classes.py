@@ -391,47 +391,54 @@ class IncidentPwFem(PwFem):
         return out
 
     def get_Omega_0(self, ky, om):
+        # State vector S={0:\hat{\sigma}_{xy}, 1:u_x^s, 2:u_x^t, 3:\hat{\sigma}_{xx}, 4:p, 5:u_y^s}'''
+        S = np.array([0, 0, -1j*ky/(Air.rho*om**2), 0, 1, 0])
+
         if self.typ == "Airborne":
-            weak = self.ny*np.array([1j*ky/(Air.rho*om**2)])
-            orth = np.array([1.])
+            # u_y^t
+            weak = np.array([S[2]])
+            # p
+            orth = np.array([S[4]])
         elif self.typ == "Elastic":
             # sigma_xy and sigma_yy = -p
-            weak = np.array([0, -1.])
-            # u_x and u_y
-            orth = np.array([0, -1j*ky/(Air.rho*om**2)])
+            weak = np.array([S[0], -S[4]])
+            # u_x^s and u_y
+            orth = np.array([S[1], S[2]])
         elif self.typ == "Biot98":
             # sigma_xy and u_y
-            weak = np.array([0, -1j*ky/(Air.rho*om**2)])
+            weak = np.array([S[0], S[2]])
             # u_x and p
-            orth = np.array([0, 1.])
+            orth = np.array([S[1], S[4]])
         elif self.typ == "Biot01":
             # sigma_xy^t and sigma_yy^t and u_t-u_s
-            weak = np.array([0, -1., -1j*ky/(Air.rho*om**2)])
+            weak = np.array([S[0], -S[4], S[2]])
             # u_x^s and u_y^s and p
-            orth = np.array([0, 0, 1.])
+            orth = np.array([S[1], S[5], S[4]])
         else:
             raise ValueError("Unknown typ")
         return weak, orth
 
     def get_tau_eta(self, ky, om):
+        # State vector S={0:\hat{\sigma}_{xy}, 1:u_x^s, 2:u_x^t, 3:\hat{\sigma}_{xx}, 4:p, 5:u_y^s}'''
+        S = np.array([[0, 0, 1j*ky/(Air.rho*om**2), 0, 1, 0], [0, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1]]).T
         if self.typ == "Airborne":
             Omega_l_orth = np.array([1.]).reshape((1, 1))
             Omega_l_weak = np.array([1j*ky/(Air.rho*om**2)])
         elif self.typ == "Elastic":
             # sigma_xy and sigma_yy = -p
-            Omega_l_weak = np.array([[0, 0], [-1., 0]])
-            # u_x and u_y
-            Omega_l_orth = np.array([[0, 1], [1j*ky/(Air.rho*om**2), 0]])
+            Omega_l_weak = np.array([S[0, :self.nb_R], -S[4, :self.nb_R]])
+            # u_x and u_y^t
+            Omega_l_orth = np.array([S[1, :self.nb_R], S[2, :self.nb_R]])
         elif self.typ == "Biot98":
             # sigma_xy and u_y
-            Omega_l_weak = np.array([[0, 0], [1j*ky/(Air.rho*om**2), 0]])
+            Omega_l_weak = np.array([S[0, :self.nb_R], S[2, :self.nb_R]])
             # u_x and p
-            Omega_l_orth = np.array([[0, 1], [1, 0]])
+            Omega_l_orth = np.array([S[1, :self.nb_R], S[4, :self.nb_R]])
         elif self.typ == "Biot01":
-            # sigma_xy^t, sigma_yt^t and u_t-u_s^y
-            Omega_l_weak = np.array([[0, 0, 0], [-1., 0, 0], [1j*ky/(Air.rho*om**2), 0, -1]])
-            # u_x, u_y and p
-            Omega_l_orth = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
+            # sigma_xy^t, sigma_y^t and u_t-u_s^y
+            Omega_l_weak = np.array([S[0, :self.nb_R], [-1., 0, 0], S[2, :self.nb_R]-S[5, :self.nb_R]])
+            # u_x^s, u_y^s and p
+            Omega_l_orth = np.array([S[1, :self.nb_R], S[5, :self.nb_R], S[4, :self.nb_R]])
         else:
             raise ValueError("Unknown typ")
 
@@ -457,7 +464,6 @@ class IncidentPwFem(PwFem):
             tau_l, eta_l = self.get_tau_eta(self.ky[_l], omega)
             if _l == 0:
                 tau_0 = tau_l
-                print(tau_0)
             # dofs for eta and tau matrices
             dof_r, dof_c = self.get_wave_dofs(_l)
             self.eta_TM += coo_matrix((eta_l.flatten(), (dof_r, dof_c)), shape=(self.nb_dofs_TM, self.nb_dofs_TM))
@@ -497,7 +503,7 @@ class IncidentPwFem(PwFem):
                     phi += coo_matrix((_, (dof_uy, dof_2)), shape=(n_m, self.nb_dofs_TM))
                     phi += coo_matrix((_, (dof_p, dof_3)), shape=(n_m, self.nb_dofs_TM))
                 else:
-                   raise ValueError("Unknown typ")
+                    raise ValueError("Unknown typ")
                 # print(len(dof_ux))
 
 
@@ -534,130 +540,5 @@ class TransmissionPwFem(PwFem):
         _ = phi.tocoo()
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
         F = 0*(2*phi@self.Omega[:,0]).tocoo()
-        return A, F
-
-class TransmissionTmPwFem(PwFem):
-    def __str__(self):
-        # out = GmshEntity.__str__(self)
-        out = "Imposed" + TmPwFem.__str__(self)
-        return out
-    def create_dynamical_matrices(self, omega, n_m):
-        self.phi_i, self.phi_j, self.phi_v = [], [], []
-        _ = np.diag(1j*self.ky/(Air.rho*omega**2))
-        # print(self.nb_dofs)
-        self.Omega = csr_matrix(_, shape=(self.nb_dofs, self.nb_dofs), dtype=complex)
-        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
-        for i_w, kx in enumerate(self.kx):
-            for _elem in self.elements:
-                F = imposed_pw_elementary_vector(_elem, kx)
-                dof_FEM, orient, _ = dof_p_element(_elem)
-                dof_pw = [self.dofs[i_w]]*len(dof_FEM)
-                _ = orient@F
-                phi += coo_matrix((_, (dof_FEM, dof_pw)), shape=(n_m, self.nb_dofs))
-        A = (phi@self.Omega@phi.H/self.period).tocoo()
-        _ = phi.tocoo()
-        self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
-        F = 0*(2*phi@self.Omega[:,0]).tocoo()
-        return A, F
-
-class TmPwFem(PwFem):
-    def __init__(self, **kwargs):
-        PwFem.__init__(self, **kwargs)
-        self.nb_fields = 2
-        self.nb_waves = None
-        self.eta = None
-        self.tau = None
-
-    def __str__(self):
-        # out = GmshEntity.__str__(self)
-        out = "Tw" + PwFem.__str__(self)
-        return out
-    def update_frequency(self, omega):
-        k_air = omega/Air.c
-        k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+10)
-        nb_bloch_waves = 0
-        print("nb_bloch_waves ={}".format(nb_bloch_waves))
-        _ = np.array([0] + list(range(-nb_bloch_waves,0)) + list(range(1,nb_bloch_waves+1)))
-        _ = np.array([val for val in _ for __ in range(self.nb_fields)])
-        self.kx = k_x+_*(2*pi/self.period)
-        k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
-        self.ky = np.real(k_y)-1j*np.imag(k_y)
-        self.nb_waves = 1+2*nb_bloch_waves
-        self.dofs = np.arange(self.nb_fields*(self.nb_waves))
-        self.nb_dofs = self.nb_fields*self.nb_waves
-        self.tau, self.eta = [None]*self.nb_waves, [None]*self.nb_waves
-        self.sol = np.zeros(self.nb_dofs, dtype=complex)
-
-class IncidentTmPwFem(TmPwFem):
-    def __str__(self):
-        # out = GmshEntity.__str__(self)
-        out = "Imposed" + TmPwFem.__str__(self)
-        return out
-    def create_dynamical_matrices(self, omega, n_m):
-        print("n_m={}".format(n_m))
-        print("self.nb_dofs={}".format(self.nb_dofs))
-        print("self.dofs={}".format(self.dofs))
-        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
-        self.eta = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
-        self.tau = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
-        self.Omega_0 = np.array([0, 1j*self.ky[0]/(Air.rho*omega**2), -1, 0])
-        print("self.nb_waves={}".format(self.nb_waves))
-        for _l in range(self.nb_waves):
-            Omega_l = np.zeros((4, 2), dtype=complex)
-            Omega_l[1, 0] = -1j*self.ky[_l]/(Air.rho*omega**2)
-            Omega_l[2, 0] = -1.
-            Omega_l[3, 1] = 1.
-            eta_l = LA.inv(np.array([Omega_l[3, :], Omega_l[1, :]]))
-            tau_l = np.dot(np.array([Omega_l[0, :], Omega_l[2, :]]), eta_l)
-            if _l == 0:
-                tau_0 = tau_l
-            # dofs for eta and tau matrices
-            dof_1 = [2*_l, 2*_l, 2*_l+1, 2*_l+1]
-            dof_2 = [2*_l, 2*_l+1, 2*_l, 2*_l+1]
-            self.eta += coo_matrix((eta_l.flatten(), (dof_1, dof_2)), shape=(self.nb_dofs, self.nb_dofs))
-            self.tau += coo_matrix((tau_l.flatten(), (dof_1, dof_2)), shape=(self.nb_dofs, self.nb_dofs))
-            for _elem in self.elements:
-                phi_l = imposed_pw_elementary_vector(_elem, self.kx[_l])
-                dof_ux, orient_ux = dof_ux_element(_elem)
-                dof_uy, orient_uy = dof_uy_element(_elem)
-                dof_1 = [self.dofs[2*_l]]*len(dof_ux)
-                dof_2 = [self.dofs[2*_l+1]]*len(dof_ux)
-                _ = orient_ux@phi_l
-                phi += coo_matrix((_, (dof_ux, dof_1)), shape=(n_m, self.nb_dofs))
-                phi += coo_matrix((_, (dof_uy, dof_2)), shape=(n_m, self.nb_dofs))
-                print("dof_x={}".format(dof_ux))
-                print("dof_y={}".format(dof_uy))
-                print("dof_1={}".format(dof_1))
-                print("dof_2={}".format(dof_2))
-                # print(len(dof_ux))
-        print("phi")
-        print(phi)
-
-        phi = phi.tocoo()
-        self.tau = self.tau.tocoo()
-
-        print("tau")
-        print(self.tau)
-        A = (phi@self.tau@phi.H/self.period).tocoo()
-
-        _ = phi.tocoo()
-        self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
-        # print(self.Omega_0)
-        F = np.zeros(self.nb_dofs, dtype=complex)
-        print(tau_0)
-        print(Air.rho*omega**2/(1j*self.ky[_l]))
-
-        F[:2] = tau_0@np.array([[self.Omega_0[3]], [self.Omega_0[1]]]).reshape(2)
-        print(F)
-        F[:2] -= np.array([[self.Omega_0[0]], [self.Omega_0[2]]]).reshape(2)
-
-        print(F)
-        # print(phi.shape)
-        # print(F.shape)
-        F = coo_matrix((phi@F).reshape(n_m, 1))
-        # print(F.shape)
-        print("FF=\n{}".format(F))
-
         return A, F
 
