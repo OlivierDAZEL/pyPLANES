@@ -26,8 +26,11 @@
 import numpy as np
 import itertools
 
+from mediapack import Air
+
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem
+from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem
+
 # import sys
 # import itertools
 
@@ -245,29 +248,48 @@ def elementary_matrices(self):
     '''Creation of elementary matrices in the elements'''
     print("Creation of elementary matrices in the elements")
     for _ent in self.model_entities:
-            for _el in _ent.elements:
-                _ent.elementary_matrices(_el)
+        for _el in _ent.elements:
+            _ent.elementary_matrices(_el)
 
-def check_model(self):
+def check_model(self, p):
     ''' TBD '''
     unfinished = True
     while unfinished:
         unfinished = False
         for _e in self.entities:
-            if _e.dim ==1:
-                if len(_e.neighbouring_surfaces)==2:
-                    print(_e.neighbouring_surfaces)
+            if _e.dim == 1:
+                if len(_e.neighbouring_surfaces) > 1:
+                    if isinstance(_e, (PwFem, RigidWallFem, PeriodicityFem)):
+                        raise ValueError("preprocess")
+            if _e.dim == 2:
+                if isinstance(_e, PemFem):
+                    _e.formulation98 = True
+                    # _e.formulation98 = False
+
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
-            for s in _e.neighbouring_surfaces:
-                if isinstance(s, PemFem):
-                #    s.formulation98 = False
-                   print(s.formulation98)
+            if hasattr(p, "incident_ml"):
+                pass
+            else:
+                for s in _e.neighbouring_surfaces:
+                    if isinstance(s, Air):
+                        _e.nb_R = 1
+                        _e.typ = "Airborne"
+                    elif (isinstance(s, ElasticFem)):
+                        _e.nb_R = 2
+                        _e.typ = "Elastic"
+                    elif (isinstance(s, PemFem) and (s.formulation98)):
+                        _e.nb_R = 2
+                        _e.typ = "Biot98"
+
+
+
+
 
 def preprocess(self, p):
     if p.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
-    check_model(self)
+    check_model(self, p)
     self.frequencies = init_vec_frequencies(p.frequencies)
     # Creation of edges and faces
     print("Checking the model")
