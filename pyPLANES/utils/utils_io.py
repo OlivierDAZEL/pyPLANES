@@ -31,7 +31,7 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
-from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem
+from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem, ElasticFem
 
 def initialisation_out_files(self, p):
     # Creation of the directory if it .oes not exists
@@ -138,6 +138,24 @@ def display_sol(self, p):
                         plt.figure(2)
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
+                    if p.plot[5]:
+                        x.extend(list(x_elem))
+                        y.extend(list(y_elem))
+                        pr.extend(list(p_elem))
+        elif isinstance(_en, ElasticFem):
+            if any(p.plot): # Plot of pressure  == True
+                for _elem in _en.elements:
+                    x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
+                    ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
+                    uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
+                    if p.plot[0]:
+                        plt.figure(0)
+                        plt.plot(y_elem, np.abs(ux_elem), 'r+')
+                        plt.plot(y_elem, np.imag(ux_elem), 'm.')
+                    if p.plot[1]:
+                        plt.figure(1)
+                        plt.plot(y_elem, np.abs(uy_elem), 'r+')
+                        plt.plot(y_elem, np.imag(uy_elem), 'm.')
                     if p.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))

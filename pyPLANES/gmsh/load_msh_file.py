@@ -98,7 +98,7 @@ def entities(self, f, p):
         if "model" in physical_tags.keys():
             if physical_tags["model"] == "FEM1D":
                 if physical_tags["condition"] == "Incident_PW":
-                    _ = IncidentTmPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
+                    _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"] == "Transmission":
                     _ = TransmissionTmPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
@@ -131,6 +131,9 @@ def entities(self, f, p):
                         mat = from_yaml(self.materials_directory + physical_tags["mat"].split()[0] +".yaml")
                         if mat.MODEL == "eqf":
                             _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
+                            self.model_entities.append(_)
+                        elif mat.MODEL == "elastic":
+                            _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
                             self.model_entities.append(_)
                         else:
                                 _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)

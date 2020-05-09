@@ -67,7 +67,7 @@ class KaPw(Ka):
 
     def __str__(self):
         out = "KaPw of order {}".format(self.order)
-        return outInt_analytical_Lobatto(n,k_prime)
+        return out
 
     def int_lobatto_exponential(self, k):
         ''' Returns the vector of \dint{-1}{1} ln(xi)e^{-ik xi} dxi'''

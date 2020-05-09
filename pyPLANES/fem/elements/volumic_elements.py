@@ -57,15 +57,14 @@ def fluid_elementary_matrices(elem):
 
     return vh, vq
 
-def elas_elem(coord_e, K_ref):
-
+def elas_elementary_matrices(elem):
+    coord_e = elem.get_coordinates()
+    K_ref = elem.reference_element
     n, m = K_ref.Phi.shape
-    vm = np.zeros((3*n, 3*n))
-    vk0 = np.zeros((3*n, 3*n))
-    vk1 = np.zeros((3*n, 3*n))
-    vc = np.zeros((3*n, n))
-    vh = np.zeros((n, n))
-    vq = np.zeros((n, n))
+    vm = np.zeros((2*n, 2*n))
+    vk0 = np.zeros((2*n, 2*n))
+    vk1 = np.zeros((2*n, 2*n))
+
 
     X1X2 = coord_e[:,1]- coord_e[:,0]
     e_x = X1X2/LA.norm(X1X2)
@@ -79,7 +78,7 @@ def elas_elem(coord_e, K_ref):
     Coord_e[0, 2] = X1X3.dot(e_x)
     Coord_e[1, 2] = X1X3.dot(e_y)
 
-    Coord_e = coord_e[0:2, :]
+    Coord_e = coord_e[0:2,:]
 
     for ipg in range(m):
         _Phi = K_ref.Phi[:,ipg].reshape((1, n))
@@ -88,13 +87,13 @@ def elas_elem(coord_e, K_ref):
         _weight = K_ref.w[ipg] * LA.det(J)
 
         Gd = LA.solve(J, _dPhi)
-        eps = np.zeros((3, 3*n))
+        eps = np.zeros((3, 2*n))
         eps[0, 0:n] = Gd[0, :] # eps_xx = \dpar{ux}{x}
         eps[1, n:2*n] = Gd[1, :] # eps_yy = \dpar{uy}{y}
         eps[2, 0:n] = Gd[1, :]
         eps[2, n:2*n] = Gd[0, :] # eps_yz = \dpar{uz}{y}+ \dpar{uy}{z}
 
-        Phi_u = np.zeros((2, 3*n))
+        Phi_u = np.zeros((2, 2*n))
         Phi_u[0, 0:n] = _Phi
         Phi_u[1, n:2*n] = _Phi
 
@@ -110,7 +109,6 @@ def elas_elem(coord_e, K_ref):
         vm += _weight*np.dot(Phi_u.T, Phi_u)
 
     return vm, vk0, vk1
-
 
 def pem98_elementary_matrices(elem):
 

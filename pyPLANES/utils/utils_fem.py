@@ -43,6 +43,20 @@ def dof_up_linear_system_to_condense(_elem):
     if _elem.typ == 2:
         return np.array(_elem.dofs[0][6]+_elem.dofs[1][6]+_elem.dofs[3][6])
 
+def dof_u_linear_system_master(_elem):
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5])
+
+def dof_u_linear_system_to_condense(_elem):
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[0][6]+_elem.dofs[1][6])
+
+def dof_u_linear_system(_elem):
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[0][6]+ _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+ _elem.dofs[1][6])
+
+
+
 def dof_up_linear_system(_elem):
     if _elem.typ == 2:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[0][6]+ _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+ _elem.dofs[1][6]+
@@ -62,6 +76,18 @@ def dof_u_element(_elem):
     dof = dof_ux + dof_uy
     orient = np.diag(orient_ux + orient_uy)
     return dof, orient, elem_dof
+
+def dof_ux_element(_elem):
+    dof_ux, orient_ux = dof_element(_elem, 0)
+    orient = np.diag(orient_ux)
+    return dof_ux, orient
+
+def dof_uy_element(_elem):
+    dof_uy, orient_uy = dof_element(_elem, 1)
+    orient = np.diag(orient_uy)
+    return dof_uy, orient
+
+
 
 def orient_element(_elem,f="p"):
     order = _elem.reference_element.order

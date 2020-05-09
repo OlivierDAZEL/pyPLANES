@@ -108,9 +108,12 @@ class Model():
         self.A_i.extend(list(AF[0].row))
         self.A_j.extend(list(AF[0].col))
         self.A_v.extend(list(AF[0].data))
+        # print("extend_A_F_from_coo")
+        # print(AF[1])
+        # print(AF[1].row)
         self.F_i.extend(list(AF[1].row))
         self.F_v.extend(list(AF[1].data))
-
+        # print("self.F_i={}".format(self.F_i))
 
     def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
         self.A_i.extend(_A_i)
@@ -121,6 +124,8 @@ class Model():
         self.T_v.extend(_T_v)
 
     def linear_system_2_numpy(self):
+        # print("linear_system_2_numpy")
+        # print("self.F_i={}".format(self.F_i))
         self.F_i = np.array(self.F_i)
         self.F_v = np.array(self.F_v, dtype=complex)
         self.A_i = np.array(self.A_i)
@@ -140,12 +145,13 @@ class Model():
         self.update_frequency(f)
         omega = 2*np.pi*f
         # Initialisation of the lists
-        self.F = csr_matrix((self.nb_dof_master,1),dtype=complex)
+        self.F = csr_matrix((self.nb_dof_master, 1), dtype=complex)
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.model_entities:
             if isinstance(_ent, (PwFem)):
                 self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
+                # print("F_create={}".format(self.F))
             else: # only the matrix Matrix + RHS
                 _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
                 self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
@@ -155,6 +161,8 @@ class Model():
 
     def apply_periodicity(self):
         A_i, A_j, A_v = [], [], []
+        # print("apply periodicity")
+        # print("self.F_i={}".format(self.F_i))
         if self.dof_left != []:
             for i_left, dof_left in enumerate(self.dof_left):
                 # Corresponding dof
@@ -215,8 +223,12 @@ class Model():
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
         F = np.zeros(self.nb_dof_master-1, dtype=complex)
-        for _i,f_i in enumerate(self.F_i):
+        print(self.F_i)
+        print(self.F_v)
+        for _i, f_i in enumerate(self.F_i):
             F[f_i-1] += self.F_v[_i]
+        # print(F)
+
         self.A_i, self.A_j, self.F_v, self.F_i, self.F_v = None, None, None, None, None
         # Resolution of the sparse linear system
         X = linsolve.spsolve(A, F)
@@ -224,6 +236,7 @@ class Model():
         X = np.insert(X, 0, 0)
         # Concatenation of the slave dofs at the end of the vector
         T = coo_matrix((self.T_v, (self.T_i, self.T_j)), shape=(self.nb_dof_condensed, self.nb_dof_master)).tocsr()
+        print(self.T_v)
         X = np.insert(T@X, 0, X)
         stop = timeit.default_timer()
         if self.verbose:
@@ -244,14 +257,19 @@ class Model():
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
-                _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
-                _ent.sol[0] -= 1
-                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
+                _ent.sol[:_ent.nb_R] -= _ent.Omega_0_orth
+                _ent.sol = _ent.eta_TM@_ent.sol
+                # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, IncidentTmPwFem):
-                _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
-                _ent.sol[0] -= 1
+                _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
+                _ent.sol[0] -= _ent.Omega_0[3]
+                _ent.sol[1] -= _ent.Omega_0[1]
+                _ent.sol = _ent.eta@_ent.sol
+                print("_ent.sol")
+                print(_ent.sol)
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
                 print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 self.abs -= np.abs(self.modulus_reflex)**2

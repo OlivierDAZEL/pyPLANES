@@ -27,7 +27,7 @@ import numpy as np
 import itertools
 
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem
+from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem
 # import sys
 # import itertools
 
@@ -107,7 +107,18 @@ def activate_dofs(self):
                         _f.dofs[1] = [1]*len(_f.dofs[1])
                         _f.dofs[2] = [1]*len(_f.dofs[2])
                         _f.dofs[3] = [1]*len(_f.dofs[3])
-
+            elif isinstance(_en, ElasticFem):
+                for _el in _en.elements:
+                    for _v in _el.vertices:
+                        _v.dofs[0:3] = [1, 1, 1]
+                    for _e in _el.edges:
+                        _e.dofs[0] = [1]*len(_e.dofs[0])
+                        _e.dofs[1] = [1]*len(_e.dofs[1])
+                        _e.dofs[2] = [1]*len(_e.dofs[2])
+                    for _f in _el.faces:
+                        _f.dofs[0] = [1]*len(_f.dofs[0])
+                        _f.dofs[1] = [1]*len(_f.dofs[1])
+                        _f.dofs[2] = [1]*len(_f.dofs[2])
 
 def desactivate_dofs_dimension(self):
     if self.dim < 3:
@@ -165,15 +176,19 @@ def renumber_dofs(self):
 
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
+        print(_el)
         if _el.typ ==1:
             for i_dim in range(4):
                 _el.dofs[i_dim] += [_v.dofs[i_dim] for _v in _el.vertices]
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]
+                print(_el.dofs)
         if _el.typ ==2:
             for i_dim in range(4):
                 _el.dofs[i_dim] += [_v.dofs[i_dim] for _v in _el.vertices]
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]
                 _el.dofs[i_dim] += [_f.dofs[i_dim] for _f in _el.faces]
+                # print(_el)
+                print(_el.dofs)
 
 def periodicity_initialisation(self):
     edges_left, edges_right = [], []
@@ -246,7 +261,7 @@ def check_model(self):
         if isinstance(_e, PwFem):
             for s in _e.neighbouring_surfaces:
                 if isinstance(s, PemFem):
-                   s.formulation98 = False
+                #    s.formulation98 = False
                    print(s.formulation98)
 
 def preprocess(self, p):
@@ -257,9 +272,9 @@ def preprocess(self, p):
     # Creation of edges and faces
     print("Checking the model")
     create_lists(self, p)
-    print("Activation of dofs")
+    print("Activation of dofs based on physical media")
     activate_dofs(self)
-    print("Desactivation of orders")
+    print("Desactivation of dofs (dimension & BC)")
     desactivate_dofs_dimension(self)
     desactivate_dofs_BC(self)
     print("Renumbering of dofs")
