@@ -179,19 +179,16 @@ def renumber_dofs(self):
 
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
-        print(_el)
         if _el.typ ==1:
             for i_dim in range(4):
                 _el.dofs[i_dim] += [_v.dofs[i_dim] for _v in _el.vertices]
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]
-                print(_el.dofs)
         if _el.typ ==2:
             for i_dim in range(4):
                 _el.dofs[i_dim] += [_v.dofs[i_dim] for _v in _el.vertices]
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]
                 _el.dofs[i_dim] += [_f.dofs[i_dim] for _f in _el.faces]
-                # print(_el)
-                print(_el.dofs)
+
 
 def periodicity_initialisation(self):
     edges_left, edges_right = [], []
@@ -269,22 +266,21 @@ def check_model(self, p):
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
             if hasattr(p, "incident_ml"):
-                pass
-            else:
-                for s in _e.neighbouring_surfaces:
-                    if isinstance(s, (Air, FluidFem)):
-                        _e.nb_R = 1
-                        _e.typ = "Fluid"
-                    elif (isinstance(s, ElasticFem)):
-                        _e.nb_R = 2
-                        _e.typ = "Elastic"
-                    elif isinstance(s, PemFem):
-                        if s.formulation98:
-                            _e.nb_R = 2
-                            _e.typ = "Biot98"
-                        else:
-                            _e.nb_R = 3
-                            _e.typ = "Biot01"
+                _e.ml = p.incident_ml
+            for s in _e.neighbouring_surfaces:
+                if isinstance(s, (Air, FluidFem)):
+                    _e.nb_R = 1
+                    _e.typ = "fluid"
+                elif (isinstance(s, ElasticFem)):
+                    _e.nb_R = 2
+                    _e.typ = "elastic"
+                elif isinstance(s, PemFem):
+                    if s.formulation98:
+                        _e.nb_R = 3
+                        _e.typ = "Biot98"
+                    else:
+                        _e.nb_R = 3
+                        _e.typ = "Biot01"
 
 
 

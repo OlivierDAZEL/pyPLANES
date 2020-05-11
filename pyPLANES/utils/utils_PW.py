@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 from pymls import Solver, Layer, backing
 from mediapack import Air, PEM, EqFluidJCA
 
-
 Air = Air()
 
 class Solver_PW():
@@ -39,12 +38,15 @@ class Solver_PW():
         self.layers = S.layers
         self.backing = S.backing
         if p.frequencies[2] > 0:
-                self.frequencies = np.linspace(p.frequencies[0],p.frequencies[1],p.frequencies[2])
+                self.frequencies = np.linspace(p.frequencies[0], p.frequencies[1], p.frequencies[2])
         elif p.frequencies[2]<0:
             self.frequencies = np.logspace(np.log10(p.frequencies[0]),np.log10(p.frequencies[1]),abs(p.frequencies[2]))
 
-
         self.kx, self.ky, self.k = None, None, None
+        if hasattr(p, "shift_pw"):
+            self.shift_plot = p.shift_pw
+        else:
+            self.shift_plot = 0.
         self.plot = p.plot
         self.result = {}
 
@@ -204,7 +206,6 @@ class Solver_PW():
         ieq += 1
         return ieq
 
-
     def interface_elastic_pem(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = elastic_SV(L[iinter].medium,self.kx, self.omega)
         SV_2, k_y_2 = PEM_SV(L[iinter+1].medium,self.kx)
@@ -265,16 +266,6 @@ class Solver_PW():
         M[ieq, d[iinter+1][5]] = SV_2[5, 5]*np.exp(-1j*k_y_2[2]*L[iinter+1].thickness)
         ieq += 1
         return ieq
-
-
-
-
-
-
-
-
-
-
 
     def interface_fluid_elastic(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = fluid_SV(self.kx, self.k, L[iinter].medium.K)
@@ -338,7 +329,6 @@ class Solver_PW():
         ieq += 1
         return ieq
 
-
     def interface_elastic_fluid(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = elastic_SV(L[iinter].medium,self.kx, self.omega)
         SV_2, k_y_2 = fluid_SV(self.kx, self.k, L[iinter+1].medium.K)
@@ -378,7 +368,6 @@ class Solver_PW():
         ieq += 1
         return ieq
 
-
     def interface_pem_rigid(self, M, ieq, L, d):
         SV, k_y = PEM_SV(L.medium, self.kx)
         M[ieq, d[0]] = SV[1, 0]*np.exp(-1j*k_y[0]*L.thickness)
@@ -405,7 +394,7 @@ class Solver_PW():
         return ieq
 
     def plot_sol_PW(self, X, dofs):
-        x_start = 0
+        x_start = self.shift_plot
         for _l, _layer in enumerate(self.layers):
             x_f = np.linspace(0, _layer.thickness)
             x_b = x_f-_layer.thickness
@@ -417,8 +406,9 @@ class Solver_PW():
                 ut += SV[0, 1]*np.exp( 1j*k_y*x_b)*X[dofs[_l][1]]
                 if self.plot[2]:
                     plt.figure(2)
-                    plt.plot(x_start+x_f, np.abs(pr),'r')
-                    plt.plot(x_start+x_f, np.imag(pr),'m')
+                    plt.plot(x_start+x_f, np.abs(pr), 'r')
+                    plt.plot(x_start+x_f, np.imag(pr), 'm')
+                    plt.title("Pressure")
                 # plt.figure(5)
                 # plt.plot(x_start+x_f,np.abs(ut),'b')
                 # plt.plot(x_start+x_f,np.imag(ut),'k')
@@ -438,14 +428,17 @@ class Solver_PW():
                     plt.figure(0)
                     plt.plot(x_start+x_f, np.abs(uy), 'r')
                     plt.plot(x_start+x_f, np.imag(uy), 'm')
+                    plt.title("Solid displacement along x")
                 if self.plot[1]:
                     plt.figure(1)
                     plt.plot(x_start+x_f, np.abs(ux), 'r')
                     plt.plot(x_start+x_f, np.imag(ux), 'm')
+                    plt.title("Solid displacement along y")
                 if self.plot[2]:
                     plt.figure(2)
                     plt.plot(x_start+x_f, np.abs(pr), 'r')
                     plt.plot(x_start+x_f, np.imag(pr), 'm')
+                    plt.title("Pressure")
             if _layer.medium.MODEL == "elastic":
                 SV, k_y = elastic_SV(_layer.medium, self.kx, self.omega)
                 ux, uy, pr, sig = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
@@ -462,22 +455,22 @@ class Solver_PW():
                     plt.figure(0)
                     plt.plot(x_start+x_f, np.abs(uy), 'r')
                     plt.plot(x_start+x_f, np.imag(uy), 'm')
-                    plt.title("u_y")
+                    plt.title("Solid displacement along x")
                 if self.plot[1]:
                     plt.figure(1)
                     plt.plot(x_start+x_f, np.abs(ux), 'r')
                     plt.plot(x_start+x_f, np.imag(ux), 'm')
-                    plt.title("u_x")
+                    plt.title("Solid displacement along y")
                 # if self.plot[2]:
                 #     plt.figure(2)
                 #     plt.plot(x_start+x_f, np.abs(pr), 'r')
                 #     plt.plot(x_start+x_f, np.imag(pr), 'm')
-                #     plt.title("pr")
+                #     plt.title("Sigma_yy")
                 # if self.plot[2]:
                 #     plt.figure(3)
                 #     plt.plot(x_start+x_f, np.abs(sig), 'r')
                 #     plt.plot(x_start+x_f, np.imag(sig), 'm')
-                #     plt.title("sig")
+                #     plt.title("Sigma_xy")
 
 
 

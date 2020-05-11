@@ -223,20 +223,19 @@ class Model():
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
         F = np.zeros(self.nb_dof_master-1, dtype=complex)
-        print(self.F_i)
-        print(self.F_v)
         for _i, f_i in enumerate(self.F_i):
             F[f_i-1] += self.F_v[_i]
         # print(F)
 
         self.A_i, self.A_j, self.F_v, self.F_i, self.F_v = None, None, None, None, None
         # Resolution of the sparse linear system
+        if self.verbose:
+            print("Resolution of the linear system")
         X = linsolve.spsolve(A, F)
         # Concatenation of the first (zero) dof at the begining of the vector
         X = np.insert(X, 0, 0)
         # Concatenation of the slave dofs at the end of the vector
         T = coo_matrix((self.T_v, (self.T_i, self.T_j)), shape=(self.nb_dof_condensed, self.nb_dof_master)).tocsr()
-        print(self.T_v)
         X = np.insert(T@X, 0, X)
         stop = timeit.default_timer()
         if self.verbose:

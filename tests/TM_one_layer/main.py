@@ -19,9 +19,12 @@ from pyPLANES.utils.utils_io import print_entities
 name_server = platform.node()
 
 param = ModelParameter()
-param.theta_d = 30.000000
+param.theta_d = 60.000000
 param.frequencies = (200., 5010., 1)
 param.name_project = "one_layer"
+
+pem = from_yaml('foam2.yaml')
+Wwood = from_yaml('Wwood.yaml')
 
 L = 0.01
 d = 0.1
@@ -50,6 +53,7 @@ matrice = G.new_surface([ll_0.tag])
 G.new_physical(l_2, "condition=Rigid Wall")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
+G.new_physical(matrice, "mat=Air")
 G.new_physical(matrice, "mat=foam2")
 # G.new_physical(matrice, "mat=Wwood")
 G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
@@ -57,19 +61,25 @@ G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 option = "-2 -v 0 "
 G.run_gmsh(option)
+
+param.incident_ml = [Layer(Wwood, d)]
+param.shift_pw = -d
+
 model = Model(param)
-print_entities(model)
 model.resolution(param)
 
-pem = from_yaml('foam2.yaml')
-Wwood = from_yaml('Wwood.yaml')
+
 
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
+    Layer(Wwood,d),
+    # Layer(Air,d),
     # Layer(Wwood, d),
     Layer(pem, d),
 ]
 param.solver_pymls.backing = backing.rigid
+
+
 
 
 # param.incident_ml =  [
@@ -84,15 +94,16 @@ param.S_PW.resolution(param.theta_d)
 
 
 
-c = np.sqrt((Wwood.lambda_+2*Wwood.mu)/Wwood.rho)
-omega = 2*np.pi*param.frequencies[0]
-k = omega/c
-Z_c = Wwood.rho*c
-Z_s = -1j*Z_c/np.tan(k*d)
+# omega = 2*np.pi*param.frequencies[0]
+# k = omega/Air.c
+# Z_s = -1j*Air.Z/np.tan(2*k*d)
+# R = (Z_s-Air.Z)/(Z_s+Air.Z)
+# print(R)
 
-R = (Z_s-Air.Z)/(Z_s+Air.Z)
-print(R)
-print((1+R)/(1j*omega*Z_s))
+# Z_s = -1j*Air.Z/np.tan(k*d)
+# R = (Z_s-Air.Z)/(Z_s+Air.Z)
+# print(R)
+
 
 if any(param.plot):
     plt.show()

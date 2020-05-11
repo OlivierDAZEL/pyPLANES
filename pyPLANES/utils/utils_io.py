@@ -115,6 +115,7 @@ def display_sol(self, p):
                         plt.figure(2)
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
+                        plt.title("Pressure")
                     if p.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))
@@ -130,14 +131,17 @@ def display_sol(self, p):
                         plt.figure(0)
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
                         plt.plot(y_elem, np.imag(ux_elem), 'm.')
+                        plt.title("Solid displacement along x")
                     if p.plot[1]:
                         plt.figure(1)
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
+                        plt.title("Solid displacement along y")
                     if p.plot[2]:
                         plt.figure(2)
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
+                        plt.title("Pressure")
                     if p.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))
@@ -152,14 +156,12 @@ def display_sol(self, p):
                         plt.figure(0)
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
                         plt.plot(y_elem, np.imag(ux_elem), 'm.')
+                        plt.title("Solid displacement along x")
                     if p.plot[1]:
                         plt.figure(1)
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
-                    if p.plot[5]:
-                        x.extend(list(x_elem))
-                        y.extend(list(y_elem))
-                        pr.extend(list(p_elem))
+                        plt.title("Solid displacement along y")
     if any(p.plot[3:]):
         triang = mtri.Triangulation(x, y)
         if p.plot[5]:
