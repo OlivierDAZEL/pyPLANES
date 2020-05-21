@@ -46,7 +46,6 @@ from pyPLANES.utils.utils_io import initialisation_out_files, write_out_files, d
 
 class Model():
     def __init__(self, p):
-        self.verbose = p.verbose
         self.name_project = p.name_project
         self.dim = 2
         self.theta_d = p.theta_d
@@ -69,6 +68,12 @@ class Model():
             self.materials_directory = p.materials_directory
         else:
             self.materials_directory = ""
+        self.name_server = platform.node()
+        if self.name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
+            self.verbose = True
+        else:
+            self.verbose = False
+
         load_msh_file(self, p)
         initialisation_out_files(self, p)
         preprocess(self, p)
@@ -152,12 +157,11 @@ class Model():
             if isinstance(_ent, (PwFem)):
                 self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
                 # print("F_create={}".format(self.F))
-            else: # only the matrix Matrix + RHS
+            else: 
                 _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
                 self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
         self.linear_system_2_numpy()
         self.apply_periodicity()
-
 
     def apply_periodicity(self):
         A_i, A_j, A_v = [], [], []
@@ -201,7 +205,7 @@ class Model():
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:
             self.create_linear_system(f)
-            self.solve()
+            out = self.solve()
             write_out_files(self)
             # if self.verbose:
                 # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
@@ -210,12 +214,16 @@ class Model():
                 display_sol(self, p)
         self.outfile.close()
         self.resfile.close()
-        name_server = platform.node()
-        mail = " mailx -s \"Calculation of pyPLANES over on \"" + name_server + " olivier.dazel@univ-lemans.fr < " + self.resfile_name
-        if name_server == "il-calc1":
+
+        if self.name_server == "il-calc1":
+            mail = " mailx -s \"Calculation of pyPLANES over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.resfile_name
             os.system(mail)
 
+        return out
+
+
     def solve(self):
+        out = dict()
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
 
         start = timeit.default_timer()
@@ -260,15 +268,19 @@ class Model():
                 _ent.sol[:_ent.nb_R] -= _ent.Omega_0_orth
                 _ent.sol = _ent.eta_TM@_ent.sol
                 # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
-                print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
-                self.abs -= np.abs(self.modulus_reflex)**2
+                out["R"] = _ent.sol[0]
+                # print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
+                # self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
-                _ent.sol = _ent.phi.H .dot(X[:self.nb_dof_master])/_ent.period
-                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
-                self.abs -= self.modulus_trans**2
+                _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
+                _ent.sol = _ent.eta_TM@_ent.sol
+                # print("T pyPLANES_FEM   = {}".format((_ent.sol[0])))
+                out["T"] = _ent.sol[0]
+                #  self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
+                # self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
 
-
+        return out
 
 
 

@@ -22,14 +22,13 @@
 # copies or substantial portions of the Software.
 #
 
-
-import numpy as np
 import itertools
+import numpy as np
 
 from mediapack import Air
 
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem
+from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem
 
 # import sys
 # import itertools
@@ -189,7 +188,6 @@ def affect_dofs_to_elements(self):
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]
                 _el.dofs[i_dim] += [_f.dofs[i_dim] for _f in _el.faces]
 
-
 def periodicity_initialisation(self):
     edges_left, edges_right = [], []
     for _en in self.model_entities:
@@ -224,7 +222,6 @@ def periodicity_initialisation(self):
     _nz = np.where(_!=0)[0].tolist()
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
-
 
 def init_vec_frequencies(frequency):
     if frequency[2] > 0:
@@ -265,8 +262,6 @@ def check_model(self, p):
 
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
-            if hasattr(p, "incident_ml"):
-                _e.ml = p.incident_ml
             for s in _e.neighbouring_surfaces:
                 if isinstance(s, (Air, FluidFem)):
                     _e.nb_R = 1
@@ -281,6 +276,13 @@ def check_model(self, p):
                     else:
                         _e.nb_R = 3
                         _e.typ = "Biot01"
+            if isinstance(_e, IncidentPwFem):
+                if hasattr(p, "incident_ml"):
+                    _e.ml = p.incident_ml
+            if isinstance(_e, TransmissionPwFem):
+                if hasattr(p, "transmission_ml"):
+                    _e.ml = p.transmission_ml
+
 
 
 

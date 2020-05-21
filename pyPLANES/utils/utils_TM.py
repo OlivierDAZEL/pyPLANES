@@ -45,8 +45,9 @@ def convert_Omega(Om_m, typ_minus, typ_plus):
                 M = np.array([[Om_m[0, 1], Om_m[0, 2]], [Om_m[3, 1], Om_m[3, 2]]])
                 F = np.array([Om_m[0, 0], Om_m[3, 0]])
                 X = LA.solve(M, F)
-                Om_plus[0,0] = Om_m[2, 0]-x[0]*Om_m[2, 1]-x[1]*Om_m[2, 2]
-                Om_plus[1,0] = Om_m[4, 0]-x[0]*Om_m[4, 1]-x[1]*Om_m[4, 2]
+                # print(Om_m[0,0]-x[0]*Om_m[0, 1]-x[1]*Om_m[0, 2])
+                Om_plus[0, 0] = Om_m[2, 0]-x[0]*Om_m[2, 1]-x[1]*Om_m[2, 2]
+                Om_plus[1, 0] = Om_m[4, 0]-x[0]*Om_m[4, 1]-x[1]*Om_m[4, 2]
             elif typ_plus == "elastic":
                 Om_plus = np.zeros((4,2), dtype=complex)
                 # We have to impose that u_y^s = u_y^t
@@ -57,6 +58,7 @@ def convert_Omega(Om_m, typ_minus, typ_plus):
                     if abs(c_1) == 0:
                         raise ValueError("c_1 and c_2 are both zero")
                     else:
+                        print("swapping c_& and c_2")
                         c_1, c_2 = c_2, c_1
                         Om_m[:, [1, 2]]= Om_m[:, [2, 1]]
                 Om_plus[0, 0] = Om_m[0, 0] - (c_R/c_2)*Om_m[0, 2]
@@ -95,33 +97,91 @@ def convert_Omega(Om_m, typ_minus, typ_plus):
                 Om_plus[3, :] = [0, 1]
     return Om_plus
 
-
 def TM_fluid(layer, kx, om):
+    h = layer.thickness
     rho = layer.medium.rho
     K = layer.medium.K
+    k = om*np.sqrt(rho/K)
+    ky = np.sqrt(k**2-kx**2)
 
-    alpha = np.zeros((2,2), dtype=complex)
-    alpha[0,1] = kx**2/(rho*om**2)-1/K
-    alpha[1,0] = rho*om**2
-    return expm(layer.thickness*alpha)
+    T = np.zeros((2, 2), dtype=complex)
+    T[0, 0] = np.cos(ky*h)
+    T[1, 0] = (om**2*rho/ky)*np.sin(ky*h)
+    T[0, 1] = -(ky/(om**2*rho))*np.sin(ky*h)
+    T[1, 1] = np.cos(ky*h)
+
+    # alpha = np.zeros((2, 2), dtype=complex)
+    # alpha[0, 1] = (kx**2/(rho*om**2))-1/K
+    # alpha[1, 0] = rho*om**2
+
+    # print(expm(alpha*h))
+
+    # print(T)
+    return T
 
 def TM_elastic(layer, kx, om):
     rho = layer.medium.rho
     lam = layer.medium.lambda_
     mu = layer.medium.mu
+    d = layer.thickness
 
-    alpha = np.zeros((4,4), dtype=complex)
-    alpha[0, 2] = 1j*kx*lam/(lam+2*mu)
-    alpha[0, 3] = -((lam**2-(lam+2*mu)**2)*kx**2/(lam+2*mu))-rho*om**2
-    alpha[1, 2] = 1/(lam+2*mu)
-    alpha[1, 3] = 1j*kx*lam/(lam+2*mu)
-    alpha[2, 0] = 1j*kx
-    alpha[2, 1] = -rho*om**2
-    alpha[3, 0] = 1/mu
-    alpha[3, 1] = 1j*kx
-    return expm(layer.thickness*alpha)
+    # alpha = np.zeros((4, 4), dtype=complex)
+    # alpha[0, 2] = 1j*kx*lam/(lam+2*mu)
+    # alpha[0, 3] = -((lam**2-(lam+2*mu)**2)*kx**2/(lam+2*mu))-rho*om**2
+    # alpha[1, 2] = 1/(lam+2*mu)
+    # alpha[1, 3] = 1j*kx*lam/(lam+2*mu)
+    # alpha[2, 0] = 1j*kx
+    # alpha[2, 1] = -rho*om**2
+    # alpha[3, 0] = 1/mu
+    # alpha[3, 1] = 1j*kx
+    # T_0 = expm(layer.thickness*alpha)
 
-def weak_orth_terms(om, kx, ky, Omega,layers, typ_end):
+    P_mat = lam + 2*mu
+    delta_p = om*np.sqrt(rho/P_mat)
+    delta_s = om*np.sqrt(rho/mu)
+
+    beta_p = np.sqrt(delta_p**2-kx**2)
+    beta_s = np.sqrt(delta_s**2-kx**2)
+
+    alpha_p = -1j*lam*delta_p**2 - 2j*mu*beta_p**2
+    alpha_s = 2j*mu*beta_s*kx
+
+    Phi_0 = np.zeros((4, 4), dtype=np.complex)
+    Phi_0[0,0] = -2j*mu*beta_p*kx
+    Phi_0[0,1] = 2j*mu*beta_p*kx
+    Phi_0[0,2] = 1j*mu*(beta_s**2-kx**2)
+    Phi_0[0,3] = 1j*mu*(beta_s**2-kx**2)
+
+    Phi_0[1,0] = beta_p
+    Phi_0[1,1] = -beta_p
+    Phi_0[1,2] = kx
+    Phi_0[1,3] = kx
+
+    Phi_0[2,0] = alpha_p
+    Phi_0[2,1] = alpha_p
+    Phi_0[2,2] = -alpha_s
+    Phi_0[2,3] = alpha_s
+
+    Phi_0[3,0] = kx
+    Phi_0[3,1] = kx
+    Phi_0[3,2] = -beta_s
+    Phi_0[3,3] = beta_s
+
+    V_0 = np.diag([
+        np.exp(-1j*beta_p*d),
+        np.exp(1j*beta_p*d),
+        np.exp(-1j*beta_s*d),
+        np.exp(1j*beta_s*d)
+    ])
+
+    T = Phi_0@V_0@LA.inv(Phi_0)
+
+
+
+
+    return T
+
+def weak_orth_terms(om, kx, Omega, layers, typ_end):
     # fluid {0:u_y , 1:p}
     # elastic {0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
     # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
@@ -130,7 +190,10 @@ def weak_orth_terms(om, kx, ky, Omega,layers, typ_end):
         for _l in layers:
             Omega = convert_Omega(Omega, typ, _l.medium.MEDIUM_TYPE)
             if _l.medium.MEDIUM_TYPE == "fluid":
+                print(Omega)
+                print(_l.thickness)
                 Omega = TM_fluid(_l, kx, om)@Omega
+                print(Omega)
             elif _l.medium.MEDIUM_TYPE == "elastic":
                 Omega = TM_elastic(_l, kx, om)@Omega
         Omega = convert_Omega(Omega, layers[-1].medium.MEDIUM_TYPE, typ_end)

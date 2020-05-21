@@ -61,10 +61,12 @@ class Solver_PW():
 
     def resolution(self, theta_d):
         for f in self.frequencies:
-            R, T = self.solve(f, theta_d)
-            print("R pyPLANES_PW    = {}".format((R)))
-
+            out = self.solve(f, theta_d)
+            # print("R pyPLANES_PW    = {}".format((R)))
+            # print("T pyPLANES_PW    = {}".format((T)))
+        return out
     def solve(self, f, theta_d):
+        out = dict()
         self.update_frequency(f, theta_d)
         Layers = self.layers.copy()
         Layers.insert(0, Layer(Air, 0.1))
@@ -120,7 +122,9 @@ class Solver_PW():
             dofs[i] -= 2
         if self.plot:
             self.plot_sol_PW(X, dofs)
-        return R_pyPLANES_PW, T_pyPLANES_PW
+        out["R"] = R_pyPLANES_PW
+        out["T"] = T_pyPLANES_PW
+        return out
 
     def interface_fluid_fluid(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = fluid_SV(self.kx, self.k, L[iinter].medium.K)
@@ -267,9 +271,76 @@ class Solver_PW():
         ieq += 1
         return ieq
 
+    def interface_pem_elastic(self, ieq, iinter, L, d, M):
+        SV_1, k_y_1 = PEM_SV(L[iinter].medium,self.kx)
+        SV_2, k_y_2 = elastic_SV(L[iinter+1].medium,self.kx, self.omega)
+        # print(k_y_2)
+        M[ieq, d[iinter+0][0]] = SV_1[0, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+        M[ieq, d[iinter+0][1]] = SV_1[0, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+        M[ieq, d[iinter+0][2]] = SV_1[0, 2]*np.exp(-1j*k_y_1[2]*L[iinter].thickness)
+        M[ieq, d[iinter+0][3]] = SV_1[0, 3]
+        M[ieq, d[iinter+0][4]] = SV_1[0, 4]
+        M[ieq, d[iinter+0][5]] = SV_1[0, 5]
+        M[ieq, d[iinter+1][0]] = -SV_2[0, 0]
+        M[ieq, d[iinter+1][1]] = -SV_2[0, 1]
+        M[ieq, d[iinter+1][2]] = -SV_2[0, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
+        M[ieq, d[iinter+1][3]] = -SV_2[0, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
+
+        ieq += 1
+        M[ieq, d[iinter+0][0]] = SV_1[1, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+        M[ieq, d[iinter+0][1]] = SV_1[1, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+        M[ieq, d[iinter+0][2]] = SV_1[1, 2]*np.exp(-1j*k_y_1[2]*L[iinter].thickness)
+        M[ieq, d[iinter+0][3]] = SV_1[1, 3]
+        M[ieq, d[iinter+0][4]] = SV_1[1, 4]
+        M[ieq, d[iinter+0][5]] = SV_1[1, 5]
+        M[ieq, d[iinter+1][0]] = -SV_2[1, 0]
+        M[ieq, d[iinter+1][1]] = -SV_2[1, 1]
+        M[ieq, d[iinter+1][2]] = -SV_2[1, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
+        M[ieq, d[iinter+1][3]] = -SV_2[1, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
+
+        ieq += 1
+        M[ieq, d[iinter+0][0]] = SV_1[2, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+        M[ieq, d[iinter+0][1]] = SV_1[2, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+        M[ieq, d[iinter+0][2]] = SV_1[2, 2]*np.exp(-1j*k_y_1[2]*L[iinter].thickness)
+        M[ieq, d[iinter+0][3]] = SV_1[2, 3]
+        M[ieq, d[iinter+0][4]] = SV_1[2, 4]
+        M[ieq, d[iinter+0][5]] = SV_1[2, 5]
+        M[ieq, d[iinter+1][0]] = -SV_2[1, 0]
+        M[ieq, d[iinter+1][1]] = -SV_2[1, 1]
+        M[ieq, d[iinter+1][2]] = -SV_2[1, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
+        M[ieq, d[iinter+1][3]] = -SV_2[1, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
+
+        ieq += 1
+        M[ieq, d[iinter+0][0]] = (SV_1[3, 0]-SV_1[4, 0])*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+        M[ieq, d[iinter+0][1]] = (SV_1[3, 1]-SV_1[4, 1])*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+        M[ieq, d[iinter+0][2]] = (SV_1[3, 2]-SV_1[4, 2])*np.exp(-1j*k_y_1[2]*L[iinter].thickness)
+        M[ieq, d[iinter+0][3]] = (SV_1[3, 3]-SV_1[4, 3])
+        M[ieq, d[iinter+0][4]] = (SV_1[3, 4]-SV_1[4, 4])
+        M[ieq, d[iinter+0][5]] = (SV_1[3, 5]-SV_1[4, 5])
+        M[ieq, d[iinter+1][0]] = -SV_2[2, 0]
+        M[ieq, d[iinter+1][1]] = -SV_2[2, 1]
+        M[ieq, d[iinter+1][2]] = -SV_2[2, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
+        M[ieq, d[iinter+1][3]] = -SV_2[2, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
+
+        ieq += 1
+        M[ieq, d[iinter+0][0]] = SV_1[5, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+        M[ieq, d[iinter+0][1]] = SV_1[5, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+        M[ieq, d[iinter+0][2]] = SV_1[5, 2]*np.exp(-1j*k_y_1[2]*L[iinter].thickness)
+        M[ieq, d[iinter+0][3]] = SV_1[5, 3]
+        M[ieq, d[iinter+0][4]] = SV_1[5, 4]
+        M[ieq, d[iinter+0][5]] = SV_1[5, 5]
+        M[ieq, d[iinter+1][0]] = -SV_2[3, 0]
+        M[ieq, d[iinter+1][1]] = -SV_2[3, 1]
+        M[ieq, d[iinter+1][2]] = -SV_2[3, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
+        M[ieq, d[iinter+1][3]] = -SV_2[3, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
+        ieq += 1
+        return ieq
+
+
     def interface_fluid_elastic(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = fluid_SV(self.kx, self.k, L[iinter].medium.K)
-        SV_2, k_y_2 = elastic_SV(L[iinter+1].medium,self.kx, self.omega)
+        SV_2, k_y_2 = elastic_SV(L[iinter+1].medium, self.kx, self.omega)
+        # Continuity of u_y
         M[ieq, d[iinter+0][0]] =  SV_1[0, 0]*np.exp(-1j*k_y_1*L[iinter].thickness)
         M[ieq, d[iinter+0][1]] =  SV_1[0, 1]
         M[ieq, d[iinter+1][0]] = -SV_2[1, 0]
@@ -277,6 +348,7 @@ class Solver_PW():
         M[ieq, d[iinter+1][2]] = -SV_2[1, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
         M[ieq, d[iinter+1][3]] = -SV_2[1, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
         ieq += 1
+        # sigma_yy = -p
         M[ieq, d[iinter+0][0]] = SV_1[1, 0]*np.exp(-1j*k_y_1*L[iinter].thickness)
         M[ieq, d[iinter+0][1]] = SV_1[1, 1]
         M[ieq, d[iinter+1][0]] = SV_2[2, 0]
@@ -284,6 +356,7 @@ class Solver_PW():
         M[ieq, d[iinter+1][2]] = SV_2[2, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
         M[ieq, d[iinter+1][3]] = SV_2[2, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
         ieq += 1
+        # sigma_xy = 0
         M[ieq, d[iinter+1][0]] = SV_2[0, 0]
         M[ieq, d[iinter+1][1]] = SV_2[0, 1]
         M[ieq, d[iinter+1][2]] = SV_2[0, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
@@ -330,16 +403,17 @@ class Solver_PW():
         return ieq
 
     def interface_elastic_fluid(self, ieq, iinter, L, d, M):
-        SV_1, k_y_1 = elastic_SV(L[iinter].medium,self.kx, self.omega)
+        SV_1, k_y_1 = elastic_SV(L[iinter].medium, self.kx, self.omega)
         SV_2, k_y_2 = fluid_SV(self.kx, self.k, L[iinter+1].medium.K)
-        # print(k_y_2)
-        M[ieq, d[iinter+0][0]] = -SV_1[3, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
-        M[ieq, d[iinter+0][1]] = -SV_1[3, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
-        M[ieq, d[iinter+0][2]] = -SV_1[3, 2]
-        M[ieq, d[iinter+0][3]] = -SV_1[3, 3]
+        # Continuity of u_y
+        M[ieq, d[iinter+0][0]] = -SV_1[1, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+        M[ieq, d[iinter+0][1]] = -SV_1[1, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+        M[ieq, d[iinter+0][2]] = -SV_1[1, 2]
+        M[ieq, d[iinter+0][3]] = -SV_1[1, 3]
         M[ieq, d[iinter+1][0]] = SV_2[0, 0]
         M[ieq, d[iinter+1][1]] = SV_2[0, 1]*np.exp(-1j*k_y_2*L[iinter+1].thickness)
         ieq += 1
+        # sigma_yy = -p
         M[ieq, d[iinter+0][0]] = SV_1[2, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
         M[ieq, d[iinter+0][1]] = SV_1[2, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
         M[ieq, d[iinter+0][2]] = SV_1[2, 2]
@@ -347,6 +421,7 @@ class Solver_PW():
         M[ieq, d[iinter+1][0]] = SV_2[1, 0]
         M[ieq, d[iinter+1][1]] = SV_2[1, 1]*np.exp(-1j*k_y_2*L[iinter+1].thickness)
         ieq += 1
+        # sigma_xy = 0
         M[ieq, d[iinter+0][0]] = SV_1[0, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
         M[ieq, d[iinter+0][1]] = SV_1[0, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
         M[ieq, d[iinter+0][2]] = SV_1[0, 2]
@@ -396,13 +471,13 @@ class Solver_PW():
     def plot_sol_PW(self, X, dofs):
         x_start = self.shift_plot
         for _l, _layer in enumerate(self.layers):
-            x_f = np.linspace(0, _layer.thickness)
+            x_f = np.linspace(0, _layer.thickness,200)
             x_b = x_f-_layer.thickness
             if _layer.medium.MODEL == "fluid":
                 SV, k_y = fluid_SV(self.kx, self.k, _layer.medium.K)
-                pr =  SV[1, 0]*np.exp(-1j*k_y*x_f)*X[dofs[_l][0]]
+                pr = SV[1, 0]*np.exp(-1j*k_y*x_f)*X[dofs[_l][0]]
                 pr += SV[1, 1]*np.exp( 1j*k_y*x_b)*X[dofs[_l][1]]
-                ut =  SV[0, 0]*np.exp(-1j*k_y*x_f)*X[dofs[_l][0]]
+                ut = SV[0, 0]*np.exp(-1j*k_y*x_f)*X[dofs[_l][0]]
                 ut += SV[0, 1]*np.exp( 1j*k_y*x_b)*X[dofs[_l][1]]
                 if self.plot[2]:
                     plt.figure(2)
@@ -477,9 +552,8 @@ class Solver_PW():
 
             x_start += _layer.thickness
 
-
 def PEM_SV(mat,ky):
-    ''' S={0:\hat{\sigma}_{xy}, 1:u_x^s, 2:u_x^t, 3:\hat{\sigma}_{xx}, 4:p, 5:u_y^s}'''
+    ''' S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
     kx_1 = np.sqrt(mat.delta_1**2-ky**2)
     kx_2 = np.sqrt(mat.delta_2**2-ky**2)
     kx_3 = np.sqrt(mat.delta_3**2-ky**2)
@@ -502,11 +576,10 @@ def PEM_SV(mat,ky):
     SV[0:6, 5] = np.array([1j*mat.N*(kx[2]**2-ky**2), ky, mat.mu_3*ky, -alpha_3, 0., kx[2]])
     return SV, kx
 
-
 def elastic_SV(mat,ky, omega):
-    ''' S={0:\sigma_{xy}, 1: u_x, 2 \sigma_{xx}, 3 u_y}'''
+    ''' S={0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
 
-    P_mat = mat.lambda_ + 2*mat.mu
+    P_mat = mat.lambda_ + 2.*mat.mu
     delta_p = omega*np.sqrt(mat.rho/P_mat)
     delta_s = omega*np.sqrt(mat.rho/mat.mu)
 
@@ -516,21 +589,21 @@ def elastic_SV(mat,ky, omega):
     kx = np.array([kx_p, kx_s])
 
     alpha_p = -1j*mat.lambda_*delta_p**2 - 2j*mat.mu*kx[0]**2
-    alpha_s = -2j*mat.mu*kx[1]*ky
+    alpha_s = 2j*mat.mu*kx[1]*ky
 
-    SV = np.zeros((4,4), dtype=np.complex)
-    SV[0:4, 0] = np.array([-2*1j*mat.mu*kx[0]*ky,  kx[0], alpha_p, ky])
-    SV[0:4, 2] = np.array([ 2*1j*mat.mu*kx[0]*ky, -kx[0], alpha_p, ky])
+    SV = np.zeros((4, 4), dtype=np.complex)
+    SV[0:4, 0] = np.array([-2.*1j*mat.mu*kx[0]*ky,  kx[0], alpha_p, ky])
+    SV[0:4, 2] = np.array([ 2.*1j*mat.mu*kx[0]*ky, -kx[0], alpha_p, ky])
 
-    SV[0:4, 1] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky, alpha_s, -kx[1]])
-    SV[0:4, 3] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky, -alpha_s, kx[1]])
+    SV[0:4, 1] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky,-alpha_s, -kx[1]])
+    SV[0:4, 3] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky, alpha_s, kx[1]])
 
     return SV, kx
 
 def fluid_SV(kx, k, K):
     ''' S={0:u_y , 1:p}'''
     ky = np.sqrt(k**2-kx**2)
-    SV = np.zeros((2,2), dtype=complex)
+    SV = np.zeros((2, 2), dtype=complex)
     SV[0, 0:2] = np.array([ky/(1j*K*k**2), -ky/(1j*K*k**2)])
     SV[1, 0:2] = np.array([1, 1])
     return SV, ky

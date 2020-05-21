@@ -101,7 +101,7 @@ def entities(self, f, p):
                     _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"] == "Transmission":
-                    _ = TransmissionTmPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
+                    _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"] == "Rigid Wall" :
                     _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
