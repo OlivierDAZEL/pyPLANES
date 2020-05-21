@@ -16,7 +16,6 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 from pyPLANES.utils.utils_io import print_entities
 
-
 param = ModelParameter()
 param.theta_d = 60.0000001
 param.frequencies = (300., 5010., 1)
@@ -59,7 +58,7 @@ option = "-2 -v 0 "
 G.run_gmsh(option)
 
 param.incident_ml = [Layer(Wwood, d)] ; param.shift_pw = -param.incident_ml[0].thickness
-param.transmission_ml = [Layer(Air, d)]
+param.transmission_ml = [Layer(Wwood, d)]
 
 
 model = Model(param)
@@ -70,9 +69,9 @@ param.solver_pymls.layers = [
     Layer(Wwood, d),
     # Layer(Air,d),#,Layer(Air,d)
     Layer(pem, d),
-    Layer(Air,d)
+    # Layer(Air,d)
     # Layer(pem, d),
-    # Layer(Wwood,d),
+    Layer(Wwood,d),
     # Layer(Wwood,d/10),
 ]
 

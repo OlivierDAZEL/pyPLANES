@@ -190,10 +190,7 @@ def weak_orth_terms(om, kx, Omega, layers, typ_end):
         for _l in layers:
             Omega = convert_Omega(Omega, typ, _l.medium.MEDIUM_TYPE)
             if _l.medium.MEDIUM_TYPE == "fluid":
-                print(Omega)
-                print(_l.thickness)
                 Omega = TM_fluid(_l, kx, om)@Omega
-                print(Omega)
             elif _l.medium.MEDIUM_TYPE == "elastic":
                 Omega = TM_elastic(_l, kx, om)@Omega
         Omega = convert_Omega(Omega, layers[-1].medium.MEDIUM_TYPE, typ_end)

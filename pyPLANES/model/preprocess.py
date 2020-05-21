@@ -282,11 +282,9 @@ def check_model(self, p):
             if isinstance(_e, TransmissionPwFem):
                 if hasattr(p, "transmission_ml"):
                     _e.ml = p.transmission_ml
-
-
-
-
-
+                    # Thickness of transmission layers is set negative
+                    for _l in _e.ml:
+                        _l.thickness *= -1
 
 
 def preprocess(self, p):

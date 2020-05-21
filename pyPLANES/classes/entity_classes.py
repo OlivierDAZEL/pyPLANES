@@ -360,7 +360,7 @@ class PwFem(FemEntity):
         k_air = omega/Air.c
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
         nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5)
-        nb_bloch_waves = 0
+        # nb_bloch_waves = 0
         print("nb_bloch_waves ={}".format(nb_bloch_waves))
         _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
         self.nb_waves = 1+2*nb_bloch_waves
@@ -486,8 +486,6 @@ class TransmissionPwFem(PwFem):
     def get_tau_eta(self, kx, ky, om):
         # State vector S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}^t, 4:p, 5:u_x^s}'''
         Omega = np.array([-1j*ky/(Air.rho*om**2), 1]).reshape((2,1))
-        print(self.ml)
-        print(self.typ)
         Omega_l_weak, Omega_l_orth = weak_orth_terms(om, kx, Omega, self.ml, self.typ)
 
         eta_l = LA.inv(Omega_l_orth)
