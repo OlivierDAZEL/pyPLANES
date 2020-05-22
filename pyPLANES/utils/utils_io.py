@@ -64,14 +64,14 @@ def initialisation_out_files(self, p):
         self.resfile.write("|T| [no unity]\n")
 
 def write_out_files(self):
-
     self.outfile.write("{:.12e}\t".format(self.current_frequency))
-    if [isinstance(_ent, (IncidentPwFem, TransmissionPwFem)) for _ent in self.model_entities]:
+    if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
         self.outfile.write("{:.12e}\t".format(self.abs))
-    if [isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]:
+    if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
         self.outfile.write("{:.12e}\t".format(self.modulus_reflex))
-    if [isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]:
-        self.outfile.write("{:.12e}\t".format(self.modulus_reflex))
+    print(any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]))
+    if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
+        self.outfile.write("{:.12e}\t".format(self.modulus_trans))
     self.outfile.write("\n")
 
 def print_entities(self):

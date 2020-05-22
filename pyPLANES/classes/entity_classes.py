@@ -367,10 +367,10 @@ class PwFem(FemEntity):
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
-        # self.dofs = np.arange(1+2*nb_bloch_waves)
-        # self.nb_dofs = 1+2*nb_bloch_waves
         self.dofs = np.arange(self.nb_R*(1+2*nb_bloch_waves))
         self.nb_dofs = self.nb_R*(1+2*nb_bloch_waves)
+        self.A_i, self.A_j, self.A_v = [], [], []
+        self.F_i, self.F_v = [], []
 
     def apply_periodicity(self, nb_dof_m, dof_left, dof_right, delta):
         for i_left, _dof_left in enumerate(dof_left):
@@ -464,7 +464,6 @@ class IncidentPwFem(PwFem):
 
         _ = phi.tocoo()
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
-
         return A_TM*self.ny, F_TM*self.ny
 
 class TransmissionPwFem(PwFem):

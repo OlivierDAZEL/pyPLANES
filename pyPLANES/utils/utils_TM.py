@@ -22,7 +22,6 @@
 # copies or substantial portions of the Software.
 #
 
-
 import numpy as np
 import numpy.linalg as LA
 from scipy.linalg import expm

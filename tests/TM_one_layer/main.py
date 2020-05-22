@@ -60,7 +60,6 @@ G.run_gmsh(option)
 param.incident_ml = [Layer(pem, d)] ; param.shift_pw = -param.incident_ml[0].thickness
 param.transmission_ml = [Layer(pem, d)]
 
-
 model = Model(param)
 result_pyPLANES = model.resolution(param)
 

@@ -79,6 +79,10 @@ class Model():
         preprocess(self, p)
 
     def update_frequency(self, f):
+        self.F_i, self.F_v = [], []
+        self.A_i, self.A_j, self.A_v = [], [], []
+        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
+        self.T_i, self.T_j, self.T_v = [], [], []
         self.current_frequency = f
         omega = 2*np.pi*f
         self.kx = (omega/Air.c)*np.sin(self.theta_d*np.pi/180)
@@ -157,7 +161,7 @@ class Model():
             if isinstance(_ent, (PwFem)):
                 self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
                 # print("F_create={}".format(self.F))
-            else: 
+            else:
                 _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
                 self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
         self.linear_system_2_numpy()
@@ -267,17 +271,17 @@ class Model():
                 _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
                 _ent.sol[:_ent.nb_R] -= _ent.Omega_0_orth
                 _ent.sol = _ent.eta_TM@_ent.sol
-                # self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol**2)/np.real(self.ky)))
+                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R]**2)/np.real(self.ky)))
                 out["R"] = _ent.sol[0]
                 # print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
-                # self.abs -= np.abs(self.modulus_reflex)**2
+                self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
                 _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
                 _ent.sol = _ent.eta_TM@_ent.sol
                 # print("T pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 out["T"] = _ent.sol[0]
-                #  self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol)**2/np.real(self.ky)))
-                # self.abs -= self.modulus_trans**2
+                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R])**2/np.real(self.ky)))
+                self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
 
         return out
