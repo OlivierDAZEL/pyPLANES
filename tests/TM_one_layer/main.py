@@ -57,8 +57,8 @@ G.new_periodicity(l_1, l_3, (L, 0, 0))
 option = "-2 -v 0 "
 G.run_gmsh(option)
 
-param.incident_ml = [Layer(Wwood, d)] ; param.shift_pw = -param.incident_ml[0].thickness
-param.transmission_ml = [Layer(Wwood, d)]
+param.incident_ml = [Layer(pem, d)] ; param.shift_pw = -param.incident_ml[0].thickness
+param.transmission_ml = [Layer(pem, d)]
 
 
 model = Model(param)
@@ -66,12 +66,12 @@ result_pyPLANES = model.resolution(param)
 
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(Wwood, d),
+    Layer(pem, d),
     # Layer(Air,d),#,Layer(Air,d)
     Layer(pem, d),
     # Layer(Air,d)
-    # Layer(pem, d),
-    Layer(Wwood,d),
+    Layer(pem, d),
+    # Layer(Wwood,d),
     # Layer(Wwood,d/10),
 ]
 
@@ -88,16 +88,6 @@ result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
 print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
 print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
 # print("result_pymls  T  = {}".format(result_pymls["T"][0]))
-
-# rho = param.solver_pymls.layers[0].medium.rho
-# lam = param.solver_pymls.layers[0].medium.lambda_
-# mu = param.solver_pymls.layers[0].medium.mu
-# omega =2*np.pi*param.frequencies[0]
-# k = omega*np.sqrt(rho/(lam+2.*mu))
-# Z = np.sqrt(rho*(lam+2.*mu))
-# Z_s = -1j*Z/np.tan(k*param.solver_pymls.layers[0].thickness)
-# R_a = (Z_s-Air.Z)/(Z_s+Air.Z)
-# print(R_a)
 
 if any(param.plot):
     plt.show()

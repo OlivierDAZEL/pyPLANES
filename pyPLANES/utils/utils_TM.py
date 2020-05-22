@@ -26,8 +26,7 @@
 import numpy as np
 import numpy.linalg as LA
 from scipy.linalg import expm
-
-
+from numpy import sqrt
 
 def convert_Omega(Om_m, typ_minus, typ_plus):
     # fluid {0:u_y , 1:p}
@@ -69,6 +68,8 @@ def convert_Omega(Om_m, typ_minus, typ_plus):
                 Om_plus[2, 1] = (Om_m[3, 1]-Om_m[4,1]) - (c_1/c_2)*(Om_m[3, 2]-Om_m[4, 2])
                 Om_plus[3, 0] = Om_m[5, 0] - (c_R/c_2)*Om_m[5, 2]
                 Om_plus[3, 1] = Om_m[5, 1] - (c_1/c_2)*Om_m[5, 2]
+            elif typ_plus in ("Biot98", "Biot01"):
+                Om_plus = Om_m
         elif typ_minus == "elastic":
             if typ_plus in ("pem", "Biot98", "Biot01"):
                 Om_plus = np.zeros((6, 3), dtype=complex)
@@ -125,17 +126,6 @@ def TM_elastic(layer, kx, om):
     mu = layer.medium.mu
     d = layer.thickness
 
-    # alpha = np.zeros((4, 4), dtype=complex)
-    # alpha[0, 2] = 1j*kx*lam/(lam+2*mu)
-    # alpha[0, 3] = -((lam**2-(lam+2*mu)**2)*kx**2/(lam+2*mu))-rho*om**2
-    # alpha[1, 2] = 1/(lam+2*mu)
-    # alpha[1, 3] = 1j*kx*lam/(lam+2*mu)
-    # alpha[2, 0] = 1j*kx
-    # alpha[2, 1] = -rho*om**2
-    # alpha[3, 0] = 1/mu
-    # alpha[3, 1] = 1j*kx
-    # T_0 = expm(layer.thickness*alpha)
-
     P_mat = lam + 2*mu
     delta_p = om*np.sqrt(rho/P_mat)
     delta_s = om*np.sqrt(rho/mu)
@@ -176,8 +166,74 @@ def TM_elastic(layer, kx, om):
 
     T = Phi_0@V_0@LA.inv(Phi_0)
 
+    return T
 
+def TM_pem(layer, kx, om):
 
+    medium = layer.medium
+    d = layer.thickness
+
+    medium.update_frequency(om)
+    beta_1 = sqrt(medium.delta_1**2-kx**2)
+    beta_2 = sqrt(medium.delta_2**2-kx**2)
+    beta_3 = sqrt(medium.delta_3**2-kx**2)
+    alpha_1 = -1j*medium.A_hat*medium.delta_1**2 - 2j*medium.N*beta_1**2
+    alpha_2 = -1j*medium.A_hat*medium.delta_2**2 - 2j*medium.N*beta_2**2
+    alpha_3 = 2j*medium.N*beta_3*kx
+
+    Phi_0 = np.zeros((6,6), dtype=np.complex)
+    Phi_0[0 ,0] = -2j*medium.N*beta_1*kx
+    Phi_0[0 ,1] = 2j*medium.N*beta_1*kx
+    Phi_0[0 ,2] = -2j*medium.N*beta_2*kx
+    Phi_0[0 ,3] = 2j*medium.N*beta_2*kx
+    Phi_0[0 ,4] = 1j*medium.N*(beta_3**2-kx**2)
+    Phi_0[0 ,5] = 1j*medium.N*(beta_3**2-kx**2)
+
+    Phi_0[1, 0] = beta_1
+    Phi_0[1, 1] = -beta_1
+    Phi_0[1, 2] = beta_2
+    Phi_0[1, 3] = -beta_2
+    Phi_0[1, 4] = kx
+    Phi_0[1, 5] = kx
+
+    Phi_0[2, 0] = medium.mu_1*beta_1
+    Phi_0[2, 1] = -medium.mu_1*beta_1
+    Phi_0[2, 2] = medium.mu_2*beta_2
+    Phi_0[2, 3] = -medium.mu_2*beta_2
+    Phi_0[2, 4] = medium.mu_3*kx
+    Phi_0[2, 5] = medium.mu_3*kx
+
+    Phi_0[3, 0] = alpha_1
+    Phi_0[3, 1] = alpha_1
+    Phi_0[3, 2] = alpha_2
+    Phi_0[3, 3] = alpha_2
+    Phi_0[3, 4] = -alpha_3
+    Phi_0[3, 5] = alpha_3
+
+    Phi_0[4, 0] = 1j*medium.delta_1**2*medium.K_eq_til*medium.mu_1
+    Phi_0[4, 1] = 1j*medium.delta_1**2*medium.K_eq_til*medium.mu_1
+    Phi_0[4, 2] = 1j*medium.delta_2**2*medium.K_eq_til*medium.mu_2
+    Phi_0[4, 3] = 1j*medium.delta_2**2*medium.K_eq_til*medium.mu_2
+    Phi_0[4, 4] = 0
+    Phi_0[4, 5] = 0
+
+    Phi_0[5, 0] = kx
+    Phi_0[5, 1] = kx
+    Phi_0[5, 2] = kx
+    Phi_0[5, 3] = kx
+    Phi_0[5, 4] = -beta_3
+    Phi_0[5, 5] = beta_3
+
+    V_0 = np.diag([
+        np.exp(-1j*beta_1*d),
+        np.exp(1j*beta_1*d),
+        np.exp(-1j*beta_2*d),
+        np.exp(1j*beta_2*d),
+        np.exp(-1j*beta_3*d),
+        np.exp(1j*beta_3*d)
+    ])
+
+    T = Phi_0@V_0@LA.inv(Phi_0)
 
     return T
 
@@ -188,11 +244,15 @@ def weak_orth_terms(om, kx, Omega, layers, typ_end):
     typ = "fluid"
     if layers is not None:
         for _l in layers:
+            # print("converting {} to {}".format(typ, _l.medium.MEDIUM_TYPE))
             Omega = convert_Omega(Omega, typ, _l.medium.MEDIUM_TYPE)
             if _l.medium.MEDIUM_TYPE == "fluid":
                 Omega = TM_fluid(_l, kx, om)@Omega
             elif _l.medium.MEDIUM_TYPE == "elastic":
                 Omega = TM_elastic(_l, kx, om)@Omega
+            elif _l.medium.MEDIUM_TYPE == "pem":
+                Omega = TM_pem(_l, kx, om)@Omega
+        # print("converting {} to {}".format(layers[-1].medium.MEDIUM_TYPE, typ_end))
         Omega = convert_Omega(Omega, layers[-1].medium.MEDIUM_TYPE, typ_end)
     else:
         Omega = convert_Omega(Omega, "fluid", typ_end)
