@@ -69,7 +69,6 @@ def write_out_files(self):
         self.outfile.write("{:.12e}\t".format(self.abs))
     if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
         self.outfile.write("{:.12e}\t".format(self.modulus_reflex))
-    print(any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]))
     if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
         self.outfile.write("{:.12e}\t".format(self.modulus_trans))
     self.outfile.write("\n")

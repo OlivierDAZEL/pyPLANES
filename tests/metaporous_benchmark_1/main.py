@@ -25,11 +25,11 @@ pem = from_yaml('pem_benchmark_1.yaml')
 
 L = 0.01
 d = 0.1
-lcar = 0.005
+lcar = 0.001
 
-param.order = 5
-param.plot = [True, True, True, False, False, False]
-# param.plot = [False]*6
+param.order = 4
+# param.plot = [True, True, True, False, False, False]
+param.plot = [False]*6
 
 G = Gmsh(param.name_project)
 
