@@ -37,7 +37,6 @@ from pyPLANES.utils.utils_TM import weak_orth_terms
 from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
 from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_u_linear_system, dof_u_linear_system_to_condense
 
-
 class GmshEntity():
     def __init__(self, **kwargs):
         self.dim = kwargs["dim"]
