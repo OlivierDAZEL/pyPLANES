@@ -49,12 +49,12 @@ class GmshEntity():
             self.physical_tags["model"] = None
         if self.dim == 2:
             self.neighbours = [] # Neighbouring 2D entities, will be filled in preprocess
-            self.bounding_curves = [entities[abs(_e)-1] for _e in kwargs["bounding_curves"]]
+            self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
             for _e in self.bounding_curves:
                 _e.neighbouring_surfaces.append(self)
         elif self.dim == 1:
             self.neighbouring_surfaces = []
-            self.bounding_points = [entities[abs(_e)-1] for _e in kwargs["bounding_points"]]
+            self.bounding_points = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_points"]]
             for _e in self.bounding_points:
                 _e.neighbouring_curves.append(self)
         elif self.dim == 0:

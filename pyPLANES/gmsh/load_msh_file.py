@@ -79,6 +79,7 @@ def physical_names(self, f):
 def entities(self, f, p):
     ''' creation of the list of entities '''
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
+    print("points")
     for __ in range(_p):
         _f = f.readline().split()
         tag = int(_f[0])
@@ -87,6 +88,7 @@ def entities(self, f, p):
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z, entities=self.entities)
         self.entities.append(_)
+    print("curves")
     for _icurve in range(num_curves):
         _f = f.readline().split()
         tag = int(_f[0])
@@ -94,7 +96,7 @@ def entities(self, f, p):
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = 8+num_physical_tags
         num_bounding_points = int(_f[_])
-        bounding_points =[int(_l) for _l in _f[_+1:]] if num_bounding_points != 0 else []
+        bounding_points = [int(_l) for _l in _f[_+1:]] if num_bounding_points != 0 else []
         if "model" in physical_tags.keys():
             if physical_tags["model"] == "FEM1D":
                 if physical_tags["condition"] == "Incident_PW":
@@ -103,9 +105,9 @@ def entities(self, f, p):
                 elif physical_tags["condition"] == "Transmission":
                     _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
-                elif physical_tags["condition"] == "Rigid Wall" :
+                elif physical_tags["condition"] == "Rigid Wall":
                     _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
-                elif physical_tags["condition"] == "Periodicity" :
+                elif physical_tags["condition"] == "Periodicity":
                     _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 else:
@@ -113,11 +115,12 @@ def entities(self, f, p):
         else: # No numerical model
             _ = GmshEntity(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
         self.entities.append(_)
+    print("surfaces")
     for _surf in range(num_surfaces):
         _f = f.readline().split()
         tag = int(_f[0])
         num_physical_tags = int(_f[7])
-        physical_tags = dict_physical_tags(self,_f[8:8+num_physical_tags])
+        physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = 8+num_physical_tags
         num_bounding_curves = int(_f[_])
         bounding_curves = [int(_l) for _l in _f[_+1:]] if num_bounding_curves != 0 else []
@@ -141,10 +144,9 @@ def entities(self, f, p):
         self.entities.append(_)
     for __ in range(num_volumes):
         pass
-    # ######
     _ = [_ent.tag for _ent in self.entities]
     self.entity_tag = [None]*(max(_)+1)
-    for i,index in enumerate(_):
+    for i, index in enumerate(_):
         self.entity_tag[index] = i
 
 def partition(self, f):
