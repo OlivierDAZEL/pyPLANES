@@ -134,7 +134,7 @@ class Gmsh():
         self.nb_tags +=1
         points = [center, east, north, west, south]
         c = self.Circle(self.f, self.nb_tags, points)
-        self.nb_tags +=4 # 4 additional entities created in Circle
+        self.nb_tags += 4 # 4 additional entities created in Circle
         return c
 
     def new_physical(self, obj, label):

@@ -26,9 +26,9 @@ import itertools
 import numpy as np
 
 from mediapack import Air
-
+from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem
+from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem
 
 # import sys
 # import itertools
@@ -246,19 +246,60 @@ def elementary_matrices(self):
             _ent.elementary_matrices(_el)
 
 def check_model(self, p):
-    ''' TBD '''
+    ''' This function checks if the model is correct and adapt it if not '''
     unfinished = True
     while unfinished:
         unfinished = False
         for _e in self.entities:
-            if _e.dim == 1:
+            if _e.dim == 1: # 1D entities
                 if len(_e.neighbouring_surfaces) > 1:
                     if isinstance(_e, (PwFem, RigidWallFem, PeriodicityFem)):
-                        raise ValueError("preprocess")
+                        raise ValueError("Error in check model: 1D entity is linked to more than one surface")
+                    if isinstance(_e, FluidStructureFem):
+                        if len(_e.neighbouring_surfaces) != 2:
+                            raise NameError("For FluidStructureFem, the number of neighbours should be 2")
+                        else:
+                            if isinstance(_e.neighbouring_surfaces[0], FluidFem) and isinstance(_e.neighbouring_surfaces[1], ElasticFem):
+                                _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]
+                            elif isinstance(_e.neighbouring_surfaces[0], ElasticFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
+                                _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
+                            else:
+                                raise NameError("FluidStructureFem doest not relate a fluid and elastic struture")
+                            for _elem in _e.elements:
+                                vert = [_elem.vertices[0].tag, _elem.vertices[1].tag] # Vertices of the FSI element
+                                # Determination of the neighbouring element in neighbouring_surfaces[0]
+                                _iter = iter(_e.fluid_neighbour.elements)
+                                while True:
+                                    _el = next(_iter)
+                                    vert_2D = [_el.vertices[0].tag, _el.vertices[1].tag, _el.vertices[2].tag]
+                                    _ = len(set(vert).intersection(vert_2D)) # Number of common vertices
+                                    if _ == 2: # Case of two common vertices
+                                        _elem.normal_fluid = normal_to_element(_elem, _el)
+                                        _elem.normal_struc = -_elem.normal_fluid
+                                        print(_elem.normal_fluid)
+                                        print(_elem.normal_struc)
+                                        break
+
+
             if _e.dim == 2:
                 if isinstance(_e, PemFem):
-                    _e.formulation98 = True
+                    # _e.formulation98 = True
                     _e.formulation98 = False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
@@ -286,25 +327,32 @@ def check_model(self, p):
                     for _l in _e.ml:
                         _l.thickness *= -1
 
-
 def preprocess(self, p):
     if p.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
-    check_model(self, p)
+
     self.frequencies = init_vec_frequencies(p.frequencies)
     # Creation of edges and faces
-    print("Checking the model")
+    if p.verbose:
+        print("Checking the model")
     create_lists(self, p)
-    print("Activation of dofs based on physical media")
+    if p.verbose:
+        print("Activation of dofs based on physical media")
     activate_dofs(self)
-    print("Desactivation of dofs (dimension & BC)")
+    if p.verbose:
+        print("Desactivation of dofs (dimension & BC)")
     desactivate_dofs_dimension(self)
     desactivate_dofs_BC(self)
-    print("Renumbering of dofs")
+    if p.verbose:
+        print("Renumbering of dofs")
     renumber_dofs(self)
-    print("Affectation of dofs to the elements")
+    if p.verbose:
+        print("Affectation of dofs to the elements")
     affect_dofs_to_elements(self)
-    print("Identification of periodic dofs")
+    if p.verbose:
+        print("Identification of periodic dofs")
     periodicity_initialisation(self)
-    print("Creation of voids shape global matrices")
+    if p.verbose:
+        print("Creation of voids shape global matrices")
+    check_model(self, p)
     elementary_matrices(self)

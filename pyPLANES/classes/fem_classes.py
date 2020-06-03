@@ -136,6 +136,7 @@ class Element:
         out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
         if self.typ == 1:
             out += "Vertices = [{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag)
+            print(self.edges)
             out += "edge={} /orientation ={}\n".format(self.edges[0].tag, self.edges_orientation)
         elif self.typ == 2:
             out += "Vertices = [{},{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag, self.vertices[2].tag)
@@ -155,10 +156,15 @@ class Element:
             coorde[0:3, i] = _v.coord[0:3]
         return coorde
 
+    def get_center(self):
+        ''' Method that gives the center of the element'''
+        coorde = self.get_coordinates()
+        return np.mean(coorde, axis=1)
+
     def display_sol(self, field):
         order = self.reference_element.order
         if not isinstance(field, list):
-           field = [field]
+            field = [field]
         f_elem = np.zeros((self.reference_element.nb_SF, len(field)), dtype=complex)
         coorde = self.get_coordinates()
         if self.typ == 2:

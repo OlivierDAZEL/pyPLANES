@@ -32,10 +32,10 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 from mediapack import Air
 
 from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices, pem01_elementary_matrices, elas_elementary_matrices
-from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector
+from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector, fsi_elementary_matrix
 from pyPLANES.utils.utils_TM import weak_orth_terms
 from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
-from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_u_linear_system, dof_u_linear_system_to_condense
+from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
 
 class GmshEntity():
     def __init__(self, **kwargs):
@@ -47,22 +47,32 @@ class GmshEntity():
             self.physical_tags["condition"] = None
         if "model" not in list(self.physical_tags.keys()):
             self.physical_tags["model"] = None
-        if self.dim == 2:
-            self.neighbours = [] # Neighbouring 2D entities, will be filled in preprocess
-            self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
-            for _e in self.bounding_curves:
-                _e.neighbouring_surfaces.append(self)
-        elif self.dim == 1:
-            self.neighbouring_surfaces = []
-            self.bounding_points = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_points"]]
-            for _e in self.bounding_points:
-                _e.neighbouring_curves.append(self)
-        elif self.dim == 0:
+        if self.dim == 0:
             self.neighbouring_curves = []
             self.x = kwargs["x"]
             self.y = kwargs["y"]
             self.z = kwargs["z"]
             self.neighbours = []
+        elif self.dim == 1:
+            self.neighbouring_surfaces = []
+            self.bounding_points = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_points"]]
+            self.center = np.array([0., 0., 0.])
+            for p in self.bounding_points:
+                self.center += [p.x, p.y, p.z]
+            self.center /= len(self.bounding_points)
+            for _e in self.bounding_points:
+                _e.neighbouring_curves.append(self)
+        elif self.dim == 2:
+            self.neighbouring_surfaces = [] # Neighbouring 2D entities, will be completed in preprocess
+            self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
+            for _e in self.bounding_curves:
+                _e.neighbouring_surfaces.append(self)
+            self.center = np.array([0., 0., 0.])
+            for c in self.bounding_curves:
+                self.center += c.center
+            self.center /= len(self.bounding_curves)
+
+
     def __str__(self):
         out = "Entity / tag={} / dim= {}\n".format(self.tag, self.dim)
         out += "Physical tags={}\n".format(self.physical_tags)
@@ -111,6 +121,49 @@ class FemEntity(GmshEntity):
     def link_elem(self,n):
         self.elements.append(n)
 
+class FluidStructureFem(FemEntity):
+    def __init__(self, **kwargs):
+        FemEntity.__init__(self, **kwargs)
+        self.fluid_neighbour = None
+        self.struc_neighbour = None
+    def elementary_matrices(self, _el):
+        # Elementary matrices
+        M = fsi_elementary_matrix(_el)
+        orient_ = orient_element(_el)
+
+        _el.M = orient_ @ M @ orient_
+
+    def append_linear_system(self, omega):
+        A_i, A_j, A_v =[], [], []
+        # Translation matrix to compute internal dofs
+        T_i, T_j, T_v =[], [], []
+        for _el in self.elements:
+            dof_ux = dof_ux_linear_system_master(_el)
+            dof_uy = dof_uy_linear_system_master(_el)
+            dof_p = dof_p_linear_system_master(_el)
+
+            v = (_el.M).flatten()
+
+            if _el.normal_fluid[0] != 0:
+                A_i.extend(list(chain.from_iterable([[_d]*len(dof_ux) for _d in dof_p])))
+                A_j.extend(list(dof_ux)*len(dof_p))
+                A_v.extend(-_el.normal_fluid[0]*v)
+
+            if _el.normal_fluid[1] != 0:
+                A_i.extend(list(chain.from_iterable([[_d]*len(dof_uy) for _d in dof_p])))
+                A_j.extend(list(dof_uy)*len(dof_p))
+                A_v.extend(-_el.normal_fluid[1]*v)
+            if _el.normal_struc[0] != 0:
+                A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_ux])))
+                A_j.extend(list(dof_p)*len(dof_ux))
+                A_v.extend(_el.normal_struc[0]*v)
+            if _el.normal_struc[1] != 0:
+                A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_uy])))
+                A_j.extend(list(dof_p)*len(dof_uy))
+                A_v.extend(_el.normal_struc[1]*v)
+
+        return A_i, A_j, A_v, T_i, T_j, T_v
+
 class FluidFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
@@ -126,9 +179,8 @@ class FluidFem(FemEntity):
         # Elementary matrices
         H, Q = fluid_elementary_matrices(_el)
         orient_p = orient_element(_el)
-        _el.H =   orient_p @ H   @ orient_p
-        _el.Q =   orient_p @ Q   @ orient_p
-
+        _el.H = orient_p @ H @ orient_p
+        _el.Q = orient_p @ Q @ orient_p
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v =[], [], []
@@ -405,7 +457,6 @@ class IncidentPwFem(PwFem):
 
         eta_l = LA.inv(Omega_l_orth)
         tau_l = np.dot(Omega_l_weak, eta_l)
-
         return tau_l, eta_l
 
     def create_dynamical_matrices(self, omega, n_m):
@@ -438,6 +489,7 @@ class IncidentPwFem(PwFem):
                     dof_uy, orient_uy = dof_uy_element(_elem)
                     dof_1 = [self.dofs[self.nb_R*_l]]*len(dof_ux)
                     dof_2 = [self.dofs[self.nb_R*_l+1]]*len(dof_ux)
+
                     _ = orient_ux@phi_l
                     phi += coo_matrix((_, (dof_ux, dof_1)), shape=(n_m, self.nb_dofs))
                     phi += coo_matrix((_, (dof_uy, dof_2)), shape=(n_m, self.nb_dofs))
@@ -460,7 +512,7 @@ class IncidentPwFem(PwFem):
         F_TM[:self.nb_R] = Omega_0_weak-tau_0@self.Omega_0_orth
 
         F_TM = coo_matrix((phi@F_TM).reshape(n_m, 1))
-
+        # print(F_TM)
         _ = phi.tocoo()
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
         return A_TM*self.ny, F_TM*self.ny

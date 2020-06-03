@@ -336,6 +336,20 @@ class Solver_PW():
         ieq += 1
         return ieq
 
+    def interface_elastic_elastic(self, ieq, iinter, L, d, M):
+        SV_1, k_y_1 = elastic_SV(L[iinter].medium,self.kx, self.omega)
+        SV_2, k_y_2 = elastic_SV(L[iinter+1].medium,self.kx, self.omega)
+        for _i in range(4):
+            M[ieq, d[iinter+0][0]] =  SV_1[_i, 0]*np.exp(-1j*k_y_1[0]*L[iinter].thickness)
+            M[ieq, d[iinter+0][1]] =  SV_1[_i, 1]*np.exp(-1j*k_y_1[1]*L[iinter].thickness)
+            M[ieq, d[iinter+0][2]] =  SV_1[_i, 2]
+            M[ieq, d[iinter+0][3]] =  SV_1[_i, 3]
+            M[ieq, d[iinter+1][0]] = -SV_2[_i, 0]
+            M[ieq, d[iinter+1][1]] = -SV_2[_i, 1]
+            M[ieq, d[iinter+1][2]] = -SV_2[_i, 2]*np.exp(-1j*k_y_2[0]*L[iinter+1].thickness)
+            M[ieq, d[iinter+1][3]] = -SV_2[_i, 3]*np.exp(-1j*k_y_2[1]*L[iinter+1].thickness)
+            ieq += 1
+        return ieq
 
     def interface_fluid_elastic(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = fluid_SV(self.kx, self.k, L[iinter].medium.K)

@@ -24,9 +24,12 @@
 
 from itertools import product
 import numpy as np
+import numpy.linalg as LA
 from scipy.special import legendre
 
 def dof_p_linear_system_master(_elem):
+    if _elem.typ == 1:
+        return np.array(_elem.dofs[3][:2] + _elem.dofs[3][2])
     if _elem.typ == 2:
         return np.array(_elem.dofs[3][:3] + _elem.dofs[3][3] + _elem.dofs[3][4] +_elem.dofs[3][5])
 
@@ -44,8 +47,23 @@ def dof_up_linear_system_to_condense(_elem):
         return np.array(_elem.dofs[0][6]+_elem.dofs[1][6]+_elem.dofs[3][6])
 
 def dof_u_linear_system_master(_elem):
+    if _elem.typ == 1:
+        return np.array(_elem.dofs[0][:2] + _elem.dofs[0][3] + _elem.dofs[1][:2] + _elem.dofs[1][3])
     if _elem.typ == 2:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5])
+
+def dof_ux_linear_system_master(_elem):
+    if _elem.typ == 1:
+        return np.array(_elem.dofs[0][:2] + _elem.dofs[0][2])
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5])
+
+def dof_uy_linear_system_master(_elem):
+    if _elem.typ == 1:
+        return np.array(_elem.dofs[1][:2] + _elem.dofs[1][2])
+    if _elem.typ == 2:
+        return np.array(_elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5])
+
 
 def dof_u_linear_system_to_condense(_elem):
     if _elem.typ == 2:
@@ -55,13 +73,10 @@ def dof_u_linear_system(_elem):
     if _elem.typ == 2:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[0][6]+ _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+ _elem.dofs[1][6])
 
-
-
 def dof_up_linear_system(_elem):
     if _elem.typ == 2:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[0][6]+ _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+ _elem.dofs[1][6]+
         _elem.dofs[3][:3] + _elem.dofs[3][3] + _elem.dofs[3][4] +_elem.dofs[3][5]+ _elem.dofs[3][6])
-
 
 def dof_p_element(_elem):
     dof, orient = dof_element(_elem, 3)
@@ -87,9 +102,7 @@ def dof_uy_element(_elem):
     orient = np.diag(orient_uy)
     return dof_uy, orient
 
-
-
-def orient_element(_elem,f="p"):
+def orient_element(_elem, f="p"):
     order = _elem.reference_element.order
     if _elem.typ == 2:
         # Orientation of the vertices
@@ -99,14 +112,15 @@ def orient_element(_elem,f="p"):
             orient.append(_elem.edges_orientation[_e]**k)
         # Orientation of the (unique) face
         orient += [1] * int((order-1)*(order-2)/2)
+    elif _elem.typ == 1:
+        orient = [1, 1]
+        for _e, k in product(range(1), range(order-1)):
+            orient.append(_elem.edges_orientation[_e]**k)
     if f == "u": # Duplication of the orientation for the two directions
         orient *= 2
     return np.diag(orient)
 
-
-
-
-def local_dofs(_elem, field = "p"):
+def local_dofs(_elem, field="p"):
     order = _elem.reference_element.order
     if _elem.typ == 2:
         # Local dofs
@@ -128,6 +142,21 @@ def local_dofs(_elem, field = "p"):
     elif _elem.typ == 1:
         elem_dof = None
     return elem_dof
+
+def normal_to_element(elem_1d, elem_2d):
+
+    coord_e = elem_1d.get_coordinates()
+
+    n_ = coord_e[:, 1]- coord_e[:, 0]
+    n_ = np.array([n_[1], -n_[0], 0])
+    n_ = n_/LA.norm(n_)
+
+    vec_2dto1d = elem_1d.get_center()-elem_2d.get_center()
+    if np.dot(n_, vec_2dto1d):
+        n_ *= -1
+
+    return n_
+
 
 def dof_element(_elem, i_field):
     order = _elem.reference_element.order

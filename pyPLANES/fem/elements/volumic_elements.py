@@ -29,9 +29,9 @@ def fluid_elementary_matrices(elem):
     coord_e = elem.get_coordinates()
     K_ref = elem.reference_element
 
-    X1X2 = coord_e[:,1]- coord_e[:,0]
+    X1X2 = coord_e[:, 1]- coord_e[:, 0]
     e_x = X1X2/LA.norm(X1X2)
-    X1X3 = coord_e[:,2]- coord_e[:,0]
+    X1X3 = coord_e[:, 2]- coord_e[:, 0]
     e_z = np.cross(X1X2, X1X3)
     e_z /= LA.norm(e_z)
     e_y = np.cross(e_z, e_x)
@@ -78,10 +78,10 @@ def elas_elementary_matrices(elem):
     Coord_e[0, 2] = X1X3.dot(e_x)
     Coord_e[1, 2] = X1X3.dot(e_y)
 
-    Coord_e = coord_e[0:2,:]
+    Coord_e = coord_e[0:2, :]
 
     for ipg in range(m):
-        _Phi = K_ref.Phi[:,ipg].reshape((1, n))
+        _Phi = K_ref.Phi[:, ipg].reshape((1, n))
         _dPhi  = np.array([K_ref.dPhi[0][:, ipg], K_ref.dPhi[1][:, ipg]])
         J = _dPhi[:, 0:3].dot(Coord_e.T)
         _weight = K_ref.w[ipg] * LA.det(J)

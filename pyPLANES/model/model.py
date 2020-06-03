@@ -150,7 +150,8 @@ class Model():
                 _ent.phi_v = np.array(_ent.phi_v, dtype=complex)
 
     def create_linear_system(self, f):
-        print("Creation of the linear system for f={}".format(f))
+        if self.verbose:
+            print("Creation of the linear system for f={}".format(f))
         self.update_frequency(f)
         omega = 2*np.pi*f
         # Initialisation of the lists

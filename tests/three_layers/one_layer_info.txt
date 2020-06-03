@@ -1,0 +1,6 @@
+Output File from pyPLANES
+Generated on oliviers-macbook-pro.home
+Frequency [Hz]
+absorption [no unity]
+|R| [no unity]
+|T| [no unity]

@@ -50,7 +50,7 @@ def imposed_pw_elementary_vector(_elem, k):
     F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
     return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
 
-def fluid_structure_interaction_elementary_matrix(_elem):
+def fsi_elementary_matrix(_elem):
     coord_e = _elem.get_coordinates()
     K_ref = _elem.reference_element
     n, m = K_ref.Phi.shape

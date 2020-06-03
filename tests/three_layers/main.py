@@ -17,28 +17,29 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 from pyPLANES.utils.utils_io import print_entities
 
 param = ModelParameter()
-param.theta_d = 0.0000001
-param.frequencies = (50., 5010., 1)
-param.name_project = "two_layers"
+param.theta_d = 60.0000001
+param.frequencies = (30., 5010., 1)
+param.name_project = "one_layer"
 
 pem = from_yaml('foam2.yaml')
 Wwood = from_yaml('Wwood.yaml')
-Air_Elastic = from_yaml('Air_Elastic.yaml')
-
 
 L = 0.1
 d_1 = 0.1
 d_2 = 0.1
+d_3 = 0.1
 lcar = 0.1
-param.verbose = False
 
-
-param.order = 2
+param.order = 3
 param.plot = [True, True, True, False, False, False]
 # param.plot = [False]*6
 
 G = Gmsh(param.name_project)
 
+# p_7 <---l_8 --- p_6
+#  |               ^
+# l_9             l_7
+#  v               |
 # p_4 <---l_5 --- p_5
 #  |               ^
 # l_6               l_4
@@ -55,6 +56,8 @@ p_2 = G.new_point(L, d_1, lcar)
 p_3 = G.new_point(0, d_1, lcar)
 p_4 = G.new_point(0, d_1+d_2, lcar)
 p_5 = G.new_point(L, d_1+d_2, lcar)
+p_6 = G.new_point(L, d_1+d_2+d_3, lcar)
+p_7 = G.new_point(0, d_1+d_2+d_3, lcar)
 
 l_0 = G.new_line(p_0, p_1)
 l_1 = G.new_line(p_1, p_2)
@@ -63,28 +66,50 @@ l_3 = G.new_line(p_3, p_0)
 l_4 = G.new_line(p_2, p_5)
 l_5 = G.new_line(p_5, p_4)
 l_6 = G.new_line(p_4, p_3)
+l_7 = G.new_line(p_5, p_6)
+l_8 = G.new_line(p_6, p_7)
+l_9 = G.new_line(p_7, p_4)
+
+# p_7 <---l_8 --- p_6
+#  |               ^
+# l_9             l_7
+#  v               |
+# p_4 <---l_5 --- p_5
+#  |               ^
+# l_6               l_4
+#  v               |
+# p_3 <---l_2---- p_2
+#  |               ^
+# l_3             l_1
+#  v               |
+# p_O ---l_0 ---> p_1
 
 ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
 ll_1 = G.new_line_loop([l_4, l_5, l_6, l_2.inverted()])
+ll_2 = G.new_line_loop([l_7, l_8, l_9, l_5.inverted()])
+
+
 
 layer_1 = G.new_surface([ll_0.tag])
 layer_2 = G.new_surface([ll_1.tag])
+layer_3 = G.new_surface([ll_2.tag])
 
-G.new_physical(l_5, "condition=Rigid Wall")
-G.new_physical([l_1, l_4, l_3, l_6], "condition=Periodicity")
+
+# G.new_physical(l_8, "condition=Transmission")
+G.new_physical(l_8, "condition=Rigid Wall")
+G.new_physical([l_1, l_4, l_7, l_3, l_6, l_9], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
 # G.new_physical(matrice, "mat=Air")
-G.new_physical(layer_1, "mat=Wwood")
-G.new_physical(layer_2, "mat=Air")
-
-G.new_physical([l_2], "condition=Fluid_Structure")
-G.new_physical([l_0, l_1, l_3, l_4, l_6, l_5, l_2], "model=FEM1D")
-
-# G.new_physical([l_0, l_1, l_3, l_4, l_6, l_5], "model=FEM1D")
-
-G.new_physical([layer_1, layer_2], "model=FEM2D")
+G.new_physical(layer_1, "mat=foam2")
+G.new_physical(layer_2, "mat=Wwood")
+G.new_physical(layer_3, "mat=Air")
+G.new_physical([l_5], "condition=Fluid_Structure")
+# G.new_physical(matrice, "mat=Wwood")
+G.new_physical([l_0, l_1, l_3, l_4, l_6, l_7, l_9, l_8, l_5], "model=FEM1D")
+G.new_physical([layer_1, layer_2, layer_3], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 G.new_periodicity(l_4, l_6, (L, 0, 0))
+G.new_periodicity(l_7, l_9, (L, 0, 0))
 option = "-2 -v 0 "
 G.run_gmsh(option)
 
@@ -96,12 +121,17 @@ result_pyPLANES = model.resolution(param)
 
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(Wwood, d_1),
-    Layer(Air, d_2),
+    Layer(pem, d_1),
+    Layer(Wwood, d_2),
+    Layer(Air, d_3),
+    # Layer(Air,d)
+    # Layer(pem, d),
+    # Layer(Wwood,d/10),
 ]
 
 param.solver_pymls.backing = backing.rigid
 # param.solver_pymls.backing = backing.transmission
+
 
 param.S_PW = Solver_PW(param.solver_pymls, param)
 result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
@@ -111,15 +141,7 @@ result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
 # print("result_pymls     = {}".format(result_pymls["R"][0]))
 print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
 print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
-# print("result_pymls  R  = {}".format(result_pymls["R"][0]))
+# print("result_pymls  T  = {}".format(result_pymls["T"][0]))
 
 if any(param.plot):
     plt.show()
-
-# print(Air.K)
-# print(Air.rho)
-
-# k = 2*np.pi*param.frequencies[0]/Air.c
-# Z_s = -1j*Air.Z/np.tan(k*(d_1+d_2))
-# R = (Z_s-Air.Z)/(Z_s+Air.Z)
-# print(R)

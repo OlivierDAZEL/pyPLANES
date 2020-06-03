@@ -19,13 +19,13 @@ from pyPLANES.utils.utils_io import print_entities
 name_server = platform.node()
 
 param = ModelParameter()
-param.theta_d = 80.000000
-param.frequencies = (200., 5010., 1)
+param.theta_d = 0.000000
+param.frequencies = (50., 5010., 1)
 param.name_project = "one_layer"
 
-L = 0.01
-d = 0.1
-lcar = 0.01
+L = 0.1
+d = 0.2
+lcar = 0.1
 
 param.order = 2
 param.plot = [True, True, True, False, False, False]
@@ -33,6 +33,9 @@ param.plot = [True, True, True, False, False, False]
 
 if name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
     param.verbose = True
+
+param.verbose = False
+
 
 G = Gmsh(param.name_project)
 
@@ -50,22 +53,23 @@ matrice = G.new_surface([ll_0.tag])
 G.new_physical(l_2, "condition=Rigid Wall")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
-G.new_physical(matrice, "mat=foam2")
+G.new_physical(matrice, "mat=Air_Elastic")
 G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
 option = "-2 -v 0 "
 G.run_gmsh(option)
 model = Model(param)
-print_entities(model)
-model.resolution(param)
+result_pyPLANES = model.resolution(param)
+
 
 pem = from_yaml('foam2.yaml')
 Wwood = from_yaml('Wwood.yaml')
+Air_Elastic = from_yaml('Air_Elastic.yaml')
 
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(pem, d),
+    Layer(Air_Elastic, d),
 ]
 param.solver_pymls.backing = backing.rigid
 
@@ -74,6 +78,22 @@ param.solver_pymls.backing = backing.rigid
 param.S_PW = Solver_PW(param.solver_pymls, param)
 param.S_PW.resolution(param.theta_d)
 
+
+result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
+
+print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
+print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
+# print("result_pymls  R  = {}".format(result_pymls["R"][0]))
+
 if any(param.plot):
     plt.show()
 
+
+# print(Air.K)
+# print(Air.rho)
+
+
+# k = 2*np.pi*param.frequencies[0]/Air.c
+# Z_s = -1j*Air.Z/np.tan(k*(d))
+# R = (Z_s-Air.Z)/(Z_s+Air.Z)
+# print(R)

@@ -31,7 +31,8 @@ from pyPLANES.classes.fem_classes import Vertex, Element
 from pyPLANES.classes.entity_classes import *
 
 def load_msh_file(self, p):
-    print("Reading "+ p.name_project + ".msh")
+    if p.verbose:
+        print("Reading "+ p.name_project + ".msh")
     f = open(p.name_project + ".msh", "r")
     _f = "_"
     while _f:
@@ -75,11 +76,12 @@ def physical_names(self, f):
         tag = int(_[1])
         key = " ".join(_[2:])[1:-1]
         self.physical_names[tag] = key
+    # print(self.physical_names)
 
 def entities(self, f, p):
     ''' creation of the list of entities '''
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
-    print("points")
+    # print("points")
     for __ in range(_p):
         _f = f.readline().split()
         tag = int(_f[0])
@@ -88,12 +90,14 @@ def entities(self, f, p):
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z, entities=self.entities)
         self.entities.append(_)
-    print("curves")
+    # print("curves")
     for _icurve in range(num_curves):
         _f = f.readline().split()
+        # print(_f)
         tag = int(_f[0])
         num_physical_tags = int(_f[7])
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
+        # print(physical_tags)
         _ = 8+num_physical_tags
         num_bounding_points = int(_f[_])
         bounding_points = [int(_l) for _l in _f[_+1:]] if num_bounding_points != 0 else []
@@ -101,6 +105,9 @@ def entities(self, f, p):
             if physical_tags["model"] == "FEM1D":
                 if physical_tags["condition"] == "Incident_PW":
                     _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
+                    self.model_entities.append(_)
+                elif physical_tags["condition"] == "Fluid_Structure":
+                    _ = FluidStructureFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"] == "Transmission":
                     _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, p=p, entities=self.entities)
@@ -115,9 +122,10 @@ def entities(self, f, p):
         else: # No numerical model
             _ = GmshEntity(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
         self.entities.append(_)
-    print("surfaces")
+    # print("surfaces")
     for _surf in range(num_surfaces):
         _f = f.readline().split()
+        # print(_f)
         tag = int(_f[0])
         num_physical_tags = int(_f[7])
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
@@ -139,8 +147,8 @@ def entities(self, f, p):
                             _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
                             self.model_entities.append(_)
                         else:
-                                _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
-                                self.model_entities.append(_)
+                            _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, p=p, mat=mat, entities=self.entities)
+                            self.model_entities.append(_)
         self.entities.append(_)
     for __ in range(num_volumes):
         pass
@@ -232,7 +240,7 @@ def elements(self, f, p):
             element_tag, *node_tag = readl_int(f)
             if element_type == 1:
                 if entity_dim != 1:
-                    raise NameError("in import_msh_file, entity_dim!1 for element_type = 1")
+                    raise NameError("in load_msh_file, entity_dim!1 for element_type = 1")
                 vertices = [self.vertices[n] for n in node_tag]
                 self.elements[element_tag] = Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
             elif element_type == 2:
@@ -240,8 +248,9 @@ def elements(self, f, p):
                     raise NameError("in import_msh_file, entity_dim!2 for element_type = 2")
                 vertices = [self.vertices[n] for n in node_tag]
                 self.elements[element_tag]=Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
-            if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity) :
+            if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
+
 
 def periodic(self, f):
     self.vertices_left = []
