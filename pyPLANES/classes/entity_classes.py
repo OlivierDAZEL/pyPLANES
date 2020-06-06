@@ -334,6 +334,8 @@ class ElasticFem(FemEntity):
 
     def update_frequency(self, omega):
         self.mat.update_frequency(omega)
+        print("lambda_={}".format(self.mat.E))
+        print(type(self.mat.E))
 
     def elementary_matrices(self, _el):
         orient_u = orient_element(_el, "u")

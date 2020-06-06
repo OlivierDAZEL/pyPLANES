@@ -18,24 +18,25 @@ from pyPLANES.utils.utils_io import print_entities
 
 param = ModelParameter()
 param.theta_d = 0.0000001
-param.frequencies = (50., 5010., 1)
+param.frequencies = (1., 5000., 201)
 param.name_project = "two_layers"
 
-pem = from_yaml('foam2.yaml')
+rubber = from_yaml('rubber.yaml')
+pem = from_yaml('pem_benchmark_1.yaml')
 Wwood = from_yaml('Wwood.yaml')
 Air_Elastic = from_yaml('Air_Elastic.yaml')
 
 
-L = 0.1
-d_1 = 0.1
+L = 0.2
+d_1 = 0.0002
 d_2 = 0.1
 lcar = 0.1
 param.verbose = False
 
 
 param.order = 2
-param.plot = [True, True, True, False, False, False]
-# param.plot = [False]*6
+# param.plot = [True, True, True, False, False, False]
+param.plot = [False]*6
 
 G = Gmsh(param.name_project)
 
@@ -74,13 +75,13 @@ G.new_physical(l_5, "condition=Rigid Wall")
 G.new_physical([l_1, l_4, l_3, l_6], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
 # G.new_physical(matrice, "mat=Air")
-G.new_physical(layer_1, "mat=Wwood")
-G.new_physical(layer_2, "mat=Air")
+G.new_physical(layer_1, "mat=rubber")
+G.new_physical(layer_2, "mat=pem_benchmark_1")
 
-G.new_physical([l_2], "condition=Fluid_Structure")
-G.new_physical([l_0, l_1, l_3, l_4, l_6, l_5, l_2], "model=FEM1D")
+# G.new_physical([l_2], "condition=Fluid_Structure")
+# G.new_physical([l_0, l_1, l_3, l_4, l_6, l_5, l_2], "model=FEM1D")
 
-# G.new_physical([l_0, l_1, l_3, l_4, l_6, l_5], "model=FEM1D")
+G.new_physical([l_0, l_1, l_3, l_4, l_6, l_5], "model=FEM1D")
 
 G.new_physical([layer_1, layer_2], "model=FEM2D")
 G.new_periodicity(l_1, l_3, (L, 0, 0))
@@ -96,8 +97,8 @@ result_pyPLANES = model.resolution(param)
 
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(Wwood, d_1),
-    Layer(Air, d_2),
+    Layer(rubber, d_1),
+    Layer(pem, d_2),
 ]
 
 param.solver_pymls.backing = backing.rigid
@@ -106,12 +107,12 @@ param.solver_pymls.backing = backing.rigid
 param.S_PW = Solver_PW(param.solver_pymls, param)
 result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
 
-# result_pymls =  param.solver_pymls.solve(param.frequencies[0], param.theta_d)
+result_pymls =  param.solver_pymls.solve(param.frequencies[0], param.theta_d)
 
-# print("result_pymls     = {}".format(result_pymls["R"][0]))
+print("result_pymls     = {}".format(result_pymls["R"][0]))
 print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
 print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
-# print("result_pymls  R  = {}".format(result_pymls["R"][0]))
+
 
 if any(param.plot):
     plt.show()
@@ -123,3 +124,10 @@ if any(param.plot):
 # Z_s = -1j*Air.Z/np.tan(k*(d_1+d_2))
 # R = (Z_s-Air.Z)/(Z_s+Air.Z)
 # print(R)
+
+
+FEM=np.loadtxt("two_layers_out.txt")
+PW=np.loadtxt("two_layers_PW_out.txt")
+plt.plot(PW[:,0],PW[:,1], "b", label="PW")
+plt.plot(FEM[:,0],FEM[:,1], "r.", label="FEM")
+plt.show()

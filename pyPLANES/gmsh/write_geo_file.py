@@ -73,12 +73,14 @@ class Gmsh():
         def __init__(self, f, start_tag, points):
             self.typ = "Circle"
             _tag = start_tag
+
             center, east, north, west, south = points
             f.write("Circle({})= {{{}, {}, {}}};\n".format(_tag, east.tag, center.tag, north.tag)); _tag +=1
             f.write("Circle({})= {{{}, {}, {}}};\n".format(_tag, north.tag, center.tag, west.tag)); _tag +=1
             f.write("Circle({})= {{{}, {}, {}}};\n".format(_tag, west.tag, center.tag, south.tag)); _tag +=1
             f.write("Circle({})= {{{}, {}, {}}};\n".format(_tag, south.tag, center.tag, east.tag)); _tag +=1
             f.write("Curve Loop({})= {{{}, {}, {}, {}}};\n".format(_tag, _tag-4, _tag-3, _tag-2, _tag-1))
+            self.tag_arcs = [_tag-4, _tag-3, _tag-2, _tag-1]
             self.tag = _tag
 
     class Surface():
@@ -93,7 +95,6 @@ class Gmsh():
             for _l in self.ll[1:]:
                 f.write(", {}".format(_l))
             f.write("};\n")
-
 
     def add(self,txt):
         self.f.write(txt+"\n")
@@ -148,12 +149,19 @@ class Gmsh():
             for _obj in line_objects[1:]:
                 self.f.write(", {}".format(_obj))
             self.f.write("};\n")
+
         surf_objects = [_obj.tag for _obj in objects if _obj.typ == "Surface"]
         if len(surf_objects) != 0:
             self.f.write("Physical Surface(\"" + label + "\")={"+ str(surf_objects[0]))
             for _obj in surf_objects[1:]:
                 self.f.write(", {}".format(_obj))
             self.f.write("};\n")
+
+    def new_physical_curve(self, list, label):
+        self.f.write("Physical Curve(\"" + label + "\")={"+ str(list[0]))
+        for _l in list[1:]:
+            self.f.write(", {}".format(_l))
+        self.f.write("};\n")
 
     def new_periodicity(self, obj1, obj2, Delta):
         if obj1.typ != obj2.typ:

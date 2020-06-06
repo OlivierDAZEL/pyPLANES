@@ -25,16 +25,20 @@
 import numpy as np
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
-# from pymls.utils import from_yaml, media, Solver, Layer, backing
-
 
 from pymls import Solver, Layer, backing
 from mediapack import Air, PEM, EqFluidJCA
+
+from pyPLANES.utils.utils_io import initialisation_out_files
 
 Air = Air()
 
 class Solver_PW():
     def __init__(self, S, p):
+        if hasattr(p, "name_project"):
+            self.name_project = p.name_project
+        else:
+            self.name_project = "No_name"
         self.layers = S.layers
         self.backing = S.backing
         if p.frequencies[2] > 0:
@@ -50,7 +54,14 @@ class Solver_PW():
         self.plot = p.plot
         self.result = {}
 
+        self.out_file = self.name_project + "_PW_out.txt"
+        self.info_file = self.name_project + "_PW_info.txt"
+
+        initialisation_out_files(self, p)
+
+
     def update_frequency(self, f, theta_d):
+        self.current_frequency = f
         omega = 2*np.pi*f
         self.omega = omega
         for _l in self.layers:
@@ -59,15 +70,33 @@ class Solver_PW():
         self.ky = omega*np.cos(theta_d*np.pi/180)/Air.c
         self.k = omega/Air.c
 
+
+    def write_out_files(self, out):
+
+        self.out_file.write("{:.12e}\t".format(self.current_frequency))
+        abs = 1-np.abs(out["R"])**2
+        self.out_file.write("{:.12e}\t".format(abs))
+        self.out_file.write("\n")
+
+
     def resolution(self, theta_d):
+
         for f in self.frequencies:
             out = self.solve(f, theta_d)
+            self.write_out_files(out)
             # print("R pyPLANES_PW    = {}".format((R)))
             # print("T pyPLANES_PW    = {}".format((T)))
+        self.out_file.close()
+        self.info_file.close()
         return out
+
     def solve(self, f, theta_d):
         out = dict()
         self.update_frequency(f, theta_d)
+        # print("796*om={}".format(796*2*np.pi*f))
+        # print("ro={}".format(self.layers[0].medium.rho))
+        # print("E={}".format(self.layers[0].medium.E))
+        # print("nu={}".format(self.layers[0].medium.nu))
         Layers = self.layers.copy()
         Layers.insert(0, Layer(Air, 0.1))
         if self.backing == backing.transmission:

@@ -129,8 +129,8 @@ def TM_elastic(layer, kx, om):
     delta_p = om*np.sqrt(rho/P_mat)
     delta_s = om*np.sqrt(rho/mu)
 
-    beta_p = np.sqrt(delta_p**2-kx**2)
-    beta_s = np.sqrt(delta_s**2-kx**2)
+    beta_p = np.sqrt(delta_p**2-kx**2+0j)
+    beta_s = np.sqrt(delta_s**2-kx**2+0j)
 
     alpha_p = -1j*lam*delta_p**2 - 2j*mu*beta_p**2
     alpha_s = 2j*mu*beta_s*kx

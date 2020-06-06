@@ -35,43 +35,27 @@ from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, TransmissionPw
 
 def initialisation_out_files(self, p):
     # Creation of the directory if it .oes not exists
-    if hasattr(p,"outfiles_directory"):
+    if hasattr(p, "outfiles_directory"):
         if p.outfiles_directory != "":
             directory = p.outfiles_directory
             if not path.exists(directory):
                 mkdir(directory)
-            self.outfile_name = directory + "/" + self.name_project + "_out.txt"
-            self.resfile_name = directory + "/"+ self.name_project + "_info.txt"
-        else:
-            self.outfile_name = self.name_project + "_out.txt"
-            self.resfile_name = self.name_project + "_info.txt"
-    else :
-        self.outfile_name = self.name_project + "_out.txt"
-        self.resfile_name = self.name_project + "_info.txt"
-    self.outfile = open(self.outfile_name, 'w')
-    self.resfile = open(self.resfile_name, 'w')
+            self.out_file = directory + "/" + self.out_file_name
+            self.info_file = directory + "/"+ self.info_file_name
+    self.out_file = open(self.out_file, 'w')
+    self.info_file = open(self.info_file, 'w')
 
     name_server = socket.gethostname()
+    self.info_file.write("Output File from pyPLANES\n")
+    self.info_file.write("Generated on {}\n".format(name_server))
+    # self.info_file.write("Frequency [Hz]\n")
+    # if [isinstance(_ent, PwFem) for _ent in self.model_entities]:
+    #     self.info_file.write("absorption [no unity]\n")
+    # if [isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]:
+    #     self.info_file.write("|R| [no unity]\n")
+    # if [isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]:
+    #     self.info_file.write("|T| [no unity]\n")
 
-    self.resfile.write("Output File from pyPLANES\n")
-    self.resfile.write("Generated on {}\n".format(name_server))
-    self.resfile.write("Frequency [Hz]\n")
-    if [isinstance(_ent, PwFem) for _ent in self.model_entities]:
-        self.resfile.write("absorption [no unity]\n")
-    if [isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]:
-        self.resfile.write("|R| [no unity]\n")
-    if [isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]:
-        self.resfile.write("|T| [no unity]\n")
-
-def write_out_files(self):
-    self.outfile.write("{:.12e}\t".format(self.current_frequency))
-    if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
-        self.outfile.write("{:.12e}\t".format(self.abs))
-    if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
-        self.outfile.write("{:.12e}\t".format(self.modulus_reflex))
-    if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
-        self.outfile.write("{:.12e}\t".format(self.modulus_trans))
-    self.outfile.write("\n")
 
 def print_entities(self):
     for _ in self.entities:

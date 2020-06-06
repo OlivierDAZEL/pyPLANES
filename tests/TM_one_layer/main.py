@@ -19,9 +19,9 @@ from pyPLANES.utils.utils_io import print_entities
 param = ModelParameter()
 param.theta_d = 60.0000001
 param.frequencies = (300., 5010., 1)
-param.name_project = "one_layer"
+param.name_project = "TM_one_layer"
 
-pem = from_yaml('foam2.yaml')
+pem = from_yaml('pem_benchmark_1.yaml')
 Wwood = from_yaml('Wwood.yaml')
 
 L = 0.01
@@ -44,12 +44,12 @@ l_2 = G.new_line(p_2, p_3)
 l_3 = G.new_line(p_3, p_0)
 ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
 matrice = G.new_surface([ll_0.tag])
-G.new_physical(l_2, "condition=Transmission")
-# G.new_physical(l_2, "condition=Rigid Wall")
+# G.new_physical(l_2, "condition=Transmission")
+G.new_physical(l_2, "condition=Rigid Wall")
 G.new_physical([l_1, l_3], "condition=Periodicity")
 G.new_physical(l_0, "condition=Incident_PW")
 # G.new_physical(matrice, "mat=Air")
-G.new_physical(matrice, "mat=foam2")
+G.new_physical(matrice, "mat=pem_benchmark_1")
 # G.new_physical(matrice, "mat=Wwood")
 G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
 G.new_physical([matrice], "model=FEM2D")
@@ -57,25 +57,25 @@ G.new_periodicity(l_1, l_3, (L, 0, 0))
 option = "-2 -v 0 "
 G.run_gmsh(option)
 
-param.incident_ml = [Layer(pem, d)] ; param.shift_pw = -param.incident_ml[0].thickness
-param.transmission_ml = [Layer(pem, d)]
+param.incident_ml = [Layer(Wwood, d)] ; param.shift_pw = -param.incident_ml[0].thickness
+# param.transmission_ml = [Layer(pem, d)]
 
 model = Model(param)
 result_pyPLANES = model.resolution(param)
 
 param.solver_pymls = Solver()
 param.solver_pymls.layers = [
-    Layer(pem, d),
+    Layer(Wwood,d),
     # Layer(Air,d),#,Layer(Air,d)
     Layer(pem, d),
     # Layer(Air,d)
-    Layer(pem, d),
+    # Layer(pem, d),
     # Layer(Wwood,d),
     # Layer(Wwood,d/10),
 ]
 
-# param.solver_pymls.backing = backing.rigid
-param.solver_pymls.backing = backing.transmission
+param.solver_pymls.backing = backing.rigid
+# param.solver_pymls.backing = backing.transmission
 
 
 param.S_PW = Solver_PW(param.solver_pymls, param)

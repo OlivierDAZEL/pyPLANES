@@ -40,7 +40,7 @@ from mediapack import Air
 from pyPLANES.classes.entity_classes import *
 from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
-from pyPLANES.utils.utils_io import initialisation_out_files, write_out_files, display_sol
+from pyPLANES.utils.utils_io import initialisation_out_files, display_sol
 
 
 
@@ -62,7 +62,6 @@ class Model():
         self.A_i, self.A_j, self.A_v = [], [], []
         self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
-        self.outfile = None
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
         if hasattr(p, "materials_directory"):
             self.materials_directory = p.materials_directory
@@ -75,6 +74,10 @@ class Model():
             self.verbose = False
 
         load_msh_file(self, p)
+
+        self.out_file = self.name_project + "_out.txt"
+        self.info_file = self.name_project + "_info.txt"
+
         initialisation_out_files(self, p)
         preprocess(self, p)
 
@@ -92,6 +95,18 @@ class Model():
         for _ent in self.model_entities:
             _ent.update_frequency(omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
+
+    def write_out_files(self):
+
+        if isinstance(self, Model):
+            self.out_file.write("{:.12e}\t".format(self.current_frequency))
+            if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
+                self.out_file.write("{:.12e}\t".format(self.abs))
+            if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
+                self.out_file.write("{:.12e}\t".format(self.modulus_reflex))
+            if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
+                self.out_file.write("{:.12e}\t".format(self.modulus_trans))
+            self.out_file.write("\n")
 
     def __str__(self):
         out = "TBD"
@@ -211,17 +226,17 @@ class Model():
         for f in self.frequencies:
             self.create_linear_system(f)
             out = self.solve()
-            write_out_files(self)
+            self.write_out_files()
             # if self.verbose:
                 # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
                 # print("|abs pyPLANES_FEM| = {}".format(self.abs))
             if any(p.plot):
                 display_sol(self, p)
-        self.outfile.close()
-        self.resfile.close()
+        self.out_file.close()
+        self.info_file.close()
 
         if self.name_server == "il-calc1":
-            mail = " mailx -s \"Calculation of pyPLANES over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.resfile_name
+            mail = " mailx -s \"Calculation of pyPLANES over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file
             os.system(mail)
 
         return out
