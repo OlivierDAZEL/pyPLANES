@@ -32,8 +32,8 @@ from pyPLANES.classes.entity_classes import *
 
 def load_msh_file(self, p):
     if p.verbose:
-        print("Reading "+ p.name_project + ".msh")
-    f = open(p.name_project + ".msh", "r")
+        print("Reading "+ p.name_mesh + ".msh")
+    f = open(p.name_mesh + ".msh", "r")
     _f = "_"
     while _f:
         _f = f.readline().strip()

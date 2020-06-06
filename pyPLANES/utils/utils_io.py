@@ -33,7 +33,7 @@ import matplotlib.tri as mtri
 
 from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem, ElasticFem
 
-def initialisation_out_files(self, p):
+def initialisation_out_files_plain(self, p):
     # Creation of the directory if it .oes not exists
     if hasattr(p, "outfiles_directory"):
         if p.outfiles_directory != "":
@@ -42,6 +42,7 @@ def initialisation_out_files(self, p):
                 mkdir(directory)
             self.out_file = directory + "/" + self.out_file_name
             self.info_file = directory + "/"+ self.info_file_name
+
     self.out_file = open(self.out_file, 'w')
     self.info_file = open(self.info_file, 'w')
 
@@ -56,6 +57,8 @@ def initialisation_out_files(self, p):
     # if [isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]:
     #     self.info_file.write("|T| [no unity]\n")
 
+def initialisation_out_files(self, p):
+    initialisation_out_files_plain(self, p)
 
 def print_entities(self):
     for _ in self.entities:

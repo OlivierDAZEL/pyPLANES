@@ -14,7 +14,7 @@ from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 param = ModelParameter()
 theta_d = 00.
-param.frequencies = (10., 5010., 200)
+param.frequencies = (10., 15., 2)
 param.name_project = "metaporous_benchmark_2"
 
 param.theta_d = theta_d
@@ -22,7 +22,7 @@ L = 0.02
 d = 0.02
 a = 0.008
 r_i = 0.0078
-lcar = 0.008/8
+lcar = 0.008
 param.verbose = True
 param.order = 2
 # param.plot = [False, False, False, True, True, True]
@@ -42,10 +42,6 @@ l_3 = G.new_line(p_3, p_0)
 ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
 c_0 = G.new_circle(L/2, d/2, a, lcar/2)
 c_1 = G.new_circle(L/2, d/2, r_i, lcar/2)
-
-
-# print(c_1.tag_arcs)
-# dqs
 
 matrice = G.new_surface([ll_0.tag, -c_0.tag])
 rubber = G.new_surface([c_0.tag, -c_1.tag])
@@ -84,6 +80,6 @@ result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
 
 FEM = np.loadtxt("metaporous_benchmark_2_out.txt")
 PW = np.loadtxt("metaporous_benchmark_2_PW_out.txt")
-plt.plot(PW[:,0],PW[:,1], "b", label="PW")
-plt.plot(FEM[:,0],FEM[:,1], "r.", label="FEM")
+plt.plot(PW[:, 0],PW[:, 1], "b", label="PW")
+plt.plot(FEM[:, 0],FEM[:, 1], "r.", label="FEM")
 plt.show()

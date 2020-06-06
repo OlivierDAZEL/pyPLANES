@@ -395,7 +395,7 @@ class PwFem(FemEntity):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.F_i, self.F_v = [], []
         self.dofs = []
-        self.theta_d = kwargs["p"].theta_d
+        self.theta_d = None
         # self.period = kwargs["p"].period
         self.kx, self.ky = [], []
         self.phi_i, self.phi_j, self.phi_v = [], [], []

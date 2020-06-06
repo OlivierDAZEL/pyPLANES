@@ -9,22 +9,20 @@ from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 param = ModelParameter()
-theta_d = 30.
-param.frequencies = (10., 5010., 200)
-param.name_project = "metaporous_benchmark_1"
+param.frequencies = (10., 5010., 3)
+param.name_mesh = "metaporous_benchmark_1"
 
-param.theta_d = theta_d
 L = 0.02
 d = 0.02
 a = 0.008
-lcar = 0.008/8
+lcar = 0.008
 param.verbose = True
 param.order = 3
 # param.plot = [False, False, False, True, True, True]
 param.plot = [False]*6
 
 p = param
-G = Gmsh(p.name_project)
+G = Gmsh(p.name_mesh)
 
 p_0 = G.new_point(0, 0, lcar)
 p_1 = G.new_point(L, 0,lcar)
@@ -53,6 +51,8 @@ option = "-2 -v 0 "
 G.run_gmsh(option)
 
 model = Model(param)
+model.name_project = "metaporous_benchmark_1"
+param.theta_d = 0.
 model.resolution(param)
 
 # output = np.loadtxt(model.outfile_name)

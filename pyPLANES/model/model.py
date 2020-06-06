@@ -46,9 +46,12 @@ from pyPLANES.utils.utils_io import initialisation_out_files, display_sol
 
 class Model():
     def __init__(self, p):
-        self.name_project = p.name_project
+        self.name_mesh = p.name_mesh
         self.dim = 2
-        self.theta_d = p.theta_d
+        if hasattr(p, "theta_d"):
+            self.theta_d = p.theta_d
+        else:
+            self.theta_d = 0
         self.entities = [] # List of all GMSH Entities
         self.model_entities = [] # List of Entities used in the Model
         self.reference_elements = dict() # dictionary of reference_elements
@@ -75,10 +78,7 @@ class Model():
 
         load_msh_file(self, p)
 
-        self.out_file = self.name_project + "_out.txt"
-        self.info_file = self.name_project + "_info.txt"
 
-        initialisation_out_files(self, p)
         preprocess(self, p)
 
     def update_frequency(self, f):
@@ -221,6 +221,9 @@ class Model():
                 _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
 
     def resolution(self, p):
+        self.out_file = self.name_project + "_out.txt"
+        self.info_file = self.name_project + "_info.txt"
+        initialisation_out_files(self, p)
         if p.verbose:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:

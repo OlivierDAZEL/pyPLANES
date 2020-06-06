@@ -1,2 +1,2 @@
 Output File from pyPLANES
-Generated on Oliviers-MacBook-Pro.local
+Generated on oliviers-macbook-pro.home
