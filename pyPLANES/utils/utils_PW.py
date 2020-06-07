@@ -34,30 +34,31 @@ from pyPLANES.utils.utils_io import initialisation_out_files
 Air = Air()
 
 class Solver_PW():
-    def __init__(self, S, p):
-        if hasattr(p, "name_project"):
-            self.name_project = p.name_project
-        else:
-            self.name_project = "No_name"
+    def __init__(self, **kwargs):
+        self.name_project = kwargs.get("name_project", "")
+        frequencies = kwargs.get("frequencies", np.array([440]))
+        self.theta_d = kwargs.get("theta_d", 0.)
+        self.name_project = kwargs.get("name_project", "unnamed_project")
+        self.outfiles_directory = kwargs.get("outfiles_directory", False)
+
+        S = kwargs.get("S")
         self.layers = S.layers
         self.backing = S.backing
-        if p.frequencies[2] > 0:
-                self.frequencies = np.linspace(p.frequencies[0], p.frequencies[1], p.frequencies[2])
-        elif p.frequencies[2]<0:
-            self.frequencies = np.logspace(np.log10(p.frequencies[0]),np.log10(p.frequencies[1]),abs(p.frequencies[2]))
+        if frequencies[2] > 0:
+                self.frequencies = np.linspace(frequencies[0], frequencies[1], frequencies[2])
+        elif frequencies[2]<0:
+            self.frequencies = np.logspace(np.log10(frequencies[0]),np.log10(frequencies[1]),abs(frequencies[2]))
 
         self.kx, self.ky, self.k = None, None, None
-        if hasattr(p, "shift_pw"):
-            self.shift_plot = p.shift_pw
-        else:
-            self.shift_plot = 0.
-        self.plot = p.plot
+
+        self.shift_plot = kwargs.get("shift_pw", 0.)
+        self.plot = kwargs.get("plot_results", False)
         self.result = {}
 
         self.out_file = self.name_project + "_PW_out.txt"
         self.info_file = self.name_project + "_PW_info.txt"
-
-        initialisation_out_files(self, p)
+        self.outfiles_directory = False
+        initialisation_out_files(self)
 
 
     def update_frequency(self, f, theta_d):

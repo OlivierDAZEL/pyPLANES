@@ -33,11 +33,11 @@ import matplotlib.tri as mtri
 
 from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem, ElasticFem
 
-def initialisation_out_files_plain(self, p):
+def initialisation_out_files_plain(self):
     # Creation of the directory if it .oes not exists
-    if hasattr(p, "outfiles_directory"):
-        if p.outfiles_directory != "":
-            directory = p.outfiles_directory
+    if self.outfiles_directory:
+        if self.outfiles_directory != "":
+            directory = self.outfiles_directory
             if not path.exists(directory):
                 mkdir(directory)
             self.out_file = directory + "/" + self.out_file_name
@@ -57,8 +57,8 @@ def initialisation_out_files_plain(self, p):
     # if [isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]:
     #     self.info_file.write("|T| [no unity]\n")
 
-def initialisation_out_files(self, p):
-    initialisation_out_files_plain(self, p)
+def initialisation_out_files(self):
+    initialisation_out_files_plain(self)
 
 def print_entities(self):
     for _ in self.entities:
@@ -87,70 +87,70 @@ def print_model_entities(self):
 def print_reference_elements(self):
     print(self.reference_elements)
 
-def display_sol(self, p):
-    if any(p.plot[3:]):
+def display_sol(self):
+    if any(self.plot[3:]):
         x, y, u_x, u_y, pr = [], [], [], [], []
     for _en in self.entities:
         if isinstance(_en, FluidFem):
-            if any(p.plot[2::3]): # Plot of pressure  == True
+            if any(self.plot[2::3]): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
                     p_elem *= np.exp(1j*self.kx*x_elem)
-                    if p.plot[2]:
+                    if self.plot[2]:
                         plt.figure(2)
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
                         plt.title("Pressure")
-                    if p.plot[5]:
+                    if self.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))
                         pr.extend(list(p_elem))
         elif isinstance(_en, PemFem):
-            if any(p.plot): # Plot of pressure  == True
+            if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
                     ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
                     uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
                     p_elem = f_elem[:, 2]*np.exp(1j*self.kx*x_elem)
-                    if p.plot[0]:
+                    if self.plot[0]:
                         plt.figure(0)
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
                         plt.plot(y_elem, np.imag(ux_elem), 'm.')
                         plt.title("Solid displacement along x")
-                    if p.plot[1]:
+                    if self.plot[1]:
                         plt.figure(1)
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
                         plt.title("Solid displacement along y")
-                    if p.plot[2]:
+                    if self.plot[2]:
                         plt.figure(2)
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
                         plt.title("Pressure")
-                    if p.plot[5]:
+                    if self.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))
                         pr.extend(list(p_elem))
         elif isinstance(_en, ElasticFem):
-            if any(p.plot): # Plot of pressure  == True
+            if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
                     ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
                     uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
-                    if p.plot[0]:
+                    if self.plot[0]:
                         plt.figure(0)
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
                         plt.plot(y_elem, np.imag(ux_elem), 'm.')
                         plt.title("Solid displacement along x")
-                    if p.plot[1]:
+                    if self.plot[1]:
                         plt.figure(1)
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
                         plt.title("Solid displacement along y")
-    if any(p.plot[3:]):
+    if any(self.plot[3:]):
         triang = mtri.Triangulation(x, y)
-        if p.plot[5]:
+        if self.plot[5]:
             plt.figure(5)
             plt.tricontourf(triang, np.abs(pr), 40, cmap=cm.jet)
         display_mesh(self)

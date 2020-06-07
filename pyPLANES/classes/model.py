@@ -22,7 +22,6 @@
 # copies or substantial portions of the Software.
 #
 import os
-import platform
 import timeit
 
 from scipy.sparse.linalg.dsolve import linsolve
@@ -42,44 +41,25 @@ from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_io import initialisation_out_files, display_sol
 
+class ModelParameter:
+    '''Class ModelParameter'''
+    def __init__(self,verbose=False):
+        self.verbose = verbose
+        pass
+    def __str__(self):
+        out = "Parameters of the FEM Model{}\n"
+        out += "\t f = {}\n".format(self.f)
+        return out
 
-
-class Model():
-    def __init__(self, p):
-        self.name_mesh = p.name_mesh
-        self.dim = 2
-        if hasattr(p, "theta_d"):
-            self.theta_d = p.theta_d
-        else:
-            self.theta_d = 0
-        self.entities = [] # List of all GMSH Entities
-        self.model_entities = [] # List of Entities used in the Model
+class FemModel():
+    def __init__(self, **kwargs):
+        self.plot = kwargs.get("plot_results", False)
         self.reference_elements = dict() # dictionary of reference_elements
-        self.vertices = []
-        self.elements = []
         self.edges = []
         self.faces = []
-        self.bubbles =[]
-        self.nb_edges, self.nb_faces, self.nb_bubbles = 0, 0, 0
-        self.F_i, self.F_v = [], []
-        self.A_i, self.A_j, self.A_v = [], [], []
-        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
-        self.T_i, self.T_j, self.T_v = [], [], []
-        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
-        if hasattr(p, "materials_directory"):
-            self.materials_directory = p.materials_directory
-        else:
-            self.materials_directory = ""
-        self.name_server = platform.node()
-        if self.name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
-            self.verbose = True
-        else:
-            self.verbose = False
+        self.bubbles = []
+        self.nb_edges = self.nb_faces = self.nb_bubbles = 0
 
-        load_msh_file(self, p)
-
-
-        preprocess(self, p)
 
     def update_frequency(self, f):
         self.F_i, self.F_v = [], []
@@ -98,7 +78,7 @@ class Model():
 
     def write_out_files(self):
 
-        if isinstance(self, Model):
+        if isinstance(self, FemModel):
             self.out_file.write("{:.12e}\t".format(self.current_frequency))
             if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
                 self.out_file.write("{:.12e}\t".format(self.abs))
@@ -220,11 +200,9 @@ class Model():
             if isinstance(_ent, PwFem):
                 _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
 
-    def resolution(self, p):
-        self.out_file = self.name_project + "_out.txt"
-        self.info_file = self.name_project + "_info.txt"
-        initialisation_out_files(self, p)
-        if p.verbose:
+    def resolution(self):
+        initialisation_out_files(self)
+        if self.verbose:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:
             self.create_linear_system(f)
@@ -233,15 +211,14 @@ class Model():
             # if self.verbose:
                 # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
                 # print("|abs pyPLANES_FEM| = {}".format(self.abs))
-            if any(p.plot):
-                display_sol(self, p)
+            if any(self.plot):
+                display_sol(self)
         self.out_file.close()
         self.info_file.close()
 
         if self.name_server == "il-calc1":
             mail = " mailx -s \"Calculation of pyPLANES over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file
             os.system(mail)
-
         return out
 
 
@@ -304,6 +281,3 @@ class Model():
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
 
         return out
-
-
-
