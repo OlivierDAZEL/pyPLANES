@@ -37,19 +37,7 @@ import matplotlib.tri as mtri
 from mediapack import Air
 
 from pyPLANES.classes.entity_classes import *
-from pyPLANES.gmsh.load_msh_file import load_msh_file
-from pyPLANES.model.preprocess import preprocess, renumber_dof
 from pyPLANES.utils.utils_io import initialisation_out_files, display_sol
-
-class ModelParameter:
-    '''Class ModelParameter'''
-    def __init__(self,verbose=False):
-        self.verbose = verbose
-        pass
-    def __str__(self):
-        out = "Parameters of the FEM Model{}\n"
-        out += "\t f = {}\n".format(self.f)
-        return out
 
 class FemModel():
     def __init__(self, **kwargs):

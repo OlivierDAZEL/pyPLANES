@@ -18,7 +18,7 @@ from pyPLANES.utils.utils_io import print_entities
 name_server = platform.node()
 
 theta_d = 0.000000
-frequencies = (20., 5010., 1)
+frequencies = (600., 1500., 30)
 name_mesh = "one_layer"
 name_project = "one_layer"
 
@@ -28,7 +28,7 @@ lcar = 0.01
 
 order = 3
 plot_results = [True, True, True, False, False, False]
-# param.plot = [False]*6
+plot_results = [False]*6
 
 G = Gmsh(name_mesh)
 
@@ -58,35 +58,26 @@ pem = from_yaml('pem_benchmark_1.yaml')
 Wwood = from_yaml('Wwood.yaml')
 Air_Elastic = from_yaml('Air_Elastic.yaml')
 
-
 # param.incident_ml = [Layer(rubber, 0.0002)] ; param.shift_pw = -param.incident_ml[0].thickness
 
 problem = FemProblem(name_mesh=name_mesh, name_project=name_project, order=2, frequencies=frequencies, plot_results=plot_results)
 result_pyPLANES  =problem.resolution()
 
-
-from pyPLANES.classes.model import ModelParameter
-
-param = ModelParameter()
-param.theta_d = 0.000000
-param.frequencies = (20., 5010.,1)
-param.plot = plot_results
-
-param.solver_pymls = Solver()
-param.solver_pymls.layers = [
-    # Layer(rubber, 0.0002),
+solver = Solver()
+solver.layers = [
     Layer(pem, d),
 ]
-param.solver_pymls.backing = backing.rigid
+solver.backing = backing.rigid
 
-param.S_PW = Solver_PW(S=param.solver_pymls, theta_d=theta_d, frequencies=frequencies,plot_results=plot_results)
-result_pyPLANESPW = param.S_PW.resolution(param.theta_d)
+S_PW = Solver_PW(S=solver, name_project=name_project, theta_d=theta_d, frequencies=frequencies,plot_results=plot_results)
 
-print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
-print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
+result_pyPLANESPW = S_PW.resolution(theta_d)
+
+# print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
+# print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
 # print("result_pymls  R  = {}".format(result_pymls["R"][0]))
 
-if any(param.plot):
+if any(plot_results):
     plt.show()
 
 
@@ -98,8 +89,8 @@ if any(param.plot):
 # print(R)
 
 
-# FEM = np.loadtxt("one_layer_out.txt")
-# PW = np.loadtxt("one_layer_PW_out.txt")
-# plt.plot(PW[:,0],PW[:,1], "b", label="PW")
-# plt.plot(FEM[:,0],FEM[:,1], "r.", label="FEM")
-# plt.show()
+FEM = np.loadtxt("one_layer_out.txt")
+PW = np.loadtxt("one_layer_PW_out.txt")
+plt.plot(PW[:,0],PW[:,1], "b", label="PW")
+plt.plot(FEM[:,0],FEM[:,1], "r.", label="FEM")
+plt.show()

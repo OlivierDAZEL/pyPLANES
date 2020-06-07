@@ -178,8 +178,6 @@ def renumber_dofs(self):
     print("self.nb_dofs={}".format(self.nb_dofs))
 
 
-
-
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
         if _el.typ ==1:
@@ -227,20 +225,7 @@ def periodicity_initialisation(self):
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
 
-def init_vec_frequencies(frequency):
-    if frequency[2] > 0:
-            frequencies = np.linspace(frequency[0],frequency[1],frequency[2])
-    elif frequency[2]<0:
-        frequencies = np.logspace(np.log10(frequency[0]),np.log10(frequency[1]),abs(frequency[2]))
-    # else % Case of complex frequency
-    #     temp_1=linspace(frequency.min,frequency.max,frequency.nb(1));
-    #     temp_2=linspace(frequency.min_imag,frequency.max_imag,frequency.nb(2));
-    #     frequency.vec=[];
-    #     for ii=1:frequency.nb(2)
-    #         frequency.vec=[frequency.vec temp_1+1j*temp_2(ii)];
-    #     end
-    #     frequency.nb=frequency.nb(1)*frequency.nb(2);
-    return frequencies
+
 
 def elementary_matrices(self):
     '''Creation of elementary matrices in the elements'''

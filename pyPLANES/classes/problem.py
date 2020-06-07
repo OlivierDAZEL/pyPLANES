@@ -25,42 +25,15 @@
 import platform
 
 import numpy as np
-from pyPLANES.classes.model import FemModel
+from pyPLANES.classes.fem_model import FemModel
+from pyPLANES.classes.mesh import Mesh
+from pyPLANES.classes.calculus import FemCalculus
 from pyPLANES.gmsh.load_msh_file import load_msh_file
-from pyPLANES.model.preprocess import init_vec_frequencies, create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
+from pyPLANES.model.preprocess import create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
 from pyPLANES.classes.entity_classes import PwFem
 
-class Mesh():
-    def __init__(self, **kwargs):
-        self.entities = [] # List of all GMSH Entities
-        self.model_entities = [] # List of Entities used in the Model
-        self.vertices = []
-        self.elements = []
-        self.materials_directory = kwargs.get("materials_directory", "")
-        self.reference_elements = dict() # dictionary of reference_elements
-        load_msh_file(self, **kwargs)
 
-
-class Calculus():
-    def __init__(self, **kwargs):
-        frequencies = kwargs.get("frequencies", np.array([440]))
-        self.theta_d = kwargs.get("theta_d", 0.)
-        self.name_project = kwargs.get("name_project", "unnamed_project")
-        self.outfiles_directory = kwargs.get("outfiles_directory", False)
-
-
-        self.frequencies = init_vec_frequencies(frequencies)
-        self.out_file = self.name_project + "_out.txt"
-        self.info_file = self.name_project + "_info.txt"
-
-        self.F_i, self.F_v = [], []
-        self.A_i, self.A_j, self.A_v = [], [], []
-        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
-        self.T_i, self.T_j, self.T_v = [], [], []
-        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
-
-
-class FemProblem(Mesh, FemModel, Calculus):
+class FemProblem(Mesh, FemModel, FemCalculus):
     def __init__(self, **kwargs):
         self.name_server = platform.node()
         if self.name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
@@ -69,16 +42,14 @@ class FemProblem(Mesh, FemModel, Calculus):
             self.verbose = False
         self.verbose = kwargs.get("verbose", True)
         Mesh.__init__(self, **kwargs)
-
-        self.order = kwargs.get("order", 5)
+        self.order = kwargs.get("order", 2)
         FemModel.__init__(self, **kwargs)
         self.dim = 2
-        Calculus.__init__(self, **kwargs)
+        FemCalculus.__init__(self, **kwargs)
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
                 _ent.theta_d = self.theta_d
         create_lists(self)
-
         activate_dofs(self)
         desactivate_dofs_dimension(self)
         desactivate_dofs_BC(self)
@@ -87,4 +58,7 @@ class FemProblem(Mesh, FemModel, Calculus):
         periodicity_initialisation(self)
         check_model(self)
         elementary_matrices(self)
+
+    def resolution(self):
+        return FemModel.resolution(self)
 
