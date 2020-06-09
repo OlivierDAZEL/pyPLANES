@@ -26,50 +26,37 @@ import numpy as np
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
 
-from pymls import Solver, Layer, backing
+from mediapack import from_yaml
+from pymls import Layer, backing
 from mediapack import Air, PEM, EqFluidJCA
 
-from pyPLANES.utils.utils_io import initialisation_out_files
+from pyPLANES.utils.utils_io import initialisation_out_files_plain
+from pyPLANES.classes.calculus import PwCalculus
+
 
 Air = Air()
 
-class Solver_PW():
-    def __init__(self, S, p):
-        if hasattr(p, "name_project"):
-            self.name_project = p.name_project
+class Solver_PW(PwCalculus):
+    def __init__(self, **kwargs):
+        PwCalculus.__init__(self, **kwargs)
+        ml = kwargs.get("ml")
+        termination = kwargs.get("termination")
+        self.layers = []
+        for _l in ml:
+            mat = from_yaml(_l[0]+".yaml")
+            d = _l[1]
+            self.layers.append(Layer(mat,d))
+        if termination in ["trans", "transmission","Transmission"]:
+            self.backing = "Transmission"
         else:
-            self.name_project = "No_name"
-        self.layers = S.layers
-        self.backing = S.backing
-        if p.frequencies[2] > 0:
-                self.frequencies = np.linspace(p.frequencies[0], p.frequencies[1], p.frequencies[2])
-        elif p.frequencies[2]<0:
-            self.frequencies = np.logspace(np.log10(p.frequencies[0]),np.log10(p.frequencies[1]),abs(p.frequencies[2]))
+            self.backing = backing.rigid
 
         self.kx, self.ky, self.k = None, None, None
-        if hasattr(p, "shift_pw"):
-            self.shift_plot = p.shift_pw
-        else:
-            self.shift_plot = 0.
-        self.plot = p.plot
+        self.shift_plot = kwargs.get("shift_pw", 0.)
+        self.plot = kwargs.get("plot_results", [False]*6)
         self.result = {}
-
-        self.out_file = self.name_project + "_PW_out.txt"
-        self.info_file = self.name_project + "_PW_info.txt"
-
-        initialisation_out_files(self, p)
-
-
-    def update_frequency(self, f, theta_d):
-        self.current_frequency = f
-        omega = 2*np.pi*f
-        self.omega = omega
-        for _l in self.layers:
-            _l.medium.update_frequency(omega)
-        self.kx = omega*np.sin(theta_d*np.pi/180)/Air.c
-        self.ky = omega*np.cos(theta_d*np.pi/180)/Air.c
-        self.k = omega/Air.c
-
+        self.outfiles_directory = False
+        initialisation_out_files_plain(self)
 
     def write_out_files(self, out):
 
@@ -82,6 +69,7 @@ class Solver_PW():
     def resolution(self, theta_d):
 
         for f in self.frequencies:
+            self.update_frequency(f)
             out = self.solve(f, theta_d)
             self.write_out_files(out)
             # print("R pyPLANES_PW    = {}".format((R)))
@@ -92,14 +80,9 @@ class Solver_PW():
 
     def solve(self, f, theta_d):
         out = dict()
-        self.update_frequency(f, theta_d)
-        # print("796*om={}".format(796*2*np.pi*f))
-        # print("ro={}".format(self.layers[0].medium.rho))
-        # print("E={}".format(self.layers[0].medium.E))
-        # print("nu={}".format(self.layers[0].medium.nu))
         Layers = self.layers.copy()
         Layers.insert(0, Layer(Air, 0.1))
-        if self.backing == backing.transmission:
+        if self.backing == "transmission":
             Layers.append(Layer(Air, 0.2))
         n, interfaces, dofs = initialise_PW_solver(Layers, self.backing)
         M = np.zeros((n-1, n), dtype=complex)
@@ -134,14 +117,14 @@ class Solver_PW():
                 i_eq = self.interface_pem_rigid(M, i_eq, Layers[-1], dofs[-1])
             elif Layers[-1].medium.MODEL == "elastic":
                 i_eq = self.interface_elastic_rigid(M, i_eq, Layers[-1], dofs[-1])
-        elif self.backing == backing.transmission:
+        elif self.backing == "transmission":
             i_eq = self.semi_infinite_medium(M, i_eq, Layers[-1], dofs[-1] )
 
         F = -M[:, 0]*np.exp(1j*self.ky*Layers[0].thickness) # - is for transposition, exponential term is for the phase shift
         M = np.delete(M, 0, axis=1)
         X = LA.solve(M, F)
         R_pyPLANES_PW = X[0]
-        if self.backing == backing.transmission:
+        if self.backing == "transmission":
             T_pyPLANES_PW = X[-2]
         else:
             T_pyPLANES_PW = 0.

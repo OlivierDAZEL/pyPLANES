@@ -25,7 +25,8 @@
 import itertools
 import numpy as np
 
-from mediapack import Air
+from mediapack import Air, from_yaml
+from pymls import Layer
 from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
 from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem
@@ -33,7 +34,7 @@ from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFe
 # import sys
 # import itertools
 
-def update_edges(self, _el, existing_edges, element_vertices, p):
+def update_edges(self, _el, existing_edges, element_vertices):
     element_vertices_tag = [element_vertices[0].tag, element_vertices[1].tag]
     element_vertices_tag_sorted = sorted(element_vertices_tag)
     if element_vertices_tag_sorted in existing_edges: # If the edge already exists
@@ -53,32 +54,32 @@ def update_edges(self, _el, existing_edges, element_vertices, p):
         existing_edges.append(element_vertices_tag_sorted)
         # Creation of the new edge
         if element_vertices_tag == element_vertices_tag_sorted:
-            new_edge = Edge(self.nb_edges, element_vertices, _el, p.order)
+            new_edge = Edge(self.nb_edges, element_vertices, _el, self.order)
             self.edges.append(new_edge)
             _el.edges.append(new_edge)
             _el.edges_orientation.append(1)
         else:
-            new_edge = Edge(self.nb_edges, element_vertices[::-1], _el, p.order)
+            new_edge = Edge(self.nb_edges, element_vertices[::-1], _el, self.order)
             self.edges.append(new_edge)
             _el.edges.append(new_edge)
             _el.edges_orientation.append(-1)
         self.nb_edges +=1
 
-def create_lists(self, p):
+def create_lists(self):
     ''' Create the list of edges, faces and bubbles of the Model '''
     existing_edges = [] # List of element vertices for redundancy check
     for ie, _el in enumerate(self.elements[1:]):
         if _el.typ == 1:
             element_vertices = [_el.vertices[0], _el.vertices[1]]
-            update_edges(self, _el, existing_edges, element_vertices, p)
+            update_edges(self, _el, existing_edges, element_vertices)
         if _el.typ == 2:
             # Edges
             for ii in range(3):
                 element_vertices = [_el.vertices[ii], _el.vertices[(ii+1)%3]]
-                update_edges(self, _el, existing_edges, element_vertices, p)
+                update_edges(self, _el, existing_edges, element_vertices)
             # Faces
             element_vertices = [_el.vertices[0], _el.vertices[1], _el.vertices[2]]
-            new_face = Face(self.nb_faces, element_vertices, _el, p.order)
+            new_face = Face(self.nb_faces, element_vertices, _el, self.order)
             self.faces.append(new_face)
             _el.faces.append(new_face)
             _el.faces_orientation.append(1)
@@ -175,6 +176,8 @@ def renumber_dofs(self):
             self.nb_dofs = renumber_dof(_bb.dofs[i_dim], self.nb_dofs)
     self.nb_dof_FEM = self.nb_dofs
     self.nb_dofs_to_condense = self.nb_dofs - self.nb_dof_master
+    print("self.nb_dofs={}".format(self.nb_dofs))
+
 
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
@@ -223,20 +226,7 @@ def periodicity_initialisation(self):
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
 
-def init_vec_frequencies(frequency):
-    if frequency[2] > 0:
-            frequencies = np.linspace(frequency[0],frequency[1],frequency[2])
-    elif frequency[2]<0:
-        frequencies = np.logspace(np.log10(frequency[0]),np.log10(frequency[1]),abs(frequency[2]))
-    # else % Case of complex frequency
-    #     temp_1=linspace(frequency.min,frequency.max,frequency.nb(1));
-    #     temp_2=linspace(frequency.min_imag,frequency.max_imag,frequency.nb(2));
-    #     frequency.vec=[];
-    #     for ii=1:frequency.nb(2)
-    #         frequency.vec=[frequency.vec temp_1+1j*temp_2(ii)];
-    #     end
-    #     frequency.nb=frequency.nb(1)*frequency.nb(2);
-    return frequencies
+
 
 def elementary_matrices(self):
     '''Creation of elementary matrices in the elements'''
@@ -245,7 +235,7 @@ def elementary_matrices(self):
         for _el in _ent.elements:
             _ent.elementary_matrices(_el)
 
-def check_model(self, p):
+def check_model(self):
     ''' This function checks if the model is correct and adapt it if not '''
     unfinished = True
     while unfinished:
@@ -276,8 +266,6 @@ def check_model(self, p):
                                     if _ == 2: # Case of two common vertices
                                         _elem.normal_fluid = normal_to_element(_elem, _el)
                                         _elem.normal_struc = -_elem.normal_fluid
-                                        print(_elem.normal_fluid)
-                                        print(_elem.normal_struc)
                                         break
 
 
@@ -285,20 +273,6 @@ def check_model(self, p):
                 if isinstance(_e, PemFem):
                     # _e.formulation98 = True
                     _e.formulation98 = False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     for _e in self.model_entities:
@@ -318,23 +292,31 @@ def check_model(self, p):
                         _e.nb_R = 3
                         _e.typ = "Biot01"
             if isinstance(_e, IncidentPwFem):
-                if hasattr(p, "incident_ml"):
-                    _e.ml = p.incident_ml
+                if self.incident_ml:
+                    _e.ml = []
+                    for _l in self.incident_ml:
+                        mat = from_yaml(_l[0]+".yaml")
+                        d = _l[1]
+                        _e.ml.append(Layer(mat,d))
             if isinstance(_e, TransmissionPwFem):
-                if hasattr(p, "transmission_ml"):
-                    _e.ml = p.transmission_ml
-                    # Thickness of transmission layers is set negative
+                if self.transmission_ml:
+                    _e.ml = []
+                    for _l in self.transmission_ml:
+                        mat = from_yaml(_l[0]+".yaml")
+                        d = -_l[1]
+                        # Thickness of transmission layers is set negative
+                        _e.ml.append(Layer(mat,d))
+
                     for _l in _e.ml:
                         _l.thickness *= -1
 
 def preprocess(self, p):
-    if p.verbose:
+    if self.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
 
-    self.frequencies = init_vec_frequencies(p.frequencies)
+    # self.frequencies = init_vec_frequencies(p.frequencies)
     # Creation of edges and faces
-    if p.verbose:
-        print("Checking the model")
+
     create_lists(self, p)
     if p.verbose:
         print("Activation of dofs based on physical media")

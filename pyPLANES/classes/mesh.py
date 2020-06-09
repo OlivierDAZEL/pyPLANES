@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding:utf8 -*-
 #
-# model_classes.py
+# problem.py
 #
 # This file is part of pymls, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
@@ -21,17 +21,21 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-from numpy import pi
 
-class ModelParameter:
-    '''Class ModelParameter'''
-    def __init__(self,verbose=False):
-        self.verbose = verbose
-        pass
-    def __str__(self):
-        out = "Parameters of the FEM Model{}\n"
-        out += "\t f = {}\n".format(self.f)
-        return out
 
-if __name__ == "__main__":
-    model_parameter = Model_Parameter()
+from pyPLANES.gmsh.load_msh_file import load_msh_file
+
+class Mesh():
+    def __init__(self, **kwargs):
+        self.entities = [] # List of all GMSH Entities
+        self.model_entities = [] # List of Entities used in the Model
+        self.vertices = []
+        self.elements = []
+        self.materials_directory = kwargs.get("materials_directory", "")
+        self.reference_elements = dict() # dictionary of reference_elements
+        load_msh_file(self, **kwargs)
+
+
+class FemMesh(Mesh):
+    def __init__(self, **kwargs):
+        Mesh.__init__(self, **kwargs)

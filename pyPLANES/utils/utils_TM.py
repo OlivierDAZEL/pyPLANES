@@ -241,7 +241,7 @@ def weak_orth_terms(om, kx, Omega, layers, typ_end):
     # elastic {0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
     # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
     typ = "fluid"
-    if layers is not None:
+    if layers:
         for _l in layers:
             # print("converting {} to {}".format(typ, _l.medium.MEDIUM_TYPE))
             Omega = convert_Omega(Omega, typ, _l.medium.MEDIUM_TYPE)

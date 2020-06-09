@@ -96,7 +96,7 @@ class GmshEntity():
 class FemEntity(GmshEntity):
     def __init__(self, **kwargs):
         GmshEntity.__init__(self, **kwargs)
-        self.order = kwargs["p"].order
+        self.order = kwargs["order"]
         self.elements = []
     def __str__(self):
         # out = GmshEntity.__str__(self)
@@ -334,8 +334,6 @@ class ElasticFem(FemEntity):
 
     def update_frequency(self, omega):
         self.mat.update_frequency(omega)
-        print("lambda_={}".format(self.mat.E))
-        print(type(self.mat.E))
 
     def elementary_matrices(self, _el):
         orient_u = orient_element(_el, "u")
@@ -485,6 +483,10 @@ class IncidentPwFem(PwFem):
                     dof_p, orient_p, _ = dof_p_element(_elem)
                     dof_1 = [self.dofs[self.nb_R*_l]]*len(dof_p)
                     _ = orient_p@phi_l
+                    print(n_m)
+                    print(self.nb_dofs)
+                    print(dof_p)
+                    print(dof_1)
                     phi += coo_matrix((_, (dof_p, dof_1)), shape=(n_m, self.nb_dofs))
                 elif self.typ == "elastic":
                     dof_ux, orient_ux = dof_ux_element(_elem)
