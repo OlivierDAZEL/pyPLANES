@@ -23,17 +23,18 @@
 #
 
 import platform
+import time
 
 import numpy as np
 from pyPLANES.classes.fem_model import FemModel
-from pyPLANES.classes.mesh import Mesh
+from pyPLANES.classes.mesh import FemMesh
 from pyPLANES.classes.calculus import FemCalculus
 from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
 from pyPLANES.classes.entity_classes import PwFem
 
 
-class FemProblem(Mesh, FemModel, FemCalculus):
+class FemProblem(FemMesh, FemModel, FemCalculus):
     def __init__(self, **kwargs):
         self.name_server = platform.node()
         if self.name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
@@ -41,11 +42,16 @@ class FemProblem(Mesh, FemModel, FemCalculus):
         else:
             self.verbose = False
         self.verbose = kwargs.get("verbose", True)
-        Mesh.__init__(self, **kwargs)
-        self.order = kwargs.get("order", 2)
-        FemModel.__init__(self, **kwargs)
-        self.dim = 2
         FemCalculus.__init__(self, **kwargs)
+        self.initialisation_out_files()
+        FemMesh.__init__(self, **kwargs)
+        FemModel.__init__(self, **kwargs)
+
+
+        self.order = kwargs.get("order", 2)
+
+        self.dim = 2
+
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
                 _ent.theta_d = self.theta_d
@@ -57,7 +63,11 @@ class FemProblem(Mesh, FemModel, FemCalculus):
         affect_dofs_to_elements(self)
         periodicity_initialisation(self)
         check_model(self)
+        self.duration_importation = time.time() - self.start_time
+        self.info_file.write("Duration of importation ={} s\n".format(self.duration_importation))
         elementary_matrices(self)
+        self.duration_assembly = time.time() - self.start_time - self.duration_importation
+        self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))
 
     def resolution(self):
         return FemModel.resolution(self)

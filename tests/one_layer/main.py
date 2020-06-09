@@ -6,91 +6,44 @@ sys.path.insert(0, "../..")
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pymls import from_yaml, Solver, Layer, backing
-from mediapack import Air
-
-from pyPLANES.classes.problem import FemProblem
+from pyPLANES.classes.fem_problem import FemProblem
 from pyPLANES.utils.utils_PW import Solver_PW
-from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
+from pyPLANES.gmsh.layers import one_layer
 
-from pyPLANES.utils.utils_io import print_entities
 
-name_server = platform.node()
 
-theta_d = 0.000000
-frequencies = (600., 1500., 30)
+
+frequencies = (600., 1500., 10)
 name_mesh = "one_layer"
-name_project = "one_layer"
-
 L = 0.01
 d = 0.02
 lcar = 0.01
+
+one_layer(name_mesh, L, d, lcar, "pem_benchmark_1", "Rigid Wall")
 
 order = 3
 plot_results = [True, True, True, False, False, False]
 plot_results = [False]*6
 
-G = Gmsh(name_mesh)
 
-p_0 = G.new_point(0, 0, lcar)
-p_1 = G.new_point(L, 0,lcar)
-p_2 = G.new_point(L, d, lcar)
-p_3 = G.new_point(0, d, lcar)
-l_0 = G.new_line(p_0, p_1)
-l_1 = G.new_line(p_1, p_2)
-l_2 = G.new_line(p_2, p_3)
-l_3 = G.new_line(p_3, p_0)
-ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
-matrice = G.new_surface([ll_0.tag])
-# G.new_physical(l_2, "condition=Transmission")
-G.new_physical(l_2, "condition=Rigid Wall")
-G.new_physical([l_1, l_3], "condition=Periodicity")
-G.new_physical(l_0, "condition=Incident_PW")
-G.new_physical(matrice, "mat=pem_benchmark_1")
-G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
-G.new_physical([matrice], "model=FEM2D")
-G.new_periodicity(l_1, l_3, (L, 0, 0))
-option = "-2 -v 0 "
-G.run_gmsh(option)
 
-rubber = from_yaml('rubber.yaml')
-pem = from_yaml('pem_benchmark_1.yaml')
-Wwood = from_yaml('Wwood.yaml')
-Air_Elastic = from_yaml('Air_Elastic.yaml')
+incident_ml = [("rubber", 0.0002)] ; shift_pw = -incident_ml[0][1]
 
-# param.incident_ml = [Layer(rubber, 0.0002)] ; param.shift_pw = -param.incident_ml[0].thickness
+theta_d = 60.000000
+name_project = "one_layer"
+problem = FemProblem(name_mesh=name_mesh, theta_d=theta_d, name_project=name_project, order=2, frequencies=frequencies, plot_results=plot_results, incident_ml=incident_ml)
+result_pyPLANES = problem.resolution()
 
-problem = FemProblem(name_mesh=name_mesh, name_project=name_project, order=2, frequencies=frequencies, plot_results=plot_results)
-result_pyPLANES  =problem.resolution()
-
-solver = Solver()
-solver.layers = [
-    Layer(pem, d),
-]
-solver.backing = backing.rigid
-
-S_PW = Solver_PW(S=solver, name_project=name_project, theta_d=theta_d, frequencies=frequencies,plot_results=plot_results)
-
+ml = [("rubber", 0.0002), ("pem_benchmark_1", d)]
+S_PW = Solver_PW(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_results=plot_results)
 result_pyPLANESPW = S_PW.resolution(theta_d)
-
-# print("result_pyPLANESPW= {}".format(result_pyPLANESPW["R"]))
-# print("result_pyPLANES  = {}".format(result_pyPLANES["R"]))
-# print("result_pymls  R  = {}".format(result_pymls["R"][0]))
 
 if any(plot_results):
     plt.show()
 
 
-# print(Air.K)
-# print(Air.rho)
-# k = 2*np.pi*param.frequencies[0]/Air.c
-# Z_s = -1j*Air.Z/np.tan(k*(d))
-# R = (Z_s-Air.Z)/(Z_s+Air.Z)
-# print(R)
-
-
-FEM = np.loadtxt("one_layer_out.txt")
-PW = np.loadtxt("one_layer_PW_out.txt")
+FEM = np.loadtxt("one_layer.FEM.txt")
+PW = np.loadtxt("one_layer.PW.txt")
 plt.plot(PW[:,0],PW[:,1], "b", label="PW")
-plt.plot(FEM[:,0],FEM[:,1], "r.", label="FEM")
+plt.plot(FEM[:, 0],FEM[:, 1], "r.", label="FEM")
 plt.show()

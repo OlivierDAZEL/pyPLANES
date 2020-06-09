@@ -25,7 +25,8 @@
 import itertools
 import numpy as np
 
-from mediapack import Air
+from mediapack import Air, from_yaml
+from pymls import Layer
 from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
 from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem
@@ -291,12 +292,21 @@ def check_model(self):
                         _e.nb_R = 3
                         _e.typ = "Biot01"
             if isinstance(_e, IncidentPwFem):
-                if hasattr(self, "incident_ml"):
-                    _e.ml = self.incident_ml
+                if self.incident_ml:
+                    _e.ml = []
+                    for _l in self.incident_ml:
+                        mat = from_yaml(_l[0]+".yaml")
+                        d = _l[1]
+                        _e.ml.append(Layer(mat,d))
             if isinstance(_e, TransmissionPwFem):
-                if hasattr(self, "transmission_ml"):
-                    _e.ml = self.transmission_ml
-                    # Thickness of transmission layers is set negative
+                if self.transmission_ml:
+                    _e.ml = []
+                    for _l in self.transmission_ml:
+                        mat = from_yaml(_l[0]+".yaml")
+                        d = -_l[1]
+                        # Thickness of transmission layers is set negative
+                        _e.ml.append(Layer(mat,d))
+
                     for _l in _e.ml:
                         _l.thickness *= -1
 

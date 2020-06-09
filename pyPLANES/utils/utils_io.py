@@ -24,6 +24,8 @@
 
 from os import path, mkdir
 import socket
+import datetime
+import time
 
 import numpy as np
 
@@ -49,16 +51,15 @@ def initialisation_out_files_plain(self):
     name_server = socket.gethostname()
     self.info_file.write("Output File from pyPLANES\n")
     self.info_file.write("Generated on {}\n".format(name_server))
-    # self.info_file.write("Frequency [Hz]\n")
-    # if [isinstance(_ent, PwFem) for _ent in self.model_entities]:
-    #     self.info_file.write("absorption [no unity]\n")
-    # if [isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]:
-    #     self.info_file.write("|R| [no unity]\n")
-    # if [isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]:
-    #     self.info_file.write("|T| [no unity]\n")
+    self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
 
-def initialisation_out_files(self):
-    initialisation_out_files_plain(self)
+def close_out_files(self):
+    duration = time.time()-self.start_time
+    self.info_file.write("Calculus ended at %s.\n"%(datetime.datetime.now()))
+    self.info_file.write("Total duration = {} s\n".format(duration))
+    self.info_file.write("duration / freq (averaged) = {} s\n".format(duration/len(self.frequencies)))
+    self.out_file.close()
+    self.info_file.close()
 
 def print_entities(self):
     for _ in self.entities:

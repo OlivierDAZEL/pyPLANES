@@ -37,95 +37,50 @@ import matplotlib.tri as mtri
 from mediapack import Air
 
 from pyPLANES.classes.entity_classes import *
-from pyPLANES.utils.utils_io import initialisation_out_files, display_sol
+from pyPLANES.utils.utils_io import display_sol
+from pyPLANES.classes.model import Model
 
-class FemModel():
+
+
+
+class FemModel(Model):
     def __init__(self, **kwargs):
-        self.plot = kwargs.get("plot_results", False)
+        Model.__init__(self, **kwargs)
+        self.incident_ml = kwargs.get("incident_ml", False)
+
+
         self.reference_elements = dict() # dictionary of reference_elements
         self.edges = []
         self.faces = []
         self.bubbles = []
         self.nb_edges = self.nb_faces = self.nb_bubbles = 0
 
-
-    def update_frequency(self, f):
-        self.F_i, self.F_v = [], []
-        self.A_i, self.A_j, self.A_v = [], [], []
-        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
-        self.T_i, self.T_j, self.T_v = [], [], []
-        self.current_frequency = f
-        omega = 2*np.pi*f
-        self.kx = (omega/Air.c)*np.sin(self.theta_d*np.pi/180)
-        self.ky = (omega/Air.c)*np.cos(self.theta_d*np.pi/180)
-        self.delta_periodicity = np.exp(-1j*self.kx*self.period)
-        self.nb_dofs = self.nb_dof_FEM
-        for _ent in self.model_entities:
-            _ent.update_frequency(omega)
-        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
+    def initialisation_out_files(self):
+        Model.initialisation_out_files(self)
 
     def write_out_files(self):
-
-        if isinstance(self, FemModel):
-            self.out_file.write("{:.12e}\t".format(self.current_frequency))
-            if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
-                self.out_file.write("{:.12e}\t".format(self.abs))
-            if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
-                self.out_file.write("{:.12e}\t".format(self.modulus_reflex))
-            if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
-                self.out_file.write("{:.12e}\t".format(self.modulus_trans))
-            self.out_file.write("\n")
+        self.out_file.write("{:.12e}\t".format(self.current_frequency))
+        if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
+            self.out_file.write("{:.12e}\t".format(self.abs))
+        if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
+            self.out_file.write("{:.12e}\t".format(self.modulus_reflex))
+        if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
+            self.out_file.write("{:.12e}\t".format(self.modulus_trans))
+        self.out_file.write("\n")
 
     def __str__(self):
         out = "TBD"
         return out
 
-    def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-        self.F_i.extend(_F_i)
-        self.F_v.extend(_F_v)
+    def resolution(self):
+        Model.resolution(self)
+        if self.name_server == "il-calc1":
+            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
+            os.system(mail)
 
-    def extend_F(self, _F_i, _F_v):
-        self.F_i.extend(_F_i)
-        self.F_v.extend(_F_v)
-
-    def extend_A(self, _A_i, _A_j, _A_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-
-    def extend_A_F_from_coo(self, AF):
-        self.A_i.extend(list(AF[0].row))
-        self.A_j.extend(list(AF[0].col))
-        self.A_v.extend(list(AF[0].data))
-        # print("extend_A_F_from_coo")
-        # print(AF[1])
-        # print(AF[1].row)
-        self.F_i.extend(list(AF[1].row))
-        self.F_v.extend(list(AF[1].data))
-        # print("self.F_i={}".format(self.F_i))
-
-    def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-        self.T_i.extend(_T_i)
-        self.T_j.extend(_T_j)
-        self.T_v.extend(_T_v)
 
     def linear_system_2_numpy(self):
-        # print("linear_system_2_numpy")
-        # print("self.F_i={}".format(self.F_i))
-        self.F_i = np.array(self.F_i)
-        self.F_v = np.array(self.F_v, dtype=complex)
-        self.A_i = np.array(self.A_i)
-        self.A_j = np.array(self.A_j)
-        self.A_v = np.array(self.A_v, dtype=complex)
-        self.T_i = np.array(self.T_i)-self.nb_dof_master
-        self.T_j = np.array(self.T_j)
-        self.T_v = np.array(self.T_v, dtype=complex)
+        Model.linear_system_2_numpy(self)
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
                 _ent.phi_i = np.array(_ent.phi_i)
@@ -133,9 +88,7 @@ class FemModel():
                 _ent.phi_v = np.array(_ent.phi_v, dtype=complex)
 
     def create_linear_system(self, f):
-        if self.verbose:
-            print("Creation of the linear system for f={}".format(f))
-        self.update_frequency(f)
+        Model.create_linear_system(self, f)
         omega = 2*np.pi*f
         # Initialisation of the lists
         self.F = csr_matrix((self.nb_dof_master, 1), dtype=complex)
@@ -187,27 +140,6 @@ class FemModel():
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
                 _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
-
-    def resolution(self):
-        initialisation_out_files(self)
-        if self.verbose:
-            print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
-        for f in self.frequencies:
-            self.create_linear_system(f)
-            out = self.solve()
-            self.write_out_files()
-            # if self.verbose:
-                # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
-                # print("|abs pyPLANES_FEM| = {}".format(self.abs))
-            if any(self.plot):
-                display_sol(self)
-        self.out_file.close()
-        self.info_file.close()
-
-        if self.name_server == "il-calc1":
-            mail = " mailx -s \"Calculation of pyPLANES over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file
-            os.system(mail)
-        return out
 
 
     def solve(self):

@@ -36,4 +36,6 @@ class Mesh():
         load_msh_file(self, **kwargs)
 
 
-
+class FemMesh(Mesh):
+    def __init__(self, **kwargs):
+        Mesh.__init__(self, **kwargs)
