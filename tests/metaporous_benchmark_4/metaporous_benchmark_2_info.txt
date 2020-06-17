@@ -1,3 +1,2 @@
 Output File from pyPLANES
 Generated on oliviers-macbook-pro.home
-Calculus started at 2020-06-11 08:57:29.602099.

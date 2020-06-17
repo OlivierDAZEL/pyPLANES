@@ -23,7 +23,7 @@
 #
 
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
-
+from mediapack import from_yaml, Air
 
 def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1", termination="Rigid Wall"):
 
@@ -73,17 +73,42 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
 
     matrice = G.new_surface([ll_0.tag, -c_0.tag])
     ring = G.new_surface([c_0.tag, -c_1.tag])
-    cavity = G.new_surface([c_1.tag])
+    internal_inclusion = G.new_surface([c_1.tag])
 
     G.new_physical(l_2, "condition="+termination)
     G.new_physical([l_1, l_3], "condition=Periodicity")
     G.new_physical(l_0, "condition=Incident_PW")
     G.new_physical(matrice, "mat="+mat_core)
     G.new_physical(ring, "mat="+mat_ring)
-    G.new_physical(cavity, "mat="+mat_internal)
-    G.new_physical_curve(c_1.tag_arcs, "condition=Fluid_Structure")
-    G.new_physical_curve([l_0.tag, l_1.tag, l_3.tag, l_2.tag] +c_1.tag_arcs, "model=FEM1D")
-    G.new_physical([matrice, ring, cavity], "model=FEM2D")
+    G.new_physical(internal_inclusion, "mat="+mat_internal)
+
+    list_FEM_1D = [l_0.tag, l_1.tag, l_3.tag, l_2.tag]
+    list_FSI =[]
+    if mat_core == "Air":
+        material_core = Air
+    else:
+        material_core = from_yaml(mat_core+".yaml")
+    if mat_ring == "Air":
+        material_ring = Air
+    else:
+        material_ring = from_yaml(mat_ring+".yaml")
+    if mat_internal == "Air":
+        material_internal = Air
+    else:
+        material_internal = from_yaml(mat_internal+".yaml")
+
+    if set([material_ring.MODEL, material_core.MODEL]) == set(["elastic", "fluid"]):
+        list_FEM_1D.extend(c_0.tag_arcs)
+        list_FSI.extend(c_0.tag_arcs)
+    if set([material_ring.MODEL, material_internal.MODEL]) == set(["elastic", "fluid"]):
+        list_FEM_1D.extend(c_1.tag_arcs)
+        list_FSI.extend(c_1.tag_arcs)
+
+
+    if len(list_FSI)>0:
+        G.new_physical_curve(list_FSI, "condition=Fluid_Structure")
+    G.new_physical_curve(list_FEM_1D, "model=FEM1D")
+    G.new_physical([matrice, ring, internal_inclusion], "model=FEM2D")
     G.new_periodicity(l_1, l_3, (L, 0, 0))
 
     option = "-2 -v 0 "

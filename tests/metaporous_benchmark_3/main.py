@@ -11,12 +11,12 @@ from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.inclusions import one_inclusion
 
 
-frequencies = (10., 5010., 201)
+frequencies = (10., 5010., 501)
 name_mesh = "one_inclusion"
 L = 0.02
 d = 0.02
 a = 8e-3
-lcar = 0.001
+lcar = 1e-3
 order = 4
 
 

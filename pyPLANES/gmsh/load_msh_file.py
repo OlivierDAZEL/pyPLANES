@@ -97,11 +97,12 @@ def entities(self, f, order=2):
     # print("curves")
     for _icurve in range(num_curves):
         _f = f.readline().split()
-        # print(_f)
+        print(_f)
         tag = int(_f[0])
         num_physical_tags = int(_f[7])
+        print(num_physical_tags)
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
-        # print(physical_tags)
+        print(physical_tags)
         _ = 8+num_physical_tags
         num_bounding_points = int(_f[_])
         bounding_points = [int(_l) for _l in _f[_+1:]] if num_bounding_points != 0 else []

@@ -13,7 +13,7 @@ from pyPLANES.gmsh.layers import one_layer
 
 
 
-frequencies = (600., 1500., 10)
+frequencies = (600., 1500., 1)
 name_mesh = "one_layer"
 L = 0.01
 d = 0.02
@@ -23,9 +23,7 @@ one_layer(name_mesh, L, d, lcar, "pem_benchmark_1", "Rigid Wall")
 
 order = 3
 plot_results = [True, True, True, False, False, False]
-plot_results = [False]*6
-
-
+# plot_results = [False]*6
 
 incident_ml = [("rubber", 0.0002)] ; shift_pw = -incident_ml[0][1]
 
