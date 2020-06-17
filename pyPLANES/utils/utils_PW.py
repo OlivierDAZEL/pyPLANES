@@ -43,7 +43,10 @@ class Solver_PW(PwCalculus):
         termination = kwargs.get("termination")
         self.layers = []
         for _l in ml:
-            mat = from_yaml(_l[0]+".yaml")
+            if _l[0] == "Air":
+                mat = Air
+            else:
+                mat = from_yaml(_l[0]+".yaml")
             d = _l[1]
             self.layers.append(Layer(mat,d))
         if termination in ["trans", "transmission","Transmission"]:

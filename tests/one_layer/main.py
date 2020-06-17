@@ -11,8 +11,6 @@ from pyPLANES.utils.utils_PW import Solver_PW
 from pyPLANES.gmsh.layers import one_layer
 
 
-
-
 frequencies = (600., 1500., 1)
 name_mesh = "one_layer"
 L = 0.01

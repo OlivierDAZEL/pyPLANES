@@ -47,7 +47,6 @@ class FemProblem(FemMesh, FemModel, FemCalculus):
         FemMesh.__init__(self, **kwargs)
         FemModel.__init__(self, **kwargs)
 
-
         self.order = kwargs.get("order", 2)
 
         self.dim = 2

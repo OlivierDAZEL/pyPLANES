@@ -85,7 +85,7 @@ def physical_names(self, f):
 def entities(self, f, order=2):
     ''' creation of the list of entities '''
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
-    # print("points")
+    print("points")
     for __ in range(_p):
         _f = f.readline().split()
         tag = int(_f[0])
@@ -94,7 +94,7 @@ def entities(self, f, order=2):
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z, entities=self.entities)
         self.entities.append(_)
-    # print("curves")
+    print("curves")
     for _icurve in range(num_curves):
         _f = f.readline().split()
         print(_f)
