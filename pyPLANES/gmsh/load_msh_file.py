@@ -85,7 +85,6 @@ def physical_names(self, f):
 def entities(self, f, order=2):
     ''' creation of the list of entities '''
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
-    print("points")
     for __ in range(_p):
         _f = f.readline().split()
         tag = int(_f[0])
@@ -94,13 +93,12 @@ def entities(self, f, order=2):
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         _ = GmshEntity(dim=0, tag=tag, physical_tags=physical_tags, x=x, y=y, z=z, entities=self.entities)
         self.entities.append(_)
-    print("curves")
+    # print("curves")
     for _icurve in range(num_curves):
         _f = f.readline().split()
-        print(_f)
         tag = int(_f[0])
         num_physical_tags = int(_f[7])
-        print(num_physical_tags)
+        # print(num_physical_tags)
         physical_tags = dict_physical_tags(self, _f[8:8+num_physical_tags])
         print(physical_tags)
         _ = 8+num_physical_tags
@@ -122,6 +120,10 @@ def entities(self, f, order=2):
                 elif physical_tags["condition"] == "Periodicity":
                     _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
                     self.model_entities.append(_)
+                elif physical_tags["condition"].split("/")[0] == "Interface":
+                    _ = InterfaceFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities, ml=physical_tags["condition"].split("/")[1], side=physical_tags["condition"].split("/")[2])
+                    self.model_entities.append(_)
+
                 else:
                     raise NameError("FEM1D entity without physical condition")
         else: # No numerical model
@@ -255,7 +257,6 @@ def elements(self, f, order):
                 self.elements[element_tag]=Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
-
 
 def periodic(self, f):
     self.vertices_left = []

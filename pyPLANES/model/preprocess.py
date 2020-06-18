@@ -29,7 +29,7 @@ from mediapack import Air, from_yaml
 from pymls import Layer
 from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem
+from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem, InterfaceFem
 
 # import sys
 # import itertools
@@ -267,12 +267,28 @@ def check_model(self):
                                         _elem.normal_fluid = normal_to_element(_elem, _el)
                                         _elem.normal_struc = -_elem.normal_fluid
                                         break
-
-
             if _e.dim == 2:
                 if isinstance(_e, PemFem):
                     # _e.formulation98 = True
                     _e.formulation98 = False
+    # Check that the number of interfaces go by pairs
+    list_interfaces = [_ent for _ent in self.model_entities if isinstance(_ent, InterfaceFem)]
+    n_interface = len(list_interfaces)
+    if  n_interface%2= 1:
+        raise ValueError("Error in check model: Number of interfaces is odd"):
+    else:
+        while n_interface !=0:
+            
+
+
+
+    print(list_interfaces)
+    dsq
+
+
+
+
+
 
 
     for _e in self.model_entities:

@@ -121,6 +121,32 @@ class FemEntity(GmshEntity):
     def link_elem(self,n):
         self.elements.append(n)
 
+class InterfaceFem(FemEntity):
+    def __init__(self, **kwargs):
+        FemEntity.__init__(self, **kwargs)
+        self.ml = kwargs.get("ml", False)
+        self.side = kwargs.get("side", False)
+        self.
+        self.fluid_neighbour = None
+        self.struc_neighbour = None
+
+    def __str__(self):
+        out = "Interface" + FemEntity.__str__(self)
+        return out
+
+    def elementary_matrices(self, _el):
+        pass
+
+    def append_linear_system(self, omega):
+        A_i, A_j, A_v =[], [], []
+        # Translation matrix to compute internal dofs
+        T_i, T_j, T_v =[], [], []
+
+
+        return A_i, A_j, A_v, T_i, T_j, T_v
+
+
+
 class FluidStructureFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
@@ -132,6 +158,10 @@ class FluidStructureFem(FemEntity):
         orient_ = orient_element(_el)
 
         _el.M = orient_ @ M @ orient_
+
+    def __str__(self):
+        out = "FluidStructure" + FemEntity.__str__(self)
+        return out
 
     def append_linear_system(self, omega):
         A_i, A_j, A_v =[], [], []

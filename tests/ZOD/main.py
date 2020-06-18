@@ -27,11 +27,17 @@ plot_results = [True, True, True, False, False, False]
 theta_d = 10.000000
 name_project = "ZOD"
 problem = FemProblem(name_mesh=name_mesh, theta_d=theta_d, name_project=name_project, order=2, frequencies=frequencies, plot_results=plot_results)
-result_pyPLANES = problem.resolution()
 
-ml = [("Air", d)]
-S_PW = Solver_PW(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_results=plot_results)
-result_pyPLANESPW = S_PW.resolution(theta_d)
+for _ent in problem.model_entities:
+    print(_ent)
 
-if any(plot_results):
-    plt.show()
+
+
+# result_pyPLANES = problem.resolution()
+
+# ml = [("Air", d)]
+# S_PW = Solver_PW(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_results=plot_results)
+# result_pyPLANESPW = S_PW.resolution(theta_d)
+
+# if any(plot_results):
+#     plt.show()
