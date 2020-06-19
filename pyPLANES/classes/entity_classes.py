@@ -126,12 +126,11 @@ class InterfaceFem(FemEntity):
         FemEntity.__init__(self, **kwargs)
         self.ml = kwargs.get("ml", False)
         self.side = kwargs.get("side", False)
-        self.
-        self.fluid_neighbour = None
-        self.struc_neighbour = None
+        self.neighbour = False
 
     def __str__(self):
         out = "Interface" + FemEntity.__str__(self)
+        out += "Neighbour Entity tag={}\n".format(self.neighbour.tag)
         return out
 
     def elementary_matrices(self, _el):
@@ -141,17 +140,16 @@ class InterfaceFem(FemEntity):
         A_i, A_j, A_v =[], [], []
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
-
-
+        print(self.neighbour)
+        qdsqsdsdqsqd
         return A_i, A_j, A_v, T_i, T_j, T_v
-
-
 
 class FluidStructureFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.fluid_neighbour = None
         self.struc_neighbour = None
+
     def elementary_matrices(self, _el):
         # Elementary matrices
         M = fsi_elementary_matrix(_el)

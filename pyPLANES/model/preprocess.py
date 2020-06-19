@@ -68,7 +68,7 @@ def update_edges(self, _el, existing_edges, element_vertices):
 def create_lists(self):
     ''' Create the list of edges, faces and bubbles of the Model '''
     existing_edges = [] # List of element vertices for redundancy check
-    for ie, _el in enumerate(self.elements[1:]):
+    for __, _el in enumerate(self.elements[1:]):
         if _el.typ == 1:
             element_vertices = [_el.vertices[0], _el.vertices[1]]
             update_edges(self, _el, existing_edges, element_vertices)
@@ -273,24 +273,25 @@ def check_model(self):
                     _e.formulation98 = False
     # Check that the number of interfaces go by pairs
     list_interfaces = [_ent for _ent in self.model_entities if isinstance(_ent, InterfaceFem)]
+    name_interfaces = [_ent.ml for _ent in list_interfaces]
     n_interface = len(list_interfaces)
-    if  n_interface%2= 1:
-        raise ValueError("Error in check model: Number of interfaces is odd"):
+    if  n_interface%2 == 1:
+        raise ValueError("Error in check model: Number of interfaces is odd")
     else:
-        while n_interface !=0:
-            
+        while n_interface != 0:
+            _index = name_interfaces[1:].index(name_interfaces[0])+1
+            list_interfaces[0].neighbour = list_interfaces[_index]
+            list_interfaces[_index].neighbour = list_interfaces[0]
+
+
+            del list_interfaces[_index]
+            del list_interfaces[0]
+            del name_interfaces[_index]
+            del name_interfaces[0]
 
 
 
-    print(list_interfaces)
-    dsq
-
-
-
-
-
-
-
+            n_interface -= 2
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
             for s in _e.neighbouring_surfaces:
