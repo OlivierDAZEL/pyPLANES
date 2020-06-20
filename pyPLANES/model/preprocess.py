@@ -31,8 +31,7 @@ from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
 from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem, InterfaceFem
 
-# import sys
-# import itertools
+
 
 def update_edges(self, _el, existing_edges, element_vertices):
     element_vertices_tag = [element_vertices[0].tag, element_vertices[1].tag]
@@ -178,7 +177,6 @@ def renumber_dofs(self):
     self.nb_dofs_to_condense = self.nb_dofs - self.nb_dof_master
     print("self.nb_dofs={}".format(self.nb_dofs))
 
-
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
         if _el.typ ==1:
@@ -225,8 +223,6 @@ def periodicity_initialisation(self):
     _nz = np.where(_!=0)[0].tolist()
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
-
-
 
 def elementary_matrices(self):
     '''Creation of elementary matrices in the elements'''
@@ -279,19 +275,42 @@ def check_model(self):
         raise ValueError("Error in check model: Number of interfaces is odd")
     else:
         while n_interface != 0:
-            _index = name_interfaces[1:].index(name_interfaces[0])+1
-            list_interfaces[0].neighbour = list_interfaces[_index]
-            list_interfaces[_index].neighbour = list_interfaces[0]
+            _int_minus = list_interfaces[0]
+            _index = name_interfaces[1:].index(_int_minus.ml)+1
+            _int_plus = list_interfaces[_index]
 
+            _int_minus.neighbour = _int_plus
+            _int_plus.neighbour = _int_minus
 
             del list_interfaces[_index]
             del list_interfaces[0]
             del name_interfaces[_index]
             del name_interfaces[0]
 
+            if _int_minus.side == "+":
+                if _int_plus.side == "-":
+                    _int_minus, _int_plus =_int_plus, _int_minus
+                else:
+                    raise ValueError("_int_minus.side = + and _int_plus.side != + ")
+            elif _int_minus.side == "-":
+                if _int_plus.side != "+":
+                    raise ValueError("_int_minus.side = - and _int_plus.side != + ")
+            else:
+                raise ValueError("_int_minus.side ins neither + or - ")
+
+            for _el in _int_minus.elements:
+                print(_el)
+
+
 
 
             n_interface -= 2
+
+
+
+
+
+
     for _e in self.model_entities:
         if isinstance(_e, PwFem):
             for s in _e.neighbouring_surfaces:
@@ -323,7 +342,6 @@ def check_model(self):
                         d = -_l[1]
                         # Thickness of transmission layers is set negative
                         _e.ml.append(Layer(mat,d))
-
                     for _l in _e.ml:
                         _l.thickness *= -1
 

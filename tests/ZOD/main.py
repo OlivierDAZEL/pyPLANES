@@ -15,9 +15,9 @@ frequencies = (600., 1500., 1)
 name_mesh = "ZOD"
 L = 0.1
 d = 0.1
-lcar = 0.1
+lcar = 0.05
 
-ZOD(name_mesh, L, d, d, lcar, "Air", "Rigid Wall")
+ZOD(name_mesh, L, d, d, lcar, 0.02, "Air", "Rigid Wall")
 
 order = 2
 plot_results = [True, True, True, False, False, False]
@@ -28,8 +28,8 @@ theta_d = 10.000000
 name_project = "ZOD"
 problem = FemProblem(name_mesh=name_mesh, theta_d=theta_d, name_project=name_project, order=2, frequencies=frequencies, plot_results=plot_results)
 
-for _ent in problem.model_entities:
-    print(_ent)
+# for _ent in problem.model_entities:
+#     print(_ent)
 
 
 

@@ -45,6 +45,12 @@ class Edge:
         self.order = [order, order, order, order]
         self.dofs = [[0]*(order-1)]*4
         self.sol = [np.zeros((order-1))]*4
+    def center(self):
+        x = (self.vertices[0].x + self.vertices[1].x)/2.
+        y = (self.vertices[0].y + self.vertices[1].y)/2.
+        z = (self.vertices[0].z + self.vertices[1].z)/2.
+        return np.array([x, y, z])
+
     def __str__(self):
         out = "Edge #{}\n".format(self.tag)
         out  += "Vertices=[{},{}], ".format(self.vertices[0].tag, self.vertices[1].tag)
@@ -52,6 +58,9 @@ class Edge:
         out  += "related elements={}\n".format(related_elements)
         out += "dofs=" + format(self.dofs)+"\n"
         return out
+
+
+
 
 class Face:
     ''' Class Face '''
