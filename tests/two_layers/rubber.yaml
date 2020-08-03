@@ -1,0 +1,7 @@
+---
+medium_type: elastic
+E: 1.9E+6
+nu: 0.48
+rho: 1800
+eta: 796
+law: "rubber"
