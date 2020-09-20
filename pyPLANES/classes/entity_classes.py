@@ -32,7 +32,7 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 from mediapack import Air
 
 from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices, pem01_elementary_matrices, elas_elementary_matrices
-from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector, fsi_elementary_matrix
+from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector, fsi_elementary_matrix, fsi_elementary_matrix_incompatible
 from pyPLANES.utils.utils_TM import weak_orth_terms
 from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
 from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
@@ -52,6 +52,7 @@ class GmshEntity():
             self.x = kwargs["x"]
             self.y = kwargs["y"]
             self.z = kwargs["z"]
+            self.coord = np.array([self.x, self.y, self.z])
             self.neighbours = []
         elif self.dim == 1:
             self.neighbouring_surfaces = []
@@ -79,7 +80,7 @@ class GmshEntity():
         if self.dim == 0:
             out += "Belongs to curves "
             for _c in self.neighbouring_curves:
-                out += "{} ({}) ".format(_c.tag,_c.physical_tags["condition"])
+                out += "{} ({}) ".format(_c.tag, _c.physical_tags["condition"])
             out += "\n"
         if self.dim == 1:
             out += "Related points "
@@ -127,6 +128,7 @@ class InterfaceFem(FemEntity):
         self.ml = kwargs.get("ml", False)
         self.side = kwargs.get("side", False)
         self.neighbour = False
+        self.nodes = None
 
     def __str__(self):
         out = "Interface" + FemEntity.__str__(self)
@@ -134,12 +136,19 @@ class InterfaceFem(FemEntity):
         return out
 
     def elementary_matrices(self, _el):
+        M = fsi_elementary_matrix_incompatible(_el)
+        print(M)
+
+        M = fsi_elementary_matrix(_el)
+        print(M)
+
+        dsqdqsdsqdsqsdq
         pass
 
     def append_linear_system(self, omega):
-        A_i, A_j, A_v =[], [], []
+        A_i, A_j, A_v = [], [], []
         # Translation matrix to compute internal dofs
-        T_i, T_j, T_v =[], [], []
+        T_i, T_j, T_v = [], [], []
         print(self.neighbour)
         qdsqsdsdqsqd
         return A_i, A_j, A_v, T_i, T_j, T_v

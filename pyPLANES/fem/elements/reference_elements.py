@@ -38,7 +38,7 @@ import quadpy as quadpy
 
 
 class Ka:
-    def __init__(self, order=2, p= 4):
+    def __init__(self, order=2, p=4):
         self.order = order
         self.xi, self.w = leggauss(p)
         # Number of Shape Functions
@@ -89,7 +89,7 @@ class Kt:
         self.order = order
         scheme = eval("quadpy.triangle.dunavant_"+'{:02}'.format(2*order) +"()")
         _points = scheme.points.dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
-        self.xi_1, self.xi_2, self.w = _points[:,0],_points[:,1],2*scheme.weights
+        self.xi_1, self.xi_2, self.w = _points[:, 0], _points[:,1], 2*scheme.weights
 
         # Number of Shape Functions
         self.nb_v = 3
@@ -101,7 +101,7 @@ class Kt:
         self.nb_s_SF = self.nb_f
         self.nb_SF = self.nb_m_SF+self.nb_s_SF
 
-        self.Phi, self.dPhi = shape_functions_Kt(self.xi_1,self.xi_2,self.order)
+        self.Phi, self.dPhi = shape_functions_Kt(self.xi_1, self.xi_2, self.order)
 
         # For plots
         tri_Kt = mtri.Triangulation(np.asarray([-1,1,-1]), np.asarray([-1,-1,1]))
@@ -114,7 +114,6 @@ class Kt:
     def __str__(self):
         out = "K_t of order {}".format(self.order)
         return out
-
 
 class PlotKt:
     def __init__(self, order=2):

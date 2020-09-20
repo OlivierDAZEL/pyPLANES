@@ -64,7 +64,6 @@ def dof_uy_linear_system_master(_elem):
     if _elem.typ == 2:
         return np.array(_elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5])
 
-
 def dof_u_linear_system_to_condense(_elem):
     if _elem.typ == 2:
         return np.array(_elem.dofs[0][6]+_elem.dofs[1][6])

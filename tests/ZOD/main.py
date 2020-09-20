@@ -13,9 +13,9 @@ from pyPLANES.gmsh.ZOD import ZOD
 
 frequencies = (600., 1500., 1)
 name_mesh = "ZOD"
-L = 0.1
-d = 0.1
-lcar = 0.05
+L = 1
+d = 1
+lcar = 1
 
 ZOD(name_mesh, L, d, d, lcar, 0.02, "Air", "Rigid Wall")
 
@@ -33,11 +33,11 @@ problem = FemProblem(name_mesh=name_mesh, theta_d=theta_d, name_project=name_pro
 
 
 
-# result_pyPLANES = problem.resolution()
+result_pyPLANES = problem.resolution()
 
 # ml = [("Air", d)]
 # S_PW = Solver_PW(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_results=plot_results)
 # result_pyPLANESPW = S_PW.resolution(theta_d)
 
-# if any(plot_results):
-#     plt.show()
+if any(plot_results):
+    plt.show()

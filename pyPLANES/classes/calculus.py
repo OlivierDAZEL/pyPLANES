@@ -29,8 +29,12 @@ Air = Air()
 
 
 class Calculus():
+    """
+    Calculus [summary]
+    """
+
     def __init__(self, **kwargs):
-        self.frequencies = self.init_vec_frequencies( kwargs.get("frequencies", np.array([440])))
+        self.frequencies = self.init_vec_frequencies(kwargs.get("frequencies", np.array([440])))
         self.current_frequency = None
         self.omega = None
         self.theta_d = kwargs.get("theta_d", False)
@@ -39,6 +43,20 @@ class Calculus():
         self.plot = kwargs.get("plot_results", False)
 
     def init_vec_frequencies(self, frequency):
+        """
+        init_vec_frequencies: Create the frequency vector that will be used in the calculations
+
+        Parameters
+        ----------
+        frequency : a list of 3 numbers corresponding to the
+            frequency[0] is the first frequency
+            frequency[1] is the last frequency
+            frequency[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
+
+        Returns
+        -------
+        numpy 1d array with the values of the calculation frequencies
+        """
         if frequency[2] > 0:
                 frequencies = np.linspace(frequency[0], frequency[1], frequency[2])
         elif frequency[2]<0:
@@ -58,6 +76,7 @@ class Calculus():
         self.omega = 2*np.pi*f
 
 class FemCalculus(Calculus):
+
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         self.out_file = self.name_project + ".FEM.txt"

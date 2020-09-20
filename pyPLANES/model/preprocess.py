@@ -24,13 +24,14 @@
 
 import itertools
 import numpy as np
+import numpy.linalg as LA
 
 from mediapack import Air, from_yaml
 from pymls import Layer
 from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
 from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem, InterfaceFem
-
+from pyPLANES.utils.utils_geometry import getOverlap, local_abscissa
 
 
 def update_edges(self, _el, existing_edges, element_vertices):
@@ -270,6 +271,7 @@ def check_model(self):
     list_interfaces = [_ent for _ent in self.model_entities if isinstance(_ent, InterfaceFem)]
     name_interfaces = [_ent.ml for _ent in list_interfaces]
     n_interface = len(list_interfaces)
+
     if  n_interface%2 == 1:
         raise ValueError("Error in check model: Number of interfaces is odd")
     else:
@@ -281,6 +283,7 @@ def check_model(self):
             _int_minus.neighbour = _int_plus
             _int_plus.neighbour = _int_minus
 
+
             del list_interfaces[_index]
             del list_interfaces[0]
             del name_interfaces[_index]
@@ -288,7 +291,7 @@ def check_model(self):
 
             if _int_minus.side == "+":
                 if _int_plus.side == "-":
-                    _int_minus, _int_plus =_int_plus, _int_minus
+                    _int_minus, _int_plus = _int_plus, _int_minus
                 else:
                     raise ValueError("_int_minus.side = + and _int_plus.side != + ")
             elif _int_minus.side == "-":
@@ -297,13 +300,80 @@ def check_model(self):
             else:
                 raise ValueError("_int_minus.side ins neither + or - ")
 
-            for _el_minus in _int_minus.elements:
-                print(_el_minus)
-                center_minus = _el_minus.get_center()
-                for _el_plus in _int_plus.elements:
-                    center_plus = _el_plus.get_center()
-                    if LA.norm(center_minus-center_plus) < self.interface_zone:
             n_interface -= 2
+
+            _int_minus.nodes = _int_minus.bounding_points.copy()
+            _int_plus.nodes = _int_plus.bounding_points.copy()
+            p_0_minus, p_1_minus = _int_minus.nodes[0].coord, _int_minus.nodes[1].coord
+            p_0_plus, p_1_plus = _int_plus.nodes[0].coord, _int_plus.nodes[1].coord
+
+            if LA.norm(p_0_minus-p_0_plus) > LA.norm(p_0_minus-p_1_plus):
+               _int_plus.nodes.reverse()
+
+
+            _int_minus.delta = _int_plus.nodes[0].coord - _int_minus.nodes[0].coord
+            _int_plus.delta = _int_plus.nodes[1].coord - _int_minus.nodes[1].coord
+            if not(np.allclose(_int_minus.delta, _int_minus.delta)):
+                raise ValueError(" Error on delta ")
+
+
+            for _elem in _int_minus.elements:
+                _elem.neighbours = []
+                _elem.delta = _int_minus.delta
+                s_node_1 = local_abscissa(_int_minus.nodes[0].coord, _int_minus.nodes[1].coord, _elem.vertices[0].coord)
+                s_node_2 = local_abscissa(_int_minus.nodes[0].coord, _int_minus.nodes[1].coord, _elem.vertices[1].coord)
+                _elem.s_interface = [s_node_1, s_node_2]
+
+            for _elem in _int_plus.elements:
+                _elem.neighbours = []
+                _elem.delta = _int_plus.delta
+                s_node_1 = local_abscissa(_int_plus.nodes[0].coord, _int_plus.nodes[1].coord, _elem.vertices[0].coord)
+                s_node_2 = local_abscissa(_int_plus.nodes[0].coord, _int_plus.nodes[1].coord, _elem.vertices[1].coord)
+                _elem.s_interface = [s_node_1, s_node_2]
+
+
+            for _elem_minus in _int_minus.elements:
+                # print("elem_minus={}".format(_elem_minus.tag))
+                for _elem_plus in _int_plus.elements:
+                    if getOverlap(_elem_minus.s_interface, _elem_plus.s_interface) != 0:
+                        # print("elem_plus={}".format(_elem_plus.tag))
+
+                        # Coordinates
+                        s_0_minus = local_abscissa(np.array(_elem_minus.vertices[0].coord), np.array(_elem_minus.vertices[1].coord), np.array(_elem_plus.vertices[0].coord)-_int_minus.delta)
+                        s_1_minus = local_abscissa(np.array(_elem_minus.vertices[0].coord), np.array(_elem_minus.vertices[1].coord), np.array(_elem_plus.vertices[1].coord)-_int_minus.delta)
+
+                        s_0_minus = min(max(s_0_minus, 0.), 1.)
+                        s_1_minus = min(max(s_1_minus, 0.), 1.)
+
+                        s_0_plus = local_abscissa(np.array(_elem_plus.vertices[0].coord), np.array(_elem_plus.vertices[1].coord), np.array(_elem_minus.vertices[0].coord)+_int_minus.delta)
+                        s_1_plus = local_abscissa(np.array(_elem_plus.vertices[0].coord), np.array(_elem_plus.vertices[1].coord), np.array(_elem_minus.vertices[1].coord)+_int_minus.delta)
+
+                        s_0_plus = min(max(s_0_plus, 0.), 1.)
+                        s_1_plus = min(max(s_1_plus, 0.), 1.)
+
+                        direction = (np.array(_elem_minus.vertices[1].coord)-np.array(_elem_minus.vertices[0].coord)).dot(np.array(_elem_plus.vertices[1].coord)-np.array(_elem_plus.vertices[0].coord))
+                        print("direction={}".format(direction))
+                        if direction > 0:
+                            _elem_minus.neighbours.append((_elem_plus, s_0_minus, s_1_minus, s_0_plus, s_1_plus))
+                            _elem_plus.neighbours.append((_elem_minus, s_0_plus, s_1_plus, s_0_minus, s_1_minus))
+                        else:
+                            _elem_minus.neighbours.append((_elem_plus, s_0_minus, s_1_minus, s_1_plus, s_0_plus))
+                            _elem_plus.neighbours.append((_elem_minus, s_0_plus, s_1_plus, s_1_minus, s_0_minus))
+
+            # dsqsdqsdqdsdsq
+
+            # print("minus")
+            # for _elem in _int_minus.elements:
+            #     print("tag={},node_1={},node_2={}".format(_elem.tag,_elem.vertices[0].tag,_elem.vertices[1].tag))
+            #     for _e in _elem.neighbours:
+            #         print("elem={}/n_0={}/n_1={}\n s_0={}/s_1={}".format(_e[0].tag, _e[0].vertices[0].tag,_e[0].vertices[1].tag,_e[1], _e[2]))
+            # print("plus")
+            # for _elem in _int_plus.elements:
+            #     print("tag={},node_1={},node_2={}".format(_elem.tag,_elem.vertices[0].tag,_elem.vertices[1].tag))
+            #     for _e in _elem.neighbours:
+            #         print("elem={}/n_0={}/n_1={}\n s_0={}/s_1={}".format(_e[0].tag, _e[0].vertices[0].tag,_e[0].vertices[1].tag,_e[1], _e[2]))
+
+            # fsdfdsfsdfdfdsfdsdsf
 
     for _e in self.model_entities:
         if isinstance(_e, PwFem):

@@ -25,13 +25,13 @@
 from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
 
 
-def ZOD(name_mesh, L=2e-2, d_1=2e-2, d_2=2e-2, lcar=1e-2, shift=0.05, mat="Air", termination="Rigid Wall"):
+def ZOD(name_mesh, L=1., d_1=1., d_2=1., lcar=1., shift=0.05, mat="Air", termination="Rigid Wall"):
     G = Gmsh(name_mesh)
 
-    pb_0 = G.new_point(0, 0, lcar/3)
-    pb_1 = G.new_point(L, 0,lcar/3)
-    pb_2 = G.new_point(L, d_1, lcar/2.5)
-    pb_3 = G.new_point(0, d_1, lcar/2.5)
+    pb_0 = G.new_point(0, 0, lcar)
+    pb_1 = G.new_point(L, 0, lcar)
+    pb_2 = G.new_point(L, d_1, lcar)
+    pb_3 = G.new_point(0, d_1, lcar)
 
     pt_0 = G.new_point(0, d_1+shift, lcar)
     pt_1 = G.new_point(L, d_1+shift, lcar)

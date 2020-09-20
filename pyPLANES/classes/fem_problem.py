@@ -27,14 +27,14 @@ import time
 
 import numpy as np
 from pyPLANES.classes.fem_model import FemModel
-from pyPLANES.classes.mesh import FemMesh
+from pyPLANES.classes.mesh import Mesh
 from pyPLANES.classes.calculus import FemCalculus
 from pyPLANES.gmsh.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
 from pyPLANES.classes.entity_classes import PwFem
 
 
-class FemProblem(FemMesh, FemModel, FemCalculus):
+class FemProblem(Mesh, FemModel, FemCalculus):
     def __init__(self, **kwargs):
         self.name_server = platform.node()
         if self.name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
@@ -44,7 +44,7 @@ class FemProblem(FemMesh, FemModel, FemCalculus):
         self.verbose = kwargs.get("verbose", True)
         FemCalculus.__init__(self, **kwargs)
         self.initialisation_out_files()
-        FemMesh.__init__(self, **kwargs)
+        Mesh.__init__(self, **kwargs)
         FemModel.__init__(self, **kwargs)
 
         self.order = kwargs.get("order", 2)

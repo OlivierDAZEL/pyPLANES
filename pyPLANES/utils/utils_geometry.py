@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding:utf8 -*-
 #
-# problem.py
+# utils_geometry.py
 #
 # This file is part of pymls, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
@@ -22,17 +22,11 @@
 # copies or substantial portions of the Software.
 #
 
+import numpy.linalg as LA
 
-from pyPLANES.gmsh.load_msh_file import load_msh_file
+def getOverlap(a, b):
+    return max(0, min(max(a), max(b)) - max(min(a), min(b)))
 
-class Mesh():
-    def __init__(self, **kwargs):
-        self.entities = [] # List of all GMSH Entities
-        self.model_entities = [] # List of Entities used in the Model
-        self.vertices = []
-        self.elements = []
-        self.materials_directory = kwargs.get("materials_directory", "")
-        self.reference_elements = dict() # dictionary of reference_elements
-        load_msh_file(self, **kwargs)
-
-
+def local_abscissa(p_0, p_1, p_c):
+    n = LA.norm(p_1 - p_0)
+    return (p_c-p_0).dot(p_1 - p_0)/n**2
