@@ -24,7 +24,7 @@
 import numpy as np
 
 class Vertex:
-    '''Class Vertex'''
+    '''Vertex Finite-Element'''
     def __init__(self, coord, tag):
         self.coord = coord
         self.tag = tag
@@ -59,11 +59,21 @@ class Edge:
         out += "dofs=" + format(self.dofs)+"\n"
         return out
 
-
-
-
 class Face:
-    ''' Class Face '''
+    """ Finite-Element Face
+
+    Parameters
+    ----------
+    tag : int
+        GMSH tag
+    vertices : list
+        vertices linked to the element
+    element : [type]
+        [description]
+    order : [type]
+        [description]
+    """
+
     def __init__(self, tag, vertices, element, order):
         self.tag = tag
         self.vertices = vertices
@@ -82,7 +92,24 @@ class Face:
 
 class Bubble:
     ''' Class Bubble '''
+    """
+    [summary]
+    """
     def __init__(self,nodes,element,order,geo):
+        """
+        [summary]
+
+        Parameters
+        ----------
+        nodes : [type]
+            [description]
+        element : [type]
+            [description]
+        order : [type]
+            [description]
+        geo : [type]
+            [description]
+        """
         self.geo = geo
         self.nodes = nodes
         if hasattr(self, 'elements'):
@@ -166,11 +193,29 @@ class Element:
         return coorde
 
     def get_center(self):
-        ''' Method that gives the center of the element'''
+        """ 
+        Returns
+        -------
+        numpy array
+            coordinates of the center of the element
+        """
         coorde = self.get_coordinates()
         return np.mean(coorde, axis=1)
 
     def display_sol(self, field):
+        """
+        Returns the values of the coordinates 
+
+        Parameters
+        ----------
+        field : [type]
+            [description]
+
+        Returns
+        -------
+        [type]
+            [description]
+        """
         order = self.reference_element.order
         if not isinstance(field, list):
             field = [field]

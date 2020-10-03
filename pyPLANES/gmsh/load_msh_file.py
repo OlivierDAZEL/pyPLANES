@@ -35,6 +35,7 @@ def load_msh_file(self, **kwargs):
     order = kwargs["order"]
     self.incident_ml = kwargs.get("incident_ml", False)
     self.transmission_ml = kwargs.get("transmission_ml", False)
+    self.interface_ml = kwargs.get("interface_ml", False)
     if self.verbose:
         print("Reading "+ name_mesh + ".msh")
     f = open(name_mesh + ".msh", "r")

@@ -1,4 +1,5 @@
 Output File from pyPLANES
-Generated on oliviers-macbook-pro.home
-Calculus started at 2020-09-20 12:47:40.157184.
-Duration of importation =0.010326862335205078 s
+Generated on thermomix-3151a7.home
+Calculus started at 2020-10-03 09:37:40.229866.
+Duration of importation =2.279269218444824 s
+Duration of assembly =0.007200956344604492 s

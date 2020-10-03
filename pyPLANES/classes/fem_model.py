@@ -95,7 +95,7 @@ class FemModel(Model):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.model_entities:
-            if isinstance(_ent, (PwFem)):
+            if isinstance(_ent, (PwFem, InterfaceFem)):
                 self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
                 # print("F_create={}".format(self.F))
             else:

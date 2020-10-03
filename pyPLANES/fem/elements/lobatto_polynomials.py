@@ -21,9 +21,25 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
+
 import numpy as np
 
 def lobatto(order,x):
+    """
+    Lobatto shpae 
+
+    Parameters
+    ----------
+    order : [type]
+        [description]
+    x : [type]
+        [description]
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
     if order == 0:
         p_lobatto = 1-x
         d_lobatto = -x**0

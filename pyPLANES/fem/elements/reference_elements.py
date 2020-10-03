@@ -87,8 +87,8 @@ class KaPw(Ka):
 class Kt:
     def __init__(self, order=2, p= 4):
         self.order = order
-        scheme = eval("quadpy.triangle.dunavant_"+'{:02}'.format(2*order) +"()")
-        _points = scheme.points.dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
+        scheme = quadpy.t2.get_good_scheme(2*order)
+        _points = (scheme.points.T).dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
         self.xi_1, self.xi_2, self.w = _points[:, 0], _points[:,1], 2*scheme.weights
 
         # Number of Shape Functions

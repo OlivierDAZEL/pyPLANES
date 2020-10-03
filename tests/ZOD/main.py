@@ -17,7 +17,7 @@ L = 1
 d = 1
 lcar = 1
 
-ZOD(name_mesh, L, d, d, lcar, 0.02, "Air", "Rigid Wall")
+ZOD(name_mesh, L, d, d, lcar, lcar, 0.02, "Air", "Rigid Wall")
 
 order = 2
 plot_results = [True, True, True, False, False, False]

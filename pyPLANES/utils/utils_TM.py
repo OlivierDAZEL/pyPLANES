@@ -98,25 +98,30 @@ def convert_Omega(Om_m, typ_minus, typ_plus):
     return Om_plus
 
 def TM_fluid(layer, kx, om):
+    """
+    TM_fluid returns the 2x2 Transfer Matrix of a fluid layer
+
+    Parameters
+    ----------
+    layer : Layer
+    kx : transversal wave number
+    om : circular frequency
+
+    Returns
+    -------
+    2x2 numpy array
+    """
+
     h = layer.thickness
     rho = layer.medium.rho
     K = layer.medium.K
     k = om*np.sqrt(rho/K)
     ky = np.sqrt(k**2-kx**2)
-
     T = np.zeros((2, 2), dtype=complex)
     T[0, 0] = np.cos(ky*h)
     T[1, 0] = (om**2*rho/ky)*np.sin(ky*h)
     T[0, 1] = -(ky/(om**2*rho))*np.sin(ky*h)
     T[1, 1] = np.cos(ky*h)
-
-    # alpha = np.zeros((2, 2), dtype=complex)
-    # alpha[0, 1] = (kx**2/(rho*om**2))-1/K
-    # alpha[1, 0] = rho*om**2
-
-    # print(expm(alpha*h))
-
-    # print(T)
     return T
 
 def TM_elastic(layer, kx, om):

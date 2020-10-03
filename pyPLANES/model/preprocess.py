@@ -30,6 +30,7 @@ from mediapack import Air, from_yaml
 from pymls import Layer
 from pyPLANES.utils.utils_fem import normal_to_element
 from pyPLANES.classes.fem_classes import Edge, Face
+from pyPLANES.classes.mesh import NeighbourElement
 from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem, InterfaceFem
 from pyPLANES.utils.utils_geometry import getOverlap, local_abscissa
 
@@ -276,69 +277,62 @@ def check_model(self):
         raise ValueError("Error in check model: Number of interfaces is odd")
     else:
         while n_interface != 0:
+            # Current minus interface
             _int_minus = list_interfaces[0]
+            # Determination of the corresponding plus interface
             _index = name_interfaces[1:].index(_int_minus.ml)+1
             _int_plus = list_interfaces[_index]
-
-            _int_minus.neighbour = _int_plus
-            _int_plus.neighbour = _int_minus
-
-
+            # Updates of list and name of interfaces not to consider these two
             del list_interfaces[_index]
             del list_interfaces[0]
             del name_interfaces[_index]
             del name_interfaces[0]
-
+            # For bilateral communication between interfaces
+            _int_minus.neighbour = _int_plus
+            _int_plus.neighbour = _int_minus
+            n_interface -= 2
+            # Check that the side chars are correctly
             if _int_minus.side == "+":
                 if _int_plus.side == "-":
                     _int_minus, _int_plus = _int_plus, _int_minus
                 else:
-                    raise ValueError("_int_minus.side = + and _int_plus.side != + ")
+                    raise ValueError("_int_minus.side = + and _int_plus.side != - ")
             elif _int_minus.side == "-":
                 if _int_plus.side != "+":
                     raise ValueError("_int_minus.side = - and _int_plus.side != + ")
             else:
-                raise ValueError("_int_minus.side ins neither + or - ")
-
-            n_interface -= 2
-
+                raise ValueError("_int_minus.side is neither + or - ")
+            # Affectation of the bounding nodes to the two interfaces
             _int_minus.nodes = _int_minus.bounding_points.copy()
             _int_plus.nodes = _int_plus.bounding_points.copy()
-            p_0_minus, p_1_minus = _int_minus.nodes[0].coord, _int_minus.nodes[1].coord
-            p_0_plus, p_1_plus = _int_plus.nodes[0].coord, _int_plus.nodes[1].coord
 
-            if LA.norm(p_0_minus-p_0_plus) > LA.norm(p_0_minus-p_1_plus):
+            # Test if the nodes of minus and plus interface coincide
+            if LA.norm(_int_minus.nodes[0].coord-_int_plus.nodes[0].coord) > LA.norm(_int_minus.nodes[1].coord-_int_plus.nodes[0].coord):
+               # _int_minus.nodes[1] is closer of _int_plus.nodes[0] than _int_minus.nodes[0]
                _int_plus.nodes.reverse()
 
-
             _int_minus.delta = _int_plus.nodes[0].coord - _int_minus.nodes[0].coord
-            _int_plus.delta = _int_plus.nodes[1].coord - _int_minus.nodes[1].coord
-            if not(np.allclose(_int_minus.delta, _int_minus.delta)):
+            _int_plus.delta = _int_minus.nodes[1].coord - _int_plus.nodes[1].coord
+            if not(np.allclose(_int_minus.delta, -_int_plus.delta)):
                 raise ValueError(" Error on delta ")
-
-
+            #Determination for each element of the local abscissa in the interface coordinate system
             for _elem in _int_minus.elements:
-                _elem.neighbours = []
+                _elem.neighbours = [] # To be filled later
                 _elem.delta = _int_minus.delta
-                s_node_1 = local_abscissa(_int_minus.nodes[0].coord, _int_minus.nodes[1].coord, _elem.vertices[0].coord)
-                s_node_2 = local_abscissa(_int_minus.nodes[0].coord, _int_minus.nodes[1].coord, _elem.vertices[1].coord)
-                _elem.s_interface = [s_node_1, s_node_2]
-
+                s_node_0 = local_abscissa(_int_minus.nodes[0].coord, _int_minus.nodes[1].coord, _elem.vertices[0].coord)
+                s_node_1 = local_abscissa(_int_minus.nodes[0].coord, _int_minus.nodes[1].coord, _elem.vertices[1].coord)
+                _elem.s_interface = [s_node_0, s_node_1]
             for _elem in _int_plus.elements:
-                _elem.neighbours = []
+                _elem.neighbours = [] # To be filled later
                 _elem.delta = _int_plus.delta
-                s_node_1 = local_abscissa(_int_plus.nodes[0].coord, _int_plus.nodes[1].coord, _elem.vertices[0].coord)
-                s_node_2 = local_abscissa(_int_plus.nodes[0].coord, _int_plus.nodes[1].coord, _elem.vertices[1].coord)
-                _elem.s_interface = [s_node_1, s_node_2]
-
-
+                s_node_0 = local_abscissa(_int_plus.nodes[0].coord, _int_plus.nodes[1].coord, _elem.vertices[0].coord)
+                s_node_1 = local_abscissa(_int_plus.nodes[0].coord, _int_plus.nodes[1].coord, _elem.vertices[1].coord)
+                _elem.s_interface = [s_node_0, s_node_1]
+            # Determination of neighbours
             for _elem_minus in _int_minus.elements:
-                # print("elem_minus={}".format(_elem_minus.tag))
                 for _elem_plus in _int_plus.elements:
                     if getOverlap(_elem_minus.s_interface, _elem_plus.s_interface) != 0:
-                        # print("elem_plus={}".format(_elem_plus.tag))
-
-                        # Coordinates
+                       # Coordinates
                         s_0_minus = local_abscissa(np.array(_elem_minus.vertices[0].coord), np.array(_elem_minus.vertices[1].coord), np.array(_elem_plus.vertices[0].coord)-_int_minus.delta)
                         s_1_minus = local_abscissa(np.array(_elem_minus.vertices[0].coord), np.array(_elem_minus.vertices[1].coord), np.array(_elem_plus.vertices[1].coord)-_int_minus.delta)
 
@@ -354,26 +348,13 @@ def check_model(self):
                         direction = (np.array(_elem_minus.vertices[1].coord)-np.array(_elem_minus.vertices[0].coord)).dot(np.array(_elem_plus.vertices[1].coord)-np.array(_elem_plus.vertices[0].coord))
                         print("direction={}".format(direction))
                         if direction > 0:
-                            _elem_minus.neighbours.append((_elem_plus, s_0_minus, s_1_minus, s_0_plus, s_1_plus))
-                            _elem_plus.neighbours.append((_elem_minus, s_0_plus, s_1_plus, s_0_minus, s_1_minus))
+                            _elem_minus.neighbours.append(NeighbourElement(_elem_plus, s_0_minus, s_1_minus, s_0_plus, s_1_plus))
+                            _elem_plus.neighbours.append(NeighbourElement(_elem_minus, s_0_plus, s_1_plus, s_0_minus, s_1_minus))
                         else:
-                            _elem_minus.neighbours.append((_elem_plus, s_0_minus, s_1_minus, s_1_plus, s_0_plus))
-                            _elem_plus.neighbours.append((_elem_minus, s_0_plus, s_1_plus, s_1_minus, s_0_minus))
+                            _elem_minus.neighbours.append(NeighbourElement(_elem_plus, s_0_minus, s_1_minus, s_1_plus, s_0_plus))
+                            _elem_plus.neighbours.append(NeighbourElement(_elem_minus, s_0_plus, s_1_plus, s_1_minus, s_0_minus))
 
-            # dsqsdqsdqdsdsq
 
-            # print("minus")
-            # for _elem in _int_minus.elements:
-            #     print("tag={},node_1={},node_2={}".format(_elem.tag,_elem.vertices[0].tag,_elem.vertices[1].tag))
-            #     for _e in _elem.neighbours:
-            #         print("elem={}/n_0={}/n_1={}\n s_0={}/s_1={}".format(_e[0].tag, _e[0].vertices[0].tag,_e[0].vertices[1].tag,_e[1], _e[2]))
-            # print("plus")
-            # for _elem in _int_plus.elements:
-            #     print("tag={},node_1={},node_2={}".format(_elem.tag,_elem.vertices[0].tag,_elem.vertices[1].tag))
-            #     for _e in _elem.neighbours:
-            #         print("elem={}/n_0={}/n_1={}\n s_0={}/s_1={}".format(_e[0].tag, _e[0].vertices[0].tag,_e[0].vertices[1].tag,_e[1], _e[2]))
-
-            # fsdfdsfsdfdfdsfdsdsf
 
     for _e in self.model_entities:
         if isinstance(_e, PwFem):

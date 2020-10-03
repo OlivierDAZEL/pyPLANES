@@ -127,8 +127,10 @@ class InterfaceFem(FemEntity):
         FemEntity.__init__(self, **kwargs)
         self.ml = kwargs.get("ml", False)
         self.side = kwargs.get("side", False)
-        self.neighbour = False
-        self.nodes = None
+        self.neighbour = False # Neighbouring interface
+        self.nodes = None # Bounding nodes
+        self.delta = None # vector of geometrical shift with the other interface
+
 
     def __str__(self):
         out = "Interface" + FemEntity.__str__(self)
@@ -137,21 +139,26 @@ class InterfaceFem(FemEntity):
 
     def elementary_matrices(self, _el):
         M = fsi_elementary_matrix_incompatible(_el)
-        print(M)
+        orient_ = orient_element(_el)
+        for i, neigh in enumerate(_el.neighbours):
+            orient__ = orient_element((neigh._elem))
+            M[i] = orient_ @ M[i] @ orient__
 
-        M = fsi_elementary_matrix(_el)
-        print(M)
 
-        dsqdqsdsqdsqsdq
-        pass
+    def create_dynamical_matrices(self, omega, n_m):
+        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+        self.eta_TM = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
+        tau = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
+        Omega_0 = np.array([-1j*self.ky[0]/(Air.rho*omega**2), 1]).reshape((2, 1))
+        Omega_0_weak, self.Omega_0_orth = weak_orth_terms(omega, self.kx[0], Omega_0, self.ml, self.typ)
+        self.Omega_0_orth = self.Omega_0_orth[:, 0]
+        Omega_0_weak = Omega_0_weak[:, 0]
+        qdsqsddsq
 
-    def append_linear_system(self, omega):
-        A_i, A_j, A_v = [], [], []
-        # Translation matrix to compute internal dofs
-        T_i, T_j, T_v = [], [], []
-        print(self.neighbour)
-        qdsqsdsdqsqd
-        return A_i, A_j, A_v, T_i, T_j, T_v
+
+
+
+
 
 class FluidStructureFem(FemEntity):
     def __init__(self, **kwargs):
