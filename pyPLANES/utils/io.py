@@ -33,7 +33,7 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
-from pyPLANES.classes.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem, ElasticFem
+from pyPLANES.fem.problem.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem, ElasticFem
 
 def initialisation_out_files_plain(self):
     # Creation of the directory if it .oes not exists

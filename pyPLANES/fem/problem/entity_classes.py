@@ -31,11 +31,11 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
 
-from pyPLANES.fem.elements.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices, pem01_elementary_matrices, elas_elementary_matrices
-from pyPLANES.fem.elements.surfacic_elements import imposed_pw_elementary_vector, fsi_elementary_matrix, fsi_elementary_matrix_incompatible
-from pyPLANES.utils.utils_TM import weak_orth_terms
-from pyPLANES.utils.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
-from pyPLANES.utils.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
+from pyPLANES.fem.tools.volumic_elements import fluid_elementary_matrices, pem98_elementary_matrices, pem01_elementary_matrices, elas_elementary_matrices
+from pyPLANES.fem.tools.surfacic_elements import imposed_pw_elementary_vector, fsi_elementary_matrix, fsi_elementary_matrix_incompatible
+from pyPLANES.pw.tools.utils_TM import weak_orth_terms
+from pyPLANES.fem.tools.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
+from pyPLANES.fem.tools.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
 
 class GmshEntity():
     def __init__(self, **kwargs):
