@@ -22,7 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
+from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
 
 
 def one_layer(name_mesh,L=2e-2,d=2e-2, lcar=1e-2, mat="pem_benchmark_1", termination="Rigid Wall"):

@@ -26,19 +26,20 @@ import numpy as np
 
 def lobatto(order,x):
     """
-    Lobatto shpae 
+    Lobatto shape functions 
 
     Parameters
     ----------
-    order : [type]
-        [description]
-    x : [type]
-        [description]
-
+    order : integer
+        degree of the polynomial
+    x : ndarray
+        position of the Gauss points
     Returns
     -------
-    [type]
-        [description]
+    p_lobatto : ndarray
+        value of the Lobatto polynomial at x 
+    d_lobatto : ndarray
+        value of the Lobatto polynomial first derivative at x      
     """
     if order == 0:
         p_lobatto = 1-x
@@ -123,7 +124,22 @@ def lobatto(order,x):
     return p_lobatto, d_lobatto
 
 def lobatto_kernels(order, x):
+    """
+    Lobatto kernels  
 
+    Parameters
+    ----------
+    order : integer
+        degree of the polynomial
+    x : ndarray
+        position of the Gauss points
+    Returns
+    -------
+    phi : ndarray
+        value of the Lobatto kernel at x 
+    dphi : ndarray
+        value of the Lobatto kernel first derivative at x      
+    """
     if order == 0:
         phi = -np.ones(len(x))
         dphi = np.zeros(len(x))

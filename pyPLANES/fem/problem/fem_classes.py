@@ -139,9 +139,6 @@ class Element:
 
     Ref_Elem : Reference Element
 
-    Returns:
-    ------------------------
-    None
 
     Attributes :
     ------------------------

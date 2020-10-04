@@ -29,8 +29,32 @@ Air = Air()
 
 
 class Calculus():
-    """
-    Calculus [summary]
+    """ pyPLANES Calculus 
+
+    Attributes :
+    ------------------------
+
+    frequencies : ndarray
+        list of calculation frequencies
+
+    current_frequency : real or complex
+        current frequency
+
+    omega : real or complex
+        current frequency
+
+    theta_d : real or False
+        Incident angle in degree 
+
+    name_project : str
+        Incident angle in degree 
+
+    outfiles_directory : str or False
+        Directory for out files
+
+    plot : Boolean
+        True/False if plots are on/off
+
     """
 
     def __init__(self, **kwargs):
@@ -44,18 +68,19 @@ class Calculus():
 
     def init_vec_frequencies(self, frequency):
         """
-        init_vec_frequencies: Create the frequency vector that will be used in the calculations
+        Create the frequency vector that will be used in the calculations
 
         Parameters
         ----------
-        frequency : a list of 3 numbers corresponding to the
+        frequency : array_like 
+            a list of 3 numbers corresponding to the
             frequency[0] is the first frequency
             frequency[1] is the last frequency
             frequency[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
 
         Returns
         -------
-        numpy 1d array with the values of the calculation frequencies
+        ndarray of the frequencies
         """
         if frequency[2] > 0:
                 frequencies = np.linspace(frequency[0], frequency[1], frequency[2])
@@ -76,6 +101,9 @@ class Calculus():
         self.omega = 2*np.pi*f
 
 class FemCalculus(Calculus):
+    """
+    Finite-Element Calculus
+    """
 
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
@@ -88,13 +116,25 @@ class FemCalculus(Calculus):
         self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
 
     def update_frequency(self, f):
+        """
+        Update/reinitialise parameters
+
+        Parameters
+        ----------
+        f : real or complex
+            current frequency
+        """
         Calculus.update_frequency(self, f)
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
         self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
-        self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
-        self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
+        if self.theta_d:
+            self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
+            self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
+        else:
+            self.kx, self.ky = None, None 
+            
         self.delta_periodicity = np.exp(-1j*self.kx*self.period)
         self.nb_dofs = self.nb_dof_FEM
         for _ent in self.model_entities:
