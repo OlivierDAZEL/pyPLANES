@@ -28,11 +28,14 @@ import numpy.linalg as LA
 
 from mediapack import Air, from_yaml
 from pymls import Layer
-from pyPLANES.utils.utils_fem import normal_to_element
-from pyPLANES.classes.fem_classes import Edge, Face
-from pyPLANES.classes.mesh import NeighbourElement
-from pyPLANES.classes.entity_classes import PwFem, FluidFem, RigidWallFem, PemFem, ElasticFem, PeriodicityFem, IncidentPwFem, TransmissionPwFem, FluidStructureFem, InterfaceFem
-from pyPLANES.utils.utils_geometry import getOverlap, local_abscissa
+from pyPLANES.fem.utils_fem import normal_to_element
+from pyPLANES.fem.elements_plain import Edge, Face
+from pyPLANES.core.mesh import NeighbourElement
+from pyPLANES.fem.entities_surfacic import *
+from pyPLANES.fem.entities_volumic import *
+from pyPLANES.fem.entities_pw import *
+
+from pyPLANES.utils.geometry import getOverlap, local_abscissa
 
 
 def update_edges(self, _el, existing_edges, element_vertices):

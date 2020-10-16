@@ -33,25 +33,11 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
-from pyPLANES.fem.problem.entity_classes import PwFem, IncidentPwFem, TransmissionPwFem, FluidFem, PemFem, ElasticFem
+from pyPLANES.fem.entities_surfacic import *
+from pyPLANES.fem.entities_volumic import *
 
 def initialisation_out_files_plain(self):
-    # Creation of the directory if it .oes not exists
-    if self.outfiles_directory:
-        if self.outfiles_directory != "":
-            directory = self.outfiles_directory
-            if not path.exists(directory):
-                mkdir(directory)
-            self.out_file = directory + "/" + self.out_file_name
-            self.info_file = directory + "/"+ self.info_file_name
-
-    self.out_file = open(self.out_file, 'w')
-    self.info_file = open(self.info_file, 'w')
-
-    name_server = socket.gethostname()
-    self.info_file.write("Output File from pyPLANES\n")
-    self.info_file.write("Generated on {}\n".format(name_server))
-    self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
+    pass
 
 def close_out_files(self):
     duration = time.time()-self.start_time

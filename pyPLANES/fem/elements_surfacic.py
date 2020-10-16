@@ -23,7 +23,7 @@
 #
 import numpy as np
 import numpy.linalg as LA
-from pyPLANES.fem.tools.lobatto_polynomials import lobatto as l
+from pyPLANES.fem.lobatto_polynomials import lobatto as l
 
 def imposed_Neumann(_elem):
     coord_e = _elem.get_coordinates()

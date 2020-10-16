@@ -23,7 +23,7 @@
 #
 
 
-from pyPLANES.gmsh.load_msh_file import load_msh_file
+from pyPLANES.gmsh.tools.load_msh_file import load_msh_file
 
 class Mesh():
     def __init__(self, **kwargs):

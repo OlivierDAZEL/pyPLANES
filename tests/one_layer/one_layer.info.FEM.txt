@@ -1,8 +1,5 @@
 Output File from pyPLANES
-Generated on thermomix-3151a7.home
-Calculus started at 2020-10-03 12:04:47.327982.
-Duration of importation =0.01191401481628418 s
-Duration of assembly =0.0076351165771484375 s
-Calculus ended at 2020-10-03 12:04:47.575744.
-Total duration = 0.24773502349853516 s
-duration / freq (averaged) = 0.24773502349853516 s
+Generated on mamiphone.home
+Calculus started at 2020-10-16 21:48:31.917922.
+Duration of importation =0.009552955627441406 s
+Duration of assembly =0.0037679672241210938 s

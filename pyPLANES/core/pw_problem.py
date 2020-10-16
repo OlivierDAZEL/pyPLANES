@@ -27,56 +27,119 @@ import numpy.linalg as LA
 import matplotlib.pyplot as plt
 
 from mediapack import from_yaml
-from pymls import Layer, backing
 from mediapack import Air, PEM, EqFluidJCA
 
-from pyPLANES.tools.io import initialisation_out_files_plain
-from pyPLANES.problem.calculus import PwCalculus
+from pyPLANES.utils.io import initialisation_out_files_plain
+from pyPLANES.core.calculus import PwCalculus
+from pyPLANES.core.multilayer import MultiLayer
 
+from pyPLANES.pw.pw_layers import *
+from pyPLANES.pw.pw_interfaces import *
 
 Air = Air()
 
 
-class PwInterface():
-    """
-    Interface for Plane Wave Solver
-    """
-
-class PwLayer(Layer):
-    """
-    Layer for Plane Wave Solver
-    """
-    def __init__(self, mat, d):
-        Layer.__init__(self, mat, d)
-
-
-class PwProblem(PwCalculus):
+class PwProblem(PwCalculus, MultiLayer):
     """
         Plane Wave Problem 
     """ 
     def __init__(self, **kwargs):
         PwCalculus.__init__(self, **kwargs)
-        ml = kwargs.get("ml")
-        termination = kwargs.get("termination")
-        self.layers = []
-        for _l in ml:
-            if _l[0] == "Air":
-                mat = Air
-            else:
-                mat = from_yaml(_l[0]+".yaml")
-            d = _l[1]
-            self.layers.append(Layer(mat,d))
-        if termination in ["trans", "transmission","Transmission"]:
-            self.backing = "Transmission"
-        else:
-            self.backing = backing.rigid
+        termination = kwargs.get("termination","rigid")
+        self.method = kwargs.get("method","global")
+
+        MultiLayer.__init__(self, **kwargs)
 
         self.kx, self.ky, self.k = None, None, None
         self.shift_plot = kwargs.get("shift_pw", 0.)
         self.plot = kwargs.get("plot_results", [False]*6)
         self.result = {}
         self.outfiles_directory = False
-        initialisation_out_files_plain(self)
+
+        if self.method == "global":
+            self.layers.insert(0,FluidLayer(Air,1.e-2))
+            if self.layers[1].medium.MEDIUM_TYPE == "fluid":
+                self.interfaces.append(FluidFluidInterface(self.layers[0],self.layers[1]))
+            self.nb_PW = 0
+            for _layer in self.layers:
+                if _layer.medium.MODEL == "fluid":
+                    _layer.dofs = self.nb_PW+np.arange(2)
+                    self.nb_PW += 2
+                elif _layer.medium.MODEL == "pem":
+                    _layer.dofs = self.nb_PW+np.arange(6)
+                    self.nb_PW += 6
+                elif _layer.medium.MODEL == "elastic":
+                    _layer.dofs = self.nb_PW+np.arange(4)
+                    self.nb_PW += 4
+
+    def update_frequency(self, f):
+        PwCalculus.update_frequency(self, f)
+        MultiLayer.update_frequency(self, f, self.k, self.kx)
+
+    def create_linear_system(self, f):
+        self.A = np.zeros((self.nb_PW-1, self.nb_PW), dtype=complex)
+        i_eq = 0
+        # Loop on the interfaces
+        for _int in self.interfaces:
+            if self.method == "global":
+                i_eq = _int.update_M_global(self.A, i_eq)
+        
+
+
+
+        # for i_inter, _inter in enumerate(self.interfaces):
+        #     if _inter[0] == "fluid":
+        #         if _inter[1] == "fluid":
+        #             i_eq = self.interface_fluid_fluid(i_eq, i_inter, Layers, dofs, M)
+        #         if _inter[1] == "pem":
+        #             i_eq = self.interface_fluid_pem(i_eq, i_inter, Layers, dofs, M)
+        #         if _inter[1] == "elastic":
+        #             i_eq = self.interface_fluid_elastic(i_eq, i_inter, Layers, dofs, M)
+        #     elif _inter[0] == "pem":
+        #         if _inter[1] == "fluid":
+        #             i_eq = self.interface_pem_fluid(i_eq, i_inter, Layers, dofs, M)
+        #         if _inter[1] == "pem":
+        #             i_eq = self.interface_pem_pem(i_eq, i_inter, Layers, dofs, M)
+        #         if _inter[1] == "elastic":
+        #             i_eq = self.interface_pem_elastic(i_eq, i_inter, Layers, dofs, M)
+        #     elif _inter[0] == "elastic":
+        #         if _inter[1] == "fluid":
+        #             i_eq = self.interface_elastic_fluid(i_eq, i_inter, Layers, dofs, M)
+        #         if _inter[1] == "pem":
+        #             i_eq = self.interface_elastic_pem(i_eq, i_inter, Layers, dofs, M)
+        #         if _inter[1] == "elastic":
+        #             i_eq = self.interface_elastic_elastic(i_eq, i_inter, Layers, dofs, M)
+        # if self.backing == backing.rigid:
+        #     if Layers[-1].medium.MODEL == "fluid":
+        #         i_eq = self.interface_fluid_rigid(M, i_eq, Layers[-1], dofs[-1] )
+        #     elif Layers[-1].medium.MODEL == "pem":
+        #         i_eq = self.interface_pem_rigid(M, i_eq, Layers[-1], dofs[-1])
+        #     elif Layers[-1].medium.MODEL == "elastic":
+        #         i_eq = self.interface_elastic_rigid(M, i_eq, Layers[-1], dofs[-1])
+        # elif self.backing == "transmission":
+        #     i_eq = self.semi_infinite_medium(M, i_eq, Layers[-1], dofs[-1] )
+
+        self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
+        self.A = np.delete(self.A, 0, axis=1)
+        X = LA.solve(self.A, self.F)
+        R_pyPLANES_PW = X[0]
+        if self.layers[-1] == "transmission":
+            T_pyPLANES_PW = X[-2]
+        else:
+            T_pyPLANES_PW = None
+
+
+        self.layers.pop(0)
+        if self.plot:    
+            for _layer in self.layers:
+                _layer.plot_sol(self.plot, X[_layer.dofs-1])      
+
+        # out["R"] = R_pyPLANES_PW
+        # out["T"] = T_pyPLANES_PW
+        # return out
+
+
+
 
 
 class Solver_PW(PwCalculus):
@@ -112,77 +175,7 @@ class Solver_PW(PwCalculus):
         self.out_file.write("\n")
 
 
-    def resolution(self, theta_d):
 
-        for f in self.frequencies:
-            self.update_frequency(f)
-            out = self.solve(f, theta_d)
-            self.write_out_files(out)
-            # print("R pyPLANES_PW    = {}".format((R)))
-            # print("T pyPLANES_PW    = {}".format((T)))
-        self.out_file.close()
-        self.info_file.close()
-        return out
-
-    def solve(self, f, theta_d):
-        out = dict()
-        Layers = self.layers.copy()
-        Layers.insert(0, Layer(Air, 0.1))
-        if self.backing == "transmission":
-            Layers.append(Layer(Air, 0.2))
-        n, interfaces, dofs = initialise_PW_solver(Layers, self.backing)
-        M = np.zeros((n-1, n), dtype=complex)
-        i_eq = 0
-        # Loop on the layers
-        for i_inter, _inter in enumerate(interfaces):
-            if _inter[0] == "fluid":
-                if _inter[1] == "fluid":
-                    i_eq = self.interface_fluid_fluid(i_eq, i_inter, Layers, dofs, M)
-                if _inter[1] == "pem":
-                    i_eq = self.interface_fluid_pem(i_eq, i_inter, Layers, dofs, M)
-                if _inter[1] == "elastic":
-                    i_eq = self.interface_fluid_elastic(i_eq, i_inter, Layers, dofs, M)
-            elif _inter[0] == "pem":
-                if _inter[1] == "fluid":
-                    i_eq = self.interface_pem_fluid(i_eq, i_inter, Layers, dofs, M)
-                if _inter[1] == "pem":
-                    i_eq = self.interface_pem_pem(i_eq, i_inter, Layers, dofs, M)
-                if _inter[1] == "elastic":
-                    i_eq = self.interface_pem_elastic(i_eq, i_inter, Layers, dofs, M)
-            elif _inter[0] == "elastic":
-                if _inter[1] == "fluid":
-                    i_eq = self.interface_elastic_fluid(i_eq, i_inter, Layers, dofs, M)
-                if _inter[1] == "pem":
-                    i_eq = self.interface_elastic_pem(i_eq, i_inter, Layers, dofs, M)
-                if _inter[1] == "elastic":
-                    i_eq = self.interface_elastic_elastic(i_eq, i_inter, Layers, dofs, M)
-        if self.backing == backing.rigid:
-            if Layers[-1].medium.MODEL == "fluid":
-                i_eq = self.interface_fluid_rigid(M, i_eq, Layers[-1], dofs[-1] )
-            elif Layers[-1].medium.MODEL == "pem":
-                i_eq = self.interface_pem_rigid(M, i_eq, Layers[-1], dofs[-1])
-            elif Layers[-1].medium.MODEL == "elastic":
-                i_eq = self.interface_elastic_rigid(M, i_eq, Layers[-1], dofs[-1])
-        elif self.backing == "transmission":
-            i_eq = self.semi_infinite_medium(M, i_eq, Layers[-1], dofs[-1] )
-
-        F = -M[:, 0]*np.exp(1j*self.ky*Layers[0].thickness) # - is for transposition, exponential term is for the phase shift
-        M = np.delete(M, 0, axis=1)
-        X = LA.solve(M, F)
-        R_pyPLANES_PW = X[0]
-        if self.backing == "transmission":
-            T_pyPLANES_PW = X[-2]
-        else:
-            T_pyPLANES_PW = 0.
-        X = np.delete(X, 0)
-        del(dofs[0])
-        for i, _ld in enumerate(dofs):
-            dofs[i] -= 2
-        if self.plot:
-            self.plot_sol_PW(X, dofs)
-        out["R"] = R_pyPLANES_PW
-        out["T"] = T_pyPLANES_PW
-        return out
 
     def interface_fluid_fluid(self, ieq, iinter, L, d, M):
         SV_1, k_y_1 = fluid_SV(self.kx, self.k, L[iinter].medium.K)
@@ -679,24 +672,6 @@ def fluid_SV(kx, k, K):
     SV[0, 0:2] = np.array([ky/(1j*K*k**2), -ky/(1j*K*k**2)])
     SV[1, 0:2] = np.array([1, 1])
     return SV, ky
-
-def initialise_PW_solver(L, b):
-    nb_PW = 0
-    dofs = []
-    for _layer in L:
-        if _layer.medium.MODEL == "fluid":
-            dofs.append(nb_PW+np.arange(2))
-            nb_PW += 2
-        elif _layer.medium.MODEL == "pem":
-            dofs.append(nb_PW+np.arange(6))
-            nb_PW += 6
-        elif _layer.medium.MODEL == "elastic":
-            dofs.append(nb_PW+np.arange(4))
-            nb_PW += 4
-    interface = []
-    for i_l, _layer in enumerate(L[:-1]):
-        interface.append((L[i_l].medium.MODEL, L[i_l+1].medium.MODEL))
-    return nb_PW, interface, dofs
 
 def resolution_PW_imposed_displacement(S, p):
     # print("k={}".format(p.k))

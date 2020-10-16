@@ -23,33 +23,41 @@
 #
 
 import platform
-import time
+import time, timeit
 
 import numpy as np
-from pyPLANES.classes.fem_model import FemModel
-from pyPLANES.classes.mesh import Mesh
-from pyPLANES.classes.calculus import FemCalculus
-from pyPLANES.gmsh.load_msh_file import load_msh_file
-from pyPLANES.model.preprocess import create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
-from pyPLANES.classes.entity_classes import PwFem
+
+from pyPLANES.core.mesh import Mesh
+from pyPLANES.core.calculus import FemCalculus
+from pyPLANES.gmsh.tools.load_msh_file import load_msh_file
+from pyPLANES.fem.preprocess import create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
+
+from pyPLANES.fem.entities_surfacic import *
+from pyPLANES.fem.entities_volumic import *
+from pyPLANES.fem.entities_pw import *
+
+from pyPLANES.utils.io import display_sol
+
+from scipy.sparse.linalg.dsolve import linsolve
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 
-class FemProblem(Mesh, FemModel, FemCalculus):
+class FemProblem(Mesh, FemCalculus):
     def __init__(self, **kwargs):
-        self.name_server = platform.node()
-        if self.name_server in ["oliviers-macbook-pro.home", "Oliviers-MacBook-Pro.local"]:
-            self.verbose = True
-        else:
-            self.verbose = False
-        self.verbose = kwargs.get("verbose", True)
         FemCalculus.__init__(self, **kwargs)
         self.initialisation_out_files()
         Mesh.__init__(self, **kwargs)
-        FemModel.__init__(self, **kwargs)
 
         self.order = kwargs.get("order", 2)
         self.interface_zone = kwargs.get("interface_zone", 0.01)
         self.dim = 2
+
+        self.incident_ml = kwargs.get("incident_ml", False)
+        self.reference_elements = dict() # dictionary of reference_elements
+        self.edges = []
+        self.faces = []
+        self.bubbles = []
+        self.nb_edges = self.nb_faces = self.nb_bubbles = 0
 
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
@@ -69,46 +77,59 @@ class FemProblem(Mesh, FemModel, FemCalculus):
         self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))
 
     def resolution(self):
-        return FemModel.resolution(self)
+        FemCalculus.resolution(self)
+        if self.name_server == "il-calc1":
+            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
+            os.system(mail)
+        
+    def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
+        self.F_i.extend(_F_i)
+        self.F_v.extend(_F_v)
 
+    def extend_F(self, _F_i, _F_v):
+        self.F_i.extend(_F_i)
+        self.F_v.extend(_F_v)
 
+    def extend_A(self, _A_i, _A_j, _A_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
 
-class FemModel(Model):
-    def __init__(self, **kwargs):
-        Model.__init__(self, **kwargs)
-        self.incident_ml = kwargs.get("incident_ml", False)
-        self.reference_elements = dict() # dictionary of reference_elements
-        self.edges = []
-        self.faces = []
-        self.bubbles = []
-        self.nb_edges = self.nb_faces = self.nb_bubbles = 0
+    def extend_A_F_from_coo(self, AF):
+        self.A_i.extend(list(AF[0].row))
+        self.A_j.extend(list(AF[0].col))
+        self.A_v.extend(list(AF[0].data))
+        # print("extend_A_F_from_coo")
+        # print(AF[1])
+        # print(AF[1].row)
+        self.F_i.extend(list(AF[1].row))
+        self.F_v.extend(list(AF[1].data))
+        # print("self.F_i={}".format(self.F_i))
 
-    def initialisation_out_files(self):
-        Model.initialisation_out_files(self)
-
-    def write_out_files(self):
-        self.out_file.write("{:.12e}\t".format(self.current_frequency))
-        if any([isinstance(_ent, PwFem) for _ent in self.model_entities]):
-            self.out_file.write("{:.12e}\t".format(self.abs))
-        if any([isinstance(_ent, (IncidentPwFem)) for _ent in self.model_entities]):
-            self.out_file.write("{:.12e}\t".format(self.modulus_reflex))
-        if any([isinstance(_ent, (TransmissionPwFem)) for _ent in self.model_entities]):
-            self.out_file.write("{:.12e}\t".format(self.modulus_trans))
-        self.out_file.write("\n")
+    def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
+        self.T_i.extend(_T_i)
+        self.T_j.extend(_T_j)
+        self.T_v.extend(_T_v)
 
     def __str__(self):
         out = "TBD"
         return out
 
-    def resolution(self):
-        Model.resolution(self)
-        if self.name_server == "il-calc1":
-            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
-            os.system(mail)
-
-
     def linear_system_2_numpy(self):
-        Model.linear_system_2_numpy(self)
+        self.F_i = np.array(self.F_i)
+        self.F_v = np.array(self.F_v, dtype=complex)
+        self.A_i = np.array(self.A_i)
+        self.A_j = np.array(self.A_j)
+        self.A_v = np.array(self.A_v, dtype=complex)
+        self.T_i = np.array(self.T_i)-self.nb_dof_master
+        self.T_j = np.array(self.T_j)
+        self.T_v = np.array(self.T_v, dtype=complex)
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
                 _ent.phi_i = np.array(_ent.phi_i)
@@ -116,13 +137,14 @@ class FemModel(Model):
                 _ent.phi_v = np.array(_ent.phi_v, dtype=complex)
 
     def create_linear_system(self, f):
-        Model.create_linear_system(self, f)
+        # Model.create_linear_system(self, f)
         omega = 2*np.pi*f
         # Initialisation of the lists
         self.F = csr_matrix((self.nb_dof_master, 1), dtype=complex)
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.model_entities:
+            print(_ent)
             if isinstance(_ent, (PwFem, InterfaceFem)):
                 self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
                 # print("F_create={}".format(self.F))
@@ -134,14 +156,12 @@ class FemModel(Model):
 
     def apply_periodicity(self):
         A_i, A_j, A_v = [], [], []
-        # print("apply periodicity")
-        # print("self.F_i={}".format(self.F_i))
         if self.dof_left != []:
             for i_left, dof_left in enumerate(self.dof_left):
                 # Corresponding dof
                 dof_right = self.dof_right[i_left]
                 # Summation of the columns for the Matrix
-                index = np.where(self.A_j_c == dof_right)
+                index = np.where(self.A_j == dof_right)
                 self.A_j[index] = dof_left
                 for _i in index:
                     self.A_v[_i] *= self.delta_periodicity
@@ -168,7 +188,6 @@ class FemModel(Model):
         for _ent in self.model_entities:
             if isinstance(_ent, PwFem):
                 _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
-
 
     def solve(self):
         out = dict()
@@ -228,4 +247,7 @@ class FemModel(Model):
                 self.abs -= self.modulus_trans**2
         # print("abs pyPLANES_FEM   = {}".format(self.abs))
 
+        display_sol(self)
         return out
+
+

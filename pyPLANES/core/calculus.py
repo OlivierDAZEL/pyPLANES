@@ -22,6 +22,10 @@
 # copies or substantial portions of the Software.
 #
 
+import platform
+import socket
+import datetime
+import time
 
 import numpy as np
 from mediapack import Air
@@ -58,6 +62,12 @@ class Calculus():
     """
 
     def __init__(self, **kwargs):
+        self.name_server = platform.node()
+        if self.name_server in ["ODs-macbook-pro.home", "ODs-MacBook-Pro.local"]:
+            self.verbose = True
+        else:
+            self.verbose = False
+        self.verbose = kwargs.get("verbose", True)
         self.frequencies = self.init_vec_frequencies(kwargs.get("frequencies", np.array([440])))
         self.current_frequency = None
         self.omega = None
@@ -65,6 +75,69 @@ class Calculus():
         self.name_project = kwargs.get("name_project", "unnamed_project")
         self.outfiles_directory = kwargs.get("outfiles_directory", False)
         self.plot = kwargs.get("plot_results", False)
+
+    def create_linear_system(self, f):
+        """
+        Create the linear system at frequency f
+
+        Parameters
+        ----------
+        f : real or complex number
+            frequency of resolution 
+        """
+        if self.verbose:
+            print("Creation of the linear system for f={}".format(f))
+        self.update_frequency(f)
+
+    def solve(self):
+        """ Resolution of the linear system"""
+        pass
+
+    def initialisation_out_files(self):
+        """  Initialise out files """    
+            # Creation of the directory if it .oes not exists
+        if self.outfiles_directory:
+            if self.outfiles_directory != "":
+                directory = self.outfiles_directory
+                if not path.exists(directory):
+                    mkdir(directory)
+                self.out_file = directory + "/" + self.out_file_name
+                self.info_file = directory + "/"+ self.info_file_name
+
+        self.out_file = open(self.out_file, 'w')
+        self.info_file = open(self.info_file, 'w')
+
+        name_server = socket.gethostname()
+        self.info_file.write("Output File from pyPLANES\n")
+        self.info_file.write("Generated on {}\n".format(name_server))
+        self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
+        self.start_time = time.time()
+
+    def write_out_files(self):
+        """  Write out files at current frequency"""    
+        pass
+
+    def close_out_files(self):
+        """  Close out files at the end of the calculus """
+        pass 
+
+    def resolution(self):
+        """  Resolution of the problem """        
+        if self.verbose:
+            print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
+        for f in self.frequencies:
+            self.update_frequency(f)
+            self.create_linear_system(f)
+            self.solve()
+            self.write_out_files()
+            # if self.verbose:
+                # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
+                # print("|abs pyPLANES_FEM| = {}".format(self.abs))
+            # if any(self.plot):
+            #     display_sol(self)
+        self.close_out_files()
+
+        # return out
 
     def init_vec_frequencies(self, frequency):
         """
@@ -97,14 +170,15 @@ class Calculus():
         return frequencies
 
     def update_frequency(self, f):
+        """  Update frequency  """
         self.current_frequency = f
         self.omega = 2*np.pi*f
 
-class FemCalculus(Calculus):
+
+class FemCalculus(Calculus):  
     """
     Finite-Element Calculus
     """
-
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         self.out_file = self.name_project + ".FEM.txt"
@@ -129,17 +203,18 @@ class FemCalculus(Calculus):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
-        if self.theta_d:
+        if self.theta_d != None:
             self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
             self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
         else:
             self.kx, self.ky = None, None 
-            
+        
         self.delta_periodicity = np.exp(-1j*self.kx*self.period)
         self.nb_dofs = self.nb_dof_FEM
         for _ent in self.model_entities:
             _ent.update_frequency(self.omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
+
 
 class PwCalculus(Calculus):
     def __init__(self, **kwargs):
@@ -154,3 +229,5 @@ class PwCalculus(Calculus):
         self.kx = self.omega*np.sin(self.theta_d*np.pi/180)/Air.c
         self.ky = self.omega*np.cos(self.theta_d*np.pi/180)/Air.c
         self.k = self.omega/Air.c
+
+        

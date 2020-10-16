@@ -56,7 +56,7 @@ def convert_Omega(Om_m, typ_minus, typ_plus):
                     if abs(c_1) == 0:
                         raise ValueError("c_1 and c_2 are both zero")
                     else:
-                        print("swapping c_& and c_2")
+                        print("swapping c_1 and c_2")
                         c_1, c_2 = c_2, c_1
                         Om_m[:, [1, 2]]= Om_m[:, [2, 1]]
                 Om_plus[0, 0] = Om_m[0, 0] - (c_R/c_2)*Om_m[0, 2]

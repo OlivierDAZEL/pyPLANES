@@ -26,9 +26,15 @@ import numpy as np
 from mediapack import Air
 from mediapack.utils import from_yaml
 
-from pyPLANES.fem.elements.reference_elements import Ka, KaPw, Kt
-from pyPLANES.classes.fem_classes import Vertex, Element
-from pyPLANES.classes.entity_classes import *
+from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
+from pyPLANES.fem.elements_plain import Vertex, Element
+
+from pyPLANES.fem.entities_plain import *
+from pyPLANES.fem.entities_surfacic import *
+from pyPLANES.fem.entities_pw import *
+from pyPLANES.fem.entities_volumic import *
+
+
 
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]

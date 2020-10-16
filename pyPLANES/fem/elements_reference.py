@@ -25,9 +25,9 @@
 import numpy as np
 import importlib
 
-from pyPLANES.fem.elements.lobatto_polynomials import lobatto as l
-from pyPLANES.fem.elements.lobatto_polynomials import lobatto_kernels as phi
-from pyPLANES.utils.utils_fem import create_legendre_table
+from pyPLANES.fem.lobatto_polynomials import lobatto as l
+from pyPLANES.fem.lobatto_polynomials import lobatto_kernels as phi
+from pyPLANES.fem.utils_fem import create_legendre_table
 
 import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
