@@ -30,7 +30,7 @@ from itertools import chain
 from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
-
+Air = Air()
 
 from pyPLANES.fem.entities_plain import FemEntity
 from pyPLANES.fem.elements_surfacic import imposed_pw_elementary_vector, fsi_elementary_matrix, fsi_elementary_matrix_incompatible
@@ -55,21 +55,53 @@ class InterfaceFem(FemEntity):
 
     def elementary_matrices(self, _el):
         M = fsi_elementary_matrix_incompatible(_el)
+        _el.M = [None]*len(M)
         orient_ = orient_element(_el)
         for i, neigh in enumerate(_el.neighbours):
             orient__ = orient_element((neigh._elem))
-            M[i] = orient_ @ M[i] @ orient__
+            _el.M[i] = orient_ @ M[i] @ orient__
 
 
-    def create_dynamical_matrices(self, omega, n_m):
-        phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
-        self.eta_TM = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
-        tau = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
-        Omega_0 = np.array([-1j*self.ky[0]/(Air.rho*omega**2), 1]).reshape((2, 1))
-        Omega_0_weak, self.Omega_0_orth = weak_orth_terms(omega, self.kx[0], Omega_0, self.ml, self.typ)
-        self.Omega_0_orth = self.Omega_0_orth[:, 0]
-        Omega_0_weak = Omega_0_weak[:, 0]
-        qdsqsddsq
+    def append_linear_system(self, omega):
+        
+
+        k = omega/Air.c
+        d= self.delta[1]
+        MM = -np.array([[np.cos(k*d), -1.],[1, -np.cos(k*d)]])/(Air.Z*1j*np.sin(k*d)*1j*omega)
+        MM[1,:] *= -1 
+
+        A_i, A_j, A_v =[], [], []
+        # Translation matrix to compute internal dofs
+        T_i, T_j, T_v =[], [], []
+        if self.side == "-":
+            for _el in self.elements:
+
+                dof_ux = dof_ux_linear_system_master(_el)
+                dof_uy = dof_uy_linear_system_master(_el)
+                dof_p = dof_p_linear_system_master(_el)
+        
+                for i, neigh in enumerate(_el.neighbours):
+                    v = (_el.M[i]).flatten()
+                    _eln = neigh._elem
+                    dof_ux_n = dof_ux_linear_system_master(_eln)
+                    dof_uy_n = dof_uy_linear_system_master(_eln)
+                    dof_p_n = dof_p_linear_system_master(_eln)
+                    print(dof_p_n)
+                    A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_p])))
+                    A_j.extend(list(dof_p)*len(dof_p))
+                    A_v.extend(MM[0,0]*v)
+                    A_i.extend(list(chain.from_iterable([[_d]*len(dof_p_n) for _d in dof_p])))
+                    A_j.extend(list(dof_p_n)*len(dof_p))
+                    A_v.extend(MM[0,1]*v)
+                    A_i.extend(list(chain.from_iterable([[_d]*len(dof_p_n) for _d in dof_p_n])))
+                    A_j.extend(list(dof_p)*len(dof_p_n))
+                    A_v.extend(MM[1,0]*v)
+                    A_i.extend(list(chain.from_iterable([[_d]*len(dof_p_n) for _d in dof_p_n])))
+                    A_j.extend(list(dof_p_n)*len(dof_p_n))
+                    A_v.extend(MM[1,1]*v)
+
+
+        return A_i, A_j, A_v, T_i, T_j, T_v
 
 
 class FluidStructureFem(FemEntity):
@@ -99,12 +131,10 @@ class FluidStructureFem(FemEntity):
             dof_p = dof_p_linear_system_master(_el)
 
             v = (_el.M).flatten()
-
             if _el.normal_fluid[0] != 0:
                 A_i.extend(list(chain.from_iterable([[_d]*len(dof_ux) for _d in dof_p])))
                 A_j.extend(list(dof_ux)*len(dof_p))
                 A_v.extend(-_el.normal_fluid[0]*v)
-
             if _el.normal_fluid[1] != 0:
                 A_i.extend(list(chain.from_iterable([[_d]*len(dof_uy) for _d in dof_p])))
                 A_j.extend(list(dof_uy)*len(dof_p))

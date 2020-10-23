@@ -34,8 +34,7 @@ from mediapack import Air
 from pyPLANES.fem.entities_plain import FemEntity
 from pyPLANES.fem.elements_surfacic import imposed_pw_elementary_vector
 from pyPLANES.pw.utils_TM import weak_orth_terms
-from pyPLANES.fem.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
-from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
+from pyPLANES.fem.utils_fem import *
 
 
 class PwFem(FemEntity):
@@ -45,7 +44,6 @@ class PwFem(FemEntity):
         self.F_i, self.F_v = [], []
         self.dofs = []
         self.theta_d = None
-        # self.period = kwargs["p"].period
         self.kx, self.ky = [], []
         self.phi_i, self.phi_j, self.phi_v = [], [], []
         self.nb_dofs = None
@@ -134,10 +132,6 @@ class IncidentPwFem(PwFem):
                     dof_p, orient_p, _ = dof_p_element(_elem)
                     dof_1 = [self.dofs[self.nb_R*_l]]*len(dof_p)
                     _ = orient_p@phi_l
-                    print(n_m)
-                    print(self.nb_dofs)
-                    print(dof_p)
-                    print(dof_1)
                     phi += coo_matrix((_, (dof_p, dof_1)), shape=(n_m, self.nb_dofs))
                 elif self.typ == "elastic":
                     dof_ux, orient_ux = dof_ux_element(_elem)

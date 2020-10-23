@@ -4,18 +4,66 @@ pyPLANES.fem package
 Submodules
 ----------
 
-pyPLANES.fem.elements module
-----------------------------
+pyPLANES.fem.elements\_plain module
+-----------------------------------
 
-.. automodule:: pyPLANES.fem.elements
+.. automodule:: pyPLANES.fem.elements_plain
    :members:
    :undoc-members:
    :show-inheritance:
 
-pyPLANES.fem.entities module
-----------------------------
+pyPLANES.fem.elements\_reference module
+---------------------------------------
 
-.. automodule:: pyPLANES.fem.entities
+.. automodule:: pyPLANES.fem.elements_reference
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.fem.elements\_surfacic module
+--------------------------------------
+
+.. automodule:: pyPLANES.fem.elements_surfacic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.fem.elements\_volumic module
+-------------------------------------
+
+.. automodule:: pyPLANES.fem.elements_volumic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.fem.entities\_plain module
+-----------------------------------
+
+.. automodule:: pyPLANES.fem.entities_plain
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.fem.entities\_pw module
+--------------------------------
+
+.. automodule:: pyPLANES.fem.entities_pw
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.fem.entities\_surfacic module
+--------------------------------------
+
+.. automodule:: pyPLANES.fem.entities_surfacic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.fem.entities\_volumic module
+-------------------------------------
+
+.. automodule:: pyPLANES.fem.entities_volumic
    :members:
    :undoc-members:
    :show-inheritance:
@@ -36,34 +84,10 @@ pyPLANES.fem.preprocess module
    :undoc-members:
    :show-inheritance:
 
-pyPLANES.fem.reference\_elements module
----------------------------------------
-
-.. automodule:: pyPLANES.fem.reference_elements
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pyPLANES.fem.surfacic\_elements module
---------------------------------------
-
-.. automodule:: pyPLANES.fem.surfacic_elements
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 pyPLANES.fem.utils\_fem module
 ------------------------------
 
 .. automodule:: pyPLANES.fem.utils_fem
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pyPLANES.fem.volumic\_elements module
--------------------------------------
-
-.. automodule:: pyPLANES.fem.volumic_elements
    :members:
    :undoc-members:
    :show-inheritance:

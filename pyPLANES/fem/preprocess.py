@@ -254,7 +254,7 @@ def check_model(self):
                             elif isinstance(_e.neighbouring_surfaces[0], ElasticFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
                                 _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
                             else:
-                                raise NameError("FluidStructureFem doest not relate a fluid and elastic struture")
+                                raise NameError("FluidStructureFem does not relate a fluid and elastic struture")
                             for _elem in _e.elements:
                                 vert = [_elem.vertices[0].tag, _elem.vertices[1].tag] # Vertices of the FSI element
                                 # Determination of the neighbouring element in neighbouring_surfaces[0]

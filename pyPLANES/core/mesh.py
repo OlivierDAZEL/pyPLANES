@@ -31,7 +31,6 @@ class Mesh():
         [summary]
         """
 
-        #doc starts
         self.entities = [] # List of all GMSH Entities
         self.model_entities = [] # List of Entities used in the Model
         self.vertices = []
@@ -39,7 +38,7 @@ class Mesh():
         self.materials_directory = kwargs.get("materials_directory", "")
         self.reference_elements = dict() # dictionary of reference_elements
         load_msh_file(self, **kwargs)
-        #doc ends
+
 class NeighbourElement():
     def __init__(self, _elem=None, s_0_minus=None, s_1_minus=None, s_0_plus=None, s_1_plus=None):
         self._elem = _elem

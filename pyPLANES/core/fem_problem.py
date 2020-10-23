@@ -51,7 +51,6 @@ class FemProblem(Mesh, FemCalculus):
         self.order = kwargs.get("order", 2)
         self.interface_zone = kwargs.get("interface_zone", 0.01)
         self.dim = 2
-
         self.incident_ml = kwargs.get("incident_ml", False)
         self.reference_elements = dict() # dictionary of reference_elements
         self.edges = []
@@ -102,12 +101,8 @@ class FemProblem(Mesh, FemCalculus):
         self.A_i.extend(list(AF[0].row))
         self.A_j.extend(list(AF[0].col))
         self.A_v.extend(list(AF[0].data))
-        # print("extend_A_F_from_coo")
-        # print(AF[1])
-        # print(AF[1].row)
         self.F_i.extend(list(AF[1].row))
         self.F_v.extend(list(AF[1].data))
-        # print("self.F_i={}".format(self.F_i))
 
     def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
         self.A_i.extend(_A_i)
@@ -144,10 +139,8 @@ class FemProblem(Mesh, FemCalculus):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.model_entities:
-            print(_ent)
-            if isinstance(_ent, (PwFem, InterfaceFem)):
+            if isinstance(_ent, (PwFem)):
                 self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
-                # print("F_create={}".format(self.F))
             else:
                 _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
                 self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
@@ -200,7 +193,6 @@ class FemProblem(Mesh, FemCalculus):
         F = np.zeros(self.nb_dof_master-1, dtype=complex)
         for _i, f_i in enumerate(self.F_i):
             F[f_i-1] += self.F_v[_i]
-        # print(F)
 
         self.A_i, self.A_j, self.F_v, self.F_i, self.F_v = None, None, None, None, None
         # Resolution of the sparse linear system
@@ -236,7 +228,6 @@ class FemProblem(Mesh, FemCalculus):
                 _ent.sol = _ent.eta_TM@_ent.sol
                 self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R]**2)/np.real(self.ky)))
                 out["R"] = _ent.sol[0]
-                # print("R pyPLANES_FEM   = {}".format((_ent.sol[0])))
                 self.abs -= np.abs(self.modulus_reflex)**2
             elif isinstance(_ent, TransmissionPwFem):
                 _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period

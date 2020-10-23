@@ -28,10 +28,18 @@ pyPLANES.pw.pw\_layers module
    :undoc-members:
    :show-inheritance:
 
-pyPLANES.pw.utils\_PW module
-----------------------------
+pyPLANES.pw.state\_vectors module
+---------------------------------
 
-.. automodule:: pyPLANES.pw.utils_PW
+.. automodule:: pyPLANES.pw.state_vectors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pyPLANES.pw.transfert\_matrices module
+--------------------------------------
+
+.. automodule:: pyPLANES.pw.transfert_matrices
    :members:
    :undoc-members:
    :show-inheritance:

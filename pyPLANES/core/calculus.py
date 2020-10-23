@@ -74,7 +74,7 @@ class Calculus():
         self.theta_d = kwargs.get("theta_d", False)
         self.name_project = kwargs.get("name_project", "unnamed_project")
         self.outfiles_directory = kwargs.get("outfiles_directory", False)
-        self.plot = kwargs.get("plot_results", False)
+        self.plot = kwargs.get("plot_results", [False]*6)
 
     def create_linear_system(self, f):
         """
@@ -91,7 +91,8 @@ class Calculus():
 
     def solve(self):
         """ Resolution of the linear system"""
-        pass
+        if self.verbose:
+            print("Resolution of the linear system")
 
     def initialisation_out_files(self):
         """  Initialise out files """    
@@ -121,6 +122,9 @@ class Calculus():
         """  Close out files at the end of the calculus """
         pass 
 
+    def display_sol(self):
+        pass
+
     def resolution(self):
         """  Resolution of the problem """        
         if self.verbose:
@@ -130,14 +134,9 @@ class Calculus():
             self.create_linear_system(f)
             self.solve()
             self.write_out_files()
-            # if self.verbose:
-                # print("|R pyPLANES_FEM|  = {}".format(self.modulus_reflex))
-                # print("|abs pyPLANES_FEM| = {}".format(self.abs))
-            # if any(self.plot):
-            #     display_sol(self)
+            if any(self.plot):
+                self.display_sol()
         self.close_out_files()
-
-        # return out
 
     def init_vec_frequencies(self, frequency):
         """
@@ -190,14 +189,6 @@ class FemCalculus(Calculus):
         self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
 
     def update_frequency(self, f):
-        """
-        Update/reinitialise parameters
-
-        Parameters
-        ----------
-        f : real or complex
-            current frequency
-        """
         Calculus.update_frequency(self, f)
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
@@ -215,17 +206,15 @@ class FemCalculus(Calculus):
             _ent.update_frequency(self.omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
 
-
 class PwCalculus(Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
+        self.X = None
         self.out_file = self.name_project + ".PW.txt"
         self.info_file = self.name_project + ".info.PW.txt"
 
     def update_frequency(self, f):
         Calculus.update_frequency(self, f)
-        for _l in self.layers:
-            _l.medium.update_frequency(self.omega)
         self.kx = self.omega*np.sin(self.theta_d*np.pi/180)/Air.c
         self.ky = self.omega*np.cos(self.theta_d*np.pi/180)/Air.c
         self.k = self.omega/Air.c

@@ -22,7 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
+from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
 
 
 def ZOD(name_mesh, L=1., d_1=1., d_2=1., lcb=1., lct=1., shift=0.05, mat="Air", termination="Rigid Wall"):
