@@ -67,6 +67,7 @@ def load_msh_file(self, **kwargs):
             _ = f.readline()
             if _.strip() != "$End"+ tag:
                 raise NameError("Error in GMSH file importation at tag:" +tag)
+    
 
 def dict_physical_tags(self, _list):
     ''' create a dict from gmsh file physical tags.
@@ -127,9 +128,8 @@ def entities(self, f, order=2):
                     _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
                     self.model_entities.append(_)
                 elif physical_tags["condition"].split("/")[0] == "Interface":
-                    _ = InterfaceFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities, ml=physical_tags["condition"].split("/")[1], side=physical_tags["condition"].split("/")[2])
+                    _ = InterfaceFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities, ml_name=physical_tags["condition"].split("/")[1], side=physical_tags["condition"].split("/")[2])
                     self.model_entities.append(_)
-
                 else:
                     raise NameError("FEM1D entity without physical condition")
         else: # No numerical model

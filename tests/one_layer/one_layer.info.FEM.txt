@@ -1,5 +1,5 @@
 Output File from pyPLANES
-Generated on papiphone.home
-Calculus started at 2020-10-19 21:16:03.862196.
-Duration of importation =0.009264230728149414 s
-Duration of assembly =0.008391857147216797 s
+Generated on mamiphone.home
+Calculus started at 2020-11-16 13:54:25.524379.
+Duration of importation =0.010504007339477539 s
+Duration of assembly =0.006439924240112305 s

@@ -26,6 +26,12 @@ import numpy as np
 import numpy.linalg as LA
 from scipy.linalg import expm
 from numpy import sqrt
+from pyPLANES.pw.transfert_matrices import TM_elastic, TM_fluid, TM_pem
+
+from mediapack import Air
+Air = Air()
+
+
 
 def convert_Omega(Om_m, typ_minus, typ_plus):
     # fluid {0:u_y , 1:p}
@@ -140,3 +146,36 @@ def weak_orth_terms(om, kx, Omega, layers, typ_end):
     else:
         raise ValueError("Unknown typ")
     return weak, orth
+
+def ZOD_terms(om, kx, ml):
+    # fluid {0:u_y , 1:p}
+    # elastic {0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
+    # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
+    typ = "fluid"
+    typ_end = "fluid"
+    Omega = np.eye(2)
+    ml.update_frequency(om/(2*np.pi), om/Air.c, kx)
+
+    for i_l, _l in enumerate(ml.layers):
+        Omega =  ml.interfaces[i_l].update_Omega(Omega)
+        Omega =  _l.update_Omega(om, Omega)
+    Omega =  ml.interfaces[-1].update_Omega(Omega) 
+
+    index_w_plus = [0] 
+    index_f_plus = [1] 
+    index_w_minus = [0] 
+    index_f_minus = [1]
+
+    A = Omega[index_w_plus, :][:, index_w_minus]
+    B = Omega[index_w_plus, :][:,index_f_minus]
+    C = Omega[index_f_plus, :][:,index_w_minus]
+    D = Omega[index_f_plus, :][:,index_f_minus]
+
+    Ci = LA.inv(C)
+    
+    wmfm = Ci@D
+    wmfp = -Ci
+    wpfm = (B-A@Ci@D) # - is for outgoing normal
+    wpfp = (A@Ci) # - is for outgoing normal
+
+    return wmfm, wmfp, wpfm, wpfp

@@ -23,6 +23,8 @@
 #
 
 import itertools
+import time, timeit
+
 import numpy as np
 import numpy.linalg as LA
 
@@ -36,7 +38,7 @@ from pyPLANES.fem.entities_volumic import *
 from pyPLANES.fem.entities_pw import *
 
 from pyPLANES.utils.geometry import getOverlap, local_abscissa
-
+from pyPLANES.core.multilayer import MultiLayer
 
 def update_edges(self, _el, existing_edges, element_vertices):
     element_vertices_tag = [element_vertices[0].tag, element_vertices[1].tag]
@@ -263,7 +265,7 @@ def check_model(self):
                                     _el = next(_iter)
                                     vert_2D = [_el.vertices[0].tag, _el.vertices[1].tag, _el.vertices[2].tag]
                                     _ = len(set(vert).intersection(vert_2D)) # Number of common vertices
-                                    if _ == 2: # Case of two common vertices
+                                if _ == 2: # Case of two common vertices
                                         _elem.normal_fluid = normal_to_element(_elem, _el)
                                         _elem.normal_struc = -_elem.normal_fluid
                                         break
@@ -349,14 +351,16 @@ def check_model(self):
                         s_1_plus = min(max(s_1_plus, 0.), 1.)
 
                         direction = (np.array(_elem_minus.vertices[1].coord)-np.array(_elem_minus.vertices[0].coord)).dot(np.array(_elem_plus.vertices[1].coord)-np.array(_elem_plus.vertices[0].coord))
-                        print("direction={}".format(direction))
                         if direction > 0:
                             _elem_minus.neighbours.append(NeighbourElement(_elem_plus, s_0_minus, s_1_minus, s_0_plus, s_1_plus))
                             _elem_plus.neighbours.append(NeighbourElement(_elem_minus, s_0_plus, s_1_plus, s_0_minus, s_1_minus))
                         else:
                             _elem_minus.neighbours.append(NeighbourElement(_elem_plus, s_0_minus, s_1_minus, s_1_plus, s_0_plus))
                             _elem_plus.neighbours.append(NeighbourElement(_elem_minus, s_0_plus, s_1_plus, s_1_minus, s_0_minus))
-
+            # Afffectation of the ml to the - interface
+            _int_minus.ml = MultiLayer(ml=self.interface_ml[_int_minus.ml_name],incident=_int_minus.neighbouring_surfaces[0].mat,termination=_int_plus.neighbouring_surfaces[0].mat)
+            # Deletion of the + interface from the model_entities
+            self.model_entities.remove(_int_plus)
 
 
     for _e in self.model_entities:
@@ -393,31 +397,35 @@ def check_model(self):
                     for _l in _e.ml:
                         _l.thickness *= -1
 
-def preprocess(self, p):
+def preprocess(self):
     if self.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
 
     # self.frequencies = init_vec_frequencies(p.frequencies)
     # Creation of edges and faces
 
-    create_lists(self, p)
-    if p.verbose:
+    create_lists(self)
+    if self.verbose:
         print("Activation of dofs based on physical media")
     activate_dofs(self)
-    if p.verbose:
+    if self.verbose:
         print("Desactivation of dofs (dimension & BC)")
     desactivate_dofs_dimension(self)
     desactivate_dofs_BC(self)
-    if p.verbose:
+    if self.verbose:
         print("Renumbering of dofs")
     renumber_dofs(self)
-    if p.verbose:
+    if self.verbose:
         print("Affectation of dofs to the elements")
     affect_dofs_to_elements(self)
-    if p.verbose:
+    if self.verbose:
         print("Identification of periodic dofs")
     periodicity_initialisation(self)
-    if p.verbose:
+    if self.verbose:
         print("Creation of voids shape global matrices")
-    check_model(self, p)
+    check_model(self)
+    self.duration_importation = time.time() - self.start_time
+    self.info_file.write("Duration of importation ={} s\n".format(self.duration_importation))
     elementary_matrices(self)
+    self.duration_assembly = time.time() - self.start_time - self.duration_importation
+    self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   

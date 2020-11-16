@@ -90,9 +90,12 @@ def display_sol(self):
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
                         plt.title("Pressure")
                     if self.plot[5]:
-                        x.extend(list(x_elem))
-                        y.extend(list(y_elem))
-                        pr.extend(list(p_elem))
+                        triang = mtri.Triangulation(x_elem, y_elem)
+                        plt.figure(5)
+                        plt.tricontourf(triang, np.abs(p_elem), 40, cmap=cm.jet)
+                        # x.extend(list(x_elem))
+                        # y.extend(list(y_elem))
+                        # pr.extend(list(p_elem))
         elif isinstance(_en, PemFem):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
@@ -136,20 +139,16 @@ def display_sol(self):
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
                         plt.title("Solid displacement along y")
     if any(self.plot[3:]):
-        triang = mtri.Triangulation(x, y)
+        # triang = mtri.Triangulation(x, y)
         if self.plot[5]:
             plt.figure(5)
-            plt.tricontourf(triang, np.abs(pr), 40, cmap=cm.jet)
-        display_mesh(self)
+            # plt.tricontourf(triang, np.abs(pr), 40, cmap=cm.jet)
+        self.display_mesh()
         plt.colorbar()
         plt.axis('equal')
     # plt.show()
 
-def display_mesh(self):
-    x_vertices =[_nd.coord[0] for _nd in self.vertices[1:]]
-    y_vertices =[_nd.coord[1] for _nd in self.vertices[1:]]
-    tri_vertices = mtri.Triangulation(x_vertices, y_vertices)
-    plt.triplot(tri_vertices, 'ko-', lw=0.5, ms=2)
+
 
 
 

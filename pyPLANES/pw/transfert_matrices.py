@@ -39,7 +39,7 @@ def TM_fluid(layer, kx, om):
     2x2 numpy array
     """
 
-    h = layer.thickness
+    h = layer.d
     rho = layer.medium.rho
     K = layer.medium.K
     k = om*np.sqrt(rho/K)

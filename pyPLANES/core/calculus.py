@@ -71,7 +71,6 @@ class Calculus():
         self.frequencies = self.init_vec_frequencies(kwargs.get("frequencies", np.array([440])))
         self.current_frequency = None
         self.omega = None
-        self.theta_d = kwargs.get("theta_d", False)
         self.name_project = kwargs.get("name_project", "unnamed_project")
         self.outfiles_directory = kwargs.get("outfiles_directory", False)
         self.plot = kwargs.get("plot_results", [False]*6)
@@ -182,11 +181,22 @@ class FemCalculus(Calculus):
         Calculus.__init__(self, **kwargs)
         self.out_file = self.name_project + ".FEM.txt"
         self.info_file = self.name_project + ".info.FEM.txt"
+        self.dim = 2
+        self.edges = []
+        self.faces = []
+        self.bubbles = []
+        self.reference_elements = dict() # dictionary of reference_elements
+
+        self.nb_edges = self.nb_faces = self.nb_bubbles = 0
         self.F_i, self.F_v = None, None
         self.A_i, self.A_j, self.A_v = None, None, None
         self.A_i_c, self.A_j_c, self.A_v_c = None, None, None
         self.T_i, self.T_j, self.T_v = None, None, None
-        self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
+        self.order = kwargs.get("order", 2)
+        self.interface_zone = kwargs.get("interface_zone", 0.01)
+        self.incident_ml = kwargs.get("incident_ml", False)
+        self.interface_ml = kwargs.get("interface_ml", False)
+
 
     def update_frequency(self, f):
         Calculus.update_frequency(self, f)
@@ -194,21 +204,103 @@ class FemCalculus(Calculus):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
-        if self.theta_d != None:
-            self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
-            self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
-        else:
-            self.kx, self.ky = None, None 
+        for _ent in self.model_entities:
+            _ent.update_frequency(self.omega)
+
+
         
+    def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
+        self.F_i.extend(_F_i)
+        self.F_v.extend(_F_v)
+
+    def extend_F(self, _F_i, _F_v):
+        self.F_i.extend(_F_i)
+        self.F_v.extend(_F_v)
+
+    def extend_A(self, _A_i, _A_j, _A_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
+
+    def extend_A_F_from_coo(self, AF):
+        self.A_i.extend(list(AF[0].row))
+        self.A_j.extend(list(AF[0].col))
+        self.A_v.extend(list(AF[0].data))
+        self.F_i.extend(list(AF[1].row))
+        self.F_v.extend(list(AF[1].data))
+
+    def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
+        self.A_i.extend(_A_i)
+        self.A_j.extend(_A_j)
+        self.A_v.extend(_A_v)
+        self.T_i.extend(_T_i)
+        self.T_j.extend(_T_j)
+        self.T_v.extend(_T_v)
+
+    def linear_system_2_numpy(self):
+        self.F_i = np.array(self.F_i)
+        self.F_v = np.array(self.F_v, dtype=complex)
+        self.A_i = np.array(self.A_i)
+        self.A_j = np.array(self.A_j)
+        self.A_v = np.array(self.A_v, dtype=complex)
+        self.T_i = np.array(self.T_i)-self.nb_dof_master
+        self.T_j = np.array(self.T_j)
+        self.T_v = np.array(self.T_v, dtype=complex)
+
+
+
+
+
+
+
+    def resolution(self):
+        Calculus.resolution(self)
+        if self.name_server == "il-calc1":
+            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
+            os.system(mail)
+
+class PeriodicFemCalculus(FemCalculus):  
+    """
+    Periodic Finite-Element Calculus
+    """
+    def __init__(self, **kwargs):
+        FemCalculus.__init__(self, **kwargs)
+        self.theta_d = kwargs.get("theta_d", 0.0)
+        self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
+
+    def update_frequency(self, f):
+        FemCalculus.update_frequency(self, f)
+        self.F_i, self.F_v = [], []
+        self.A_i, self.A_j, self.A_v = [], [], []
+        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
+        self.T_i, self.T_j, self.T_v = [], [], []
+
+        self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
+        self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
         self.delta_periodicity = np.exp(-1j*self.kx*self.period)
+
         self.nb_dofs = self.nb_dof_FEM
         for _ent in self.model_entities:
             _ent.update_frequency(self.omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
 
+    def resolution(self):
+        Calculus.resolution(self)
+        if self.name_server == "il-calc1":
+            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
+            os.system(mail)
+
+
+
+
+
 class PwCalculus(Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
+        self.theta_d = kwargs.get("theta_d", 0.0)
         self.X = None
         self.out_file = self.name_project + ".PW.txt"
         self.info_file = self.name_project + ".info.PW.txt"

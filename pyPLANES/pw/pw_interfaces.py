@@ -35,6 +35,8 @@ class PwInterface():
         self.layers = [layer1, layer2]
     def update_M_global(self, M, i_eq):
         pass
+    def update_Omega(self, Om):
+        pass 
     def update_frequency(self, f, k, kx):
         pass
 
@@ -65,6 +67,9 @@ class FluidFluidInterface(PwInterface):
         M[i_eq, self.layers[1].dofs[1]] = -self.layers[1].SV[1, 1]*delta_1
         i_eq += 1
         return i_eq
+
+    def update_Omega(self, Om):
+        return Om 
 
 class FluidPemInterface(PwInterface):
     """

@@ -70,6 +70,9 @@ class PwLayer():
     def update_frequency(self, f, k, kx):
         pass
 
+    def update_Omega(self, Om):
+        pass 
+
 class FluidLayer(PwLayer):
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
@@ -81,6 +84,16 @@ class FluidLayer(PwLayer):
     def update_frequency(self, f, k, kx):
         self.medium.update_frequency(f)
         self.SV, self.ky = fluid_SV(self.medium, kx, k)
+
+    def update_Omega(self, om, Om):
+        T = np.zeros((2, 2), dtype=complex)
+        T[0, 0] = np.cos(self.ky*self.d)
+        T[1, 0] = (om**2*self.medium.rho/self.ky)*np.sin(self.ky*self.d)
+        T[0, 1] = -(self.ky/(om**2*self.medium.rho))*np.sin(self.ky*self.d)
+        T[1, 1] = np.cos(self.ky*self.d)
+
+        return T@Om 
+
 
     def plot_sol(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)

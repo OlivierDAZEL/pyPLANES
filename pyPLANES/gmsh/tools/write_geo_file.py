@@ -60,6 +60,28 @@ class Gmsh():
             out.tag = -self.tag
             return out
 
+    class Spline():
+        def __init__(self, f, tag, _list_points):
+            self.list_points = _list_points
+            self.tag = tag
+            self.typ = "Spline"
+            f.write("Spline({})= {{{}".format(tag, _list_points[0].tag))
+            for _p in _list_points[1:]:
+                f.write(", {}".format(_p.tag))
+            f.write("};\n")
+
+        def __str__(self):
+            out ="Line entity from points {} to point {}. Tag={}".format(self.p_1.tag, self.p_2.tag, self.tag)
+            return out
+        def inverted(self):
+            out = deepcopy(self)
+            out.tag = -self.tag
+            return out
+
+
+
+
+
     class LineLoop():
         def __init__(self, f, tag, _list):
             self.lines = [_l.tag for _l in _list]
@@ -111,6 +133,13 @@ class Gmsh():
         l = self.Line(self.f, self.nb_tags, _1, _2)
         # self.file.write("Line({})= {{{}, {}}};\n".format(self.nb_tags, _1, _2))
         return l
+
+    def new_spline(self, _list_points):
+        self.nb_tags += 1
+        l = self.Spline(self.f, self.nb_tags, _list_points)
+        # self.file.write("Line({})= {{{}, {}}};\n".format(self.nb_tags, _1, _2))
+        return l
+
 
     def new_line_loop(self, _list):
         self.nb_tags += 1

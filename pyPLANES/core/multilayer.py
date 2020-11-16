@@ -28,6 +28,7 @@ import matplotlib.pyplot as plt
 
 from mediapack import from_yaml
 from mediapack import Air, PEM, EqFluidJCA
+import mediapack as mediapack 
 
 # from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import PwCalculus
@@ -45,10 +46,10 @@ class MultiLayer():
         
         ml = kwargs.get("ml")
         incident = kwargs.get("incident", None)
-        termination = kwargs.get("termination", "rigid")
-        # Creation of the list of layers and interfaces
+        termination = kwargs.get("termination", None)
+
+        # Creation of the list of layers
         self.layers = []
-        self.interfaces = []
         _x = 0   
         for _l in ml:
             if _l[0] == "Air":
@@ -63,10 +64,10 @@ class MultiLayer():
             if mat.MEDIUM_TYPE == "elastic":
                 self.layers.append(ElasticLayer(mat,d, _x))
             _x += d
-
         # Creation of the list of interfaces     
+        self.interfaces = []
         # Case of an existing incident medium
-        if incident in ["fluid", "Fluid", "Air"]:
+        if incident in ["fluid", "Fluid", "Air"] or isinstance(incident, (mediapack.air.Air, mediapack.fluid.Fluid)):
             if self.layers[0].medium.MEDIUM_TYPE == "fluid":
                 self.interfaces.append(FluidFluidInterface(Air,self.layers[0]))
             elif self.layers[0].medium.MEDIUM_TYPE == "pem":
@@ -85,6 +86,11 @@ class MultiLayer():
 
         if termination in ["trans", "transmission","Transmission"]:
             self.interfaces.append(SemiInfinite(self.layers[-1]))
+        elif isinstance(termination, (mediapack.air.Air, mediapack.fluid.Fluid)):
+            if self.layers[-1].medium.MEDIUM_TYPE == "fluid":
+                self.interfaces.append(FluidFluidInterface(self.layers[-1],None))
+
+
         else:
             if self.layers[-1].medium.MEDIUM_TYPE == "fluid":
                 self.interfaces.append(FluidRigidBacking(self.layers[-1]))
@@ -92,6 +98,7 @@ class MultiLayer():
                 self.interfaces.append(PemBacking(self.layers[-1]))
             elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
+
 
     def __str__(self):
         out = "Interface #0\n"

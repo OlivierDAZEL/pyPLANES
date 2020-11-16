@@ -36,7 +36,6 @@ def imposed_Neumann(_elem):
     F *= LA.norm(coord_e[:, 1]-coord_e[:, 0])/2.
     return F
 
-
 def imposed_pw_elementary_vector(_elem, k):
     ''' Calculus of I = int_{\Omega_e} e^{-jkx} Phi(x) dx
         On the reference element:
@@ -79,19 +78,19 @@ def fsi_elementary_matrix_incompatible(_elem):
     K_ref = _elem.reference_element
     order = K_ref.order
 
-    print("element tag = {}".format(_elem.tag))
+    # print("element tag = {}".format(_elem.tag))
 
     node_0 = np.array(_elem.vertices[0].coord)
     node_1 = np.array(_elem.vertices[1].coord)
-    print("node_0={}".format(node_0))
-    print("node_1={}".format(node_1))
+    # print("node_0={}".format(node_0))
+    # print("node_1={}".format(node_1))
     Matrices = []
     for neigh in _elem.neighbours:
         Node_0 = neigh._elem.vertices[0].coord
         Node_1 = neigh._elem.vertices[1].coord
-        print("Node_0={}".format(Node_0))
-        print("Node_1={}".format(Node_1))
-        print("neighbour_element_tag ={}".format(neigh._elem.tag))
+        # print("Node_0={}".format(Node_0))
+        # print("Node_1={}".format(Node_1))
+        # print("neighbour_element_tag ={}".format(neigh._elem.tag))
         # Gauss points of both elements
         xi = (-1+2*neigh.s[0])+ (K_ref.xi+1)*(neigh.s[1]-neigh.s[0])
         Xi = (-1+2*neigh.S[0])+ (K_ref.xi+1)*(neigh.S[1]-neigh.S[0])

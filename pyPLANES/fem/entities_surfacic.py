@@ -37,11 +37,13 @@ from pyPLANES.fem.elements_surfacic import imposed_pw_elementary_vector, fsi_ele
 from pyPLANES.pw.utils_TM import weak_orth_terms
 from pyPLANES.fem.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
 from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
+from pyPLANES.pw.utils_TM import ZOD_terms
 
 class InterfaceFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-        self.ml = kwargs.get("ml", False)
+        self.ml_name = kwargs.get("ml_name", False)
+        self.ml = None
         self.side = kwargs.get("side", False)
         self.neighbour = False # Neighbouring interface
         self.nodes = None # Bounding nodes
@@ -63,12 +65,19 @@ class InterfaceFem(FemEntity):
 
 
     def append_linear_system(self, omega):
-        
+        A_i, A_j, A_v =[], [], []
+        # Translation matrix to compute internal dofs
+        T_i, T_j, T_v =[], [], []
+        # if self.side == "-":
+            # k = omega/Air.c
+            # d= self.delta[1]
+            # MM = -np.array([[np.cos(k*d), -1.],[1, -np.cos(k*d)]])/(Air.Z*1j*np.sin(k*d)*1j*omega)
+            # MM[1,:] *= -1 
+            # print(MM)
+            # print(ZOD_terms(omega, 0.0, self.ml))
 
-        k = omega/Air.c
-        d= self.delta[1]
-        MM = -np.array([[np.cos(k*d), -1.],[1, -np.cos(k*d)]])/(Air.Z*1j*np.sin(k*d)*1j*omega)
-        MM[1,:] *= -1 
+        wmfm, wmfp, wpfm, wpfp = ZOD_terms(omega, 0.0, self.ml)
+
 
         A_i, A_j, A_v =[], [], []
         # Translation matrix to compute internal dofs
@@ -89,16 +98,16 @@ class InterfaceFem(FemEntity):
                     print(dof_p_n)
                     A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_p])))
                     A_j.extend(list(dof_p)*len(dof_p))
-                    A_v.extend(MM[0,0]*v)
+                    A_v.extend(wmfm[0,0]*v)
                     A_i.extend(list(chain.from_iterable([[_d]*len(dof_p_n) for _d in dof_p])))
                     A_j.extend(list(dof_p_n)*len(dof_p))
-                    A_v.extend(MM[0,1]*v)
+                    A_v.extend(wmfp[0,0]*v)
                     A_i.extend(list(chain.from_iterable([[_d]*len(dof_p_n) for _d in dof_p_n])))
                     A_j.extend(list(dof_p)*len(dof_p_n))
-                    A_v.extend(MM[1,0]*v)
+                    A_v.extend(wpfm[0,0]*v)
                     A_i.extend(list(chain.from_iterable([[_d]*len(dof_p_n) for _d in dof_p_n])))
                     A_j.extend(list(dof_p_n)*len(dof_p_n))
-                    A_v.extend(MM[1,1]*v)
+                    A_v.extend(wpfp[0,0]*v)
 
 
         return A_i, A_j, A_v, T_i, T_j, T_v
