@@ -34,7 +34,8 @@ class Mesh():
         """
 
         self.entities = [] # List of all GMSH Entities
-        self.model_entities = [] # List of Entities used in the Model
+        self.fem_entities = [] # List of FEM Entities
+        self.pwfem_entities = [] # List of FEM Entities
         self.vertices = []
         self.elements = []
         self.materials_directory = kwargs.get("materials_directory", "")

@@ -12,6 +12,14 @@ pyPLANES.core.calculus module
    :undoc-members:
    :show-inheritance:
 
+pyPLANES.core.fem\_calculus module
+----------------------------------
+
+.. automodule:: pyPLANES.core.fem_calculus
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyPLANES.core.fem\_problem module
 ---------------------------------
 

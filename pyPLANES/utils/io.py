@@ -36,8 +36,8 @@ import matplotlib.tri as mtri
 from pyPLANES.fem.entities_surfacic import *
 from pyPLANES.fem.entities_volumic import *
 
-def initialisation_out_files_plain(self):
-    pass
+# def initialisation_out_files_plain(self):
+#     pass
 
 def close_out_files(self):
     duration = time.time()-self.start_time

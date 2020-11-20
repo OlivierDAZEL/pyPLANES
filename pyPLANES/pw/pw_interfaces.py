@@ -23,8 +23,9 @@
 #
 
 import numpy as np
-from mediapack import Air
-from pyPLANES.pw.state_vectors import fluid_SV
+from numpy import sqrt
+from mediapack import Air, Fluid
+from pyPLANES.pw.pw_polarisation import fluid_waves
 
 
 class PwInterface():
@@ -37,7 +38,7 @@ class PwInterface():
         pass
     def update_Omega(self, Om):
         pass 
-    def update_frequency(self, f, k, kx):
+    def update_frequency(self, omega, k, kx):
         pass
 
 class FluidFluidInterface(PwInterface):
@@ -50,12 +51,12 @@ class FluidFluidInterface(PwInterface):
         out = "\t Fluid-fluid interface"
         return out
 
-    def update_frequency(self, f, k, kx):    
+    def update_frequency(self, omega, k, kx):    
         pass
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam[0]*self.layers[1].d)
         M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[0, 0]*delta_0
         M[i_eq, self.layers[0].dofs[1]] = self.layers[0].SV[0, 1]
         M[i_eq, self.layers[1].dofs[0]] = -self.layers[1].SV[0, 0]
@@ -67,6 +68,10 @@ class FluidFluidInterface(PwInterface):
         M[i_eq, self.layers[1].dofs[1]] = -self.layers[1].SV[1, 1]*delta_1
         i_eq += 1
         return i_eq
+
+    def transfert(self, Om):
+        self.Xi = np.eye(2)
+        return Om
 
     def update_Omega(self, Om):
         return Om 
@@ -81,9 +86,21 @@ class FluidPemInterface(PwInterface):
         out = "\t Fluid-PEM interface"
         return out
 
+    def transfert(self, Om):
+        a = -np.array([
+            [Om[0,1],Om[0,2]],
+            [Om[3,1],Om[3,2]]
+        ])
+        Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
+        Tau_tilde = np.concatenate([np.eye(1),Tau])
+
+        Omega_moins = np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau)
+
+        return Omega_moins, Tau_tilde
+
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
 
@@ -132,8 +149,8 @@ class PemFluidInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam[0]*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
 
@@ -182,8 +199,8 @@ class FluidElasticInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
         # Continuity of u_y
@@ -221,8 +238,8 @@ class ElasticFluidInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam[0]*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
         # Continuity of u_y
@@ -260,8 +277,8 @@ class ElasticElasticInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
         # Continuity of u_y
@@ -275,7 +292,6 @@ class ElasticElasticInterface(PwInterface):
             M[i_eq, self.layers[1].dofs[2]] = SV_2[1, 2]*delta_1[0]
             M[i_eq, self.layers[1].dofs[3]] = SV_2[1, 3]*delta_1[1]
             i_eq += 1
-
         return i_eq
 
 class PemPemInterface(PwInterface):
@@ -289,8 +305,8 @@ class PemPemInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
         # Continuity of u_y
@@ -323,8 +339,8 @@ class ElasticPemInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
         # Continuity of simga_xy
@@ -400,8 +416,8 @@ class PemElasticInterface(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
-        delta_1 = np.exp(-1j*self.layers[1].ky*self.layers[1].d)
+        delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
+        delta_1 = np.exp(self.layers[1].lam*self.layers[1].d)
         SV_1 = self.layers[0].SV
         SV_2 = self.layers[1].SV
         # Continuity of simga_xy
@@ -479,10 +495,13 @@ class FluidRigidBacking(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[0, 0]*np.exp(-1j*self.layers[0].ky*self.layers[0].d)
+        M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[0, 0]*np.exp(self.layers[0].lam[0]*self.layers[0].d)
         M[i_eq, self.layers[0].dofs[1]] = self.layers[0].SV[0, 1]
         i_eq += 1
         return i_eq
+
+    def Omega(self):
+        return np.array([0,1], dtype=np.complex)
 
 class PemBacking(PwInterface):
     """
@@ -496,7 +515,7 @@ class PemBacking(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
+        delta = np.exp(self.layers[0].lam*self.layers[0].d)
         SV = self.layers[0].SV
 
         M[i_eq, self.layers[0].dofs[0]] = SV[1, 0]*delta[0]
@@ -522,6 +541,13 @@ class PemBacking(PwInterface):
         i_eq += 1
         return i_eq
 
+    def Omega(self):
+        Om = np.zeros((6,3), dtype=np.complex)
+        Om[0,1] = 1.
+        Om[3,2] = 1.
+        Om[4,0] = 1.
+        return Om
+
 class ElasticBacking(PwInterface):
 
     """
@@ -535,7 +561,7 @@ class ElasticBacking(PwInterface):
         return out
 
     def update_M_global(self, M, i_eq):
-        delta = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
+        delta = np.exp(self.layers[0].lam*self.layers[0].d)
         SV = self.layers[0].SV
         M[i_eq, self.layers[0].dofs[0]] = SV[1, 0]*delta[0]
         M[i_eq, self.layers[0].dofs[1]] = SV[1, 1]*delta[1]
@@ -554,21 +580,41 @@ class SemiInfinite(PwInterface):
     Semi-infinite boundary
     """
     def __init__(self, layer1=None, layer2=None):
-        super().__init__(layer1,layer2)
-        print(layer1)
-        self.medium = Air()
+        super().__init__(layer1,layer2) 
+        Air_mat = Air()
+        self.medium = Fluid(c=Air_mat.c,rho=Air_mat.rho)
         self.SV = None
 
     def __str__(self):
         out = "\t Semi-infinite transmission medium"
         return out
 
-    def update_frequency(self, f, k, kx):
-        self.SV = fluid_SV(self.medium,kx, k)[0]
+    def update_frequency(self, omega, k, kx):
+        self.medium.update_frequency(omega)
+        self.SV, self.lam = fluid_waves(self.medium, kx)
+        self.k = k
+        self.kx = kx
+        self.omega = omega 
+
+    def Omega(self):
+        if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+            return np.array([-self.lam[0]/(self.medium.rho*self.omega**2), 1], dtype=np.complex), np.eye(1)
+
+        elif self.layers[0].medium.MEDIUM_TYPE == "pem":
+            Om = np.zeros((6, 3), dtype=complex)
+            Om[1, 1] = 1.
+            Om[2, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
+            Om[4, 0] = 1. 
+            Om[5, 2] = 1.
+        return Om, np.eye(3)
+
+    ''' S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
+         
+
 
     def update_M_global(self, M, i_eq):
         if self.layers[0].medium.MEDIUM_TYPE == "fluid":
-            delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
+            delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
             M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[0, 0]*delta_0
             M[i_eq, self.layers[0].dofs[1]] = self.layers[0].SV[0, 1]
             M[i_eq, -1] = -self.SV[0, 0]
@@ -578,7 +624,7 @@ class SemiInfinite(PwInterface):
             M[i_eq, -1] = -self.SV[1, 0]
             i_eq += 1
         elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-            delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
+            delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
             SV_1 = self.layers[0].SV
 
             M[i_eq, self.layers[0].dofs[0]] = -SV_1[2, 0]*delta_0[0]
@@ -613,7 +659,7 @@ class SemiInfinite(PwInterface):
             i_eq += 1
 
         elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-            delta_0 = np.exp(-1j*self.layers[0].ky*self.layers[0].d)
+            delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
             SV_1 = self.layers[0].SV
             # Continuity of u_y
             M[i_eq, self.layers[0].dofs[0]] = -SV_1[1, 0]*delta_0[0]

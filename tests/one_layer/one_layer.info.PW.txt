@@ -1,3 +1,0 @@
-Output File from pyPLANES
-Generated on ODs-MacBook-Pro.local
-Calculus started at 2020-10-13 14:15:11.984894.

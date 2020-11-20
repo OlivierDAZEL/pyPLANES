@@ -25,10 +25,19 @@
 import platform
 import socket
 import datetime
-import time
-
+import time, timeit
 import numpy as np
+from numpy import pi
+import matplotlib.pyplot as plt
+
+from scipy.sparse.linalg.dsolve import linsolve
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
+
+
+from pyPLANES.utils.io import display_sol
+
 from mediapack import Air
+
 Air = Air()
 
 
@@ -45,7 +54,7 @@ class Calculus():
         current frequency
 
     omega : real or complex
-        current frequency
+        current circular frequency
 
     theta_d : real or False
         Incident angle in degree 
@@ -63,21 +72,18 @@ class Calculus():
 
     def __init__(self, **kwargs):
         self.name_server = platform.node()
-        if self.name_server in ["ODs-macbook-pro.home", "ODs-MacBook-Pro.local"]:
-            self.verbose = True
-        else:
-            self.verbose = False
         self.verbose = kwargs.get("verbose", True)
         self.frequencies = self.init_vec_frequencies(kwargs.get("frequencies", np.array([440])))
-        self.current_frequency = None
         self.omega = None
         self.name_project = kwargs.get("name_project", "unnamed_project")
+        self.sub_project = kwargs.get("sub_project", False)
         self.outfiles_directory = kwargs.get("outfiles_directory", False)
         self.plot = kwargs.get("plot_results", [False]*6)
 
-    def create_linear_system(self, f):
+
+    def create_linear_system(self, omega):
         """
-        Create the linear system at frequency f
+        Create the linear system at circular frequency f
 
         Parameters
         ----------
@@ -85,8 +91,7 @@ class Calculus():
             frequency of resolution 
         """
         if self.verbose:
-            print("Creation of the linear system for f={}".format(f))
-        self.update_frequency(f)
+            print("Creation of the linear system for f={}".format(omega/(2*pi)))
 
     def solve(self):
         """ Resolution of the linear system"""
@@ -104,6 +109,9 @@ class Calculus():
                 self.out_file = directory + "/" + self.out_file_name
                 self.info_file = directory + "/"+ self.info_file_name
 
+        self.out_file_name = self.out_file
+        self.info_file_name = self.info_file
+
         self.out_file = open(self.out_file, 'w')
         self.info_file = open(self.info_file, 'w')
 
@@ -119,7 +127,8 @@ class Calculus():
 
     def close_out_files(self):
         """  Close out files at the end of the calculus """
-        pass 
+        self.out_file.close()
+        self.info_file.close()
 
     def display_sol(self):
         pass
@@ -128,9 +137,11 @@ class Calculus():
         """  Resolution of the problem """        
         if self.verbose:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
+        self.initialisation_out_files()
         for f in self.frequencies:
-            self.update_frequency(f)
-            self.create_linear_system(f)
+            omega = 2*pi*f
+            self.update_frequency(omega)
+            self.create_linear_system(omega)
             self.solve()
             self.write_out_files()
             if any(self.plot):
@@ -167,148 +178,62 @@ class Calculus():
         #     frequency.nb=frequency.nb(1)*frequency.nb(2);
         return frequencies
 
-    def update_frequency(self, f):
+    def update_frequency(self, omega):
         """  Update frequency  """
-        self.current_frequency = f
-        self.omega = 2*np.pi*f
-
-
-class FemCalculus(Calculus):  
-    """
-    Finite-Element Calculus
-    """
-    def __init__(self, **kwargs):
-        Calculus.__init__(self, **kwargs)
-        self.out_file = self.name_project + ".FEM.txt"
-        self.info_file = self.name_project + ".info.FEM.txt"
-        self.dim = 2
-        self.edges = []
-        self.faces = []
-        self.bubbles = []
-        self.reference_elements = dict() # dictionary of reference_elements
-
-        self.nb_edges = self.nb_faces = self.nb_bubbles = 0
-        self.F_i, self.F_v = None, None
-        self.A_i, self.A_j, self.A_v = None, None, None
-        self.A_i_c, self.A_j_c, self.A_v_c = None, None, None
-        self.T_i, self.T_j, self.T_v = None, None, None
-        self.order = kwargs.get("order", 2)
-        self.interface_zone = kwargs.get("interface_zone", 0.01)
-        self.incident_ml = kwargs.get("incident_ml", False)
-        self.interface_ml = kwargs.get("interface_ml", False)
-
-
-    def update_frequency(self, f):
-        Calculus.update_frequency(self, f)
-        self.F_i, self.F_v = [], []
-        self.A_i, self.A_j, self.A_v = [], [], []
-        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
-        self.T_i, self.T_j, self.T_v = [], [], []
-        for _ent in self.model_entities:
-            _ent.update_frequency(self.omega)
-
-
-        
-    def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-        self.F_i.extend(_F_i)
-        self.F_v.extend(_F_v)
-
-    def extend_F(self, _F_i, _F_v):
-        self.F_i.extend(_F_i)
-        self.F_v.extend(_F_v)
-
-    def extend_A(self, _A_i, _A_j, _A_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-
-    def extend_A_F_from_coo(self, AF):
-        self.A_i.extend(list(AF[0].row))
-        self.A_j.extend(list(AF[0].col))
-        self.A_v.extend(list(AF[0].data))
-        self.F_i.extend(list(AF[1].row))
-        self.F_v.extend(list(AF[1].data))
-
-    def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-        self.T_i.extend(_T_i)
-        self.T_j.extend(_T_j)
-        self.T_v.extend(_T_v)
-
-    def linear_system_2_numpy(self):
-        self.F_i = np.array(self.F_i)
-        self.F_v = np.array(self.F_v, dtype=complex)
-        self.A_i = np.array(self.A_i)
-        self.A_j = np.array(self.A_j)
-        self.A_v = np.array(self.A_v, dtype=complex)
-        self.T_i = np.array(self.T_i)-self.nb_dof_master
-        self.T_j = np.array(self.T_j)
-        self.T_v = np.array(self.T_v, dtype=complex)
-
-
-
-
-
-
-
-    def resolution(self):
-        Calculus.resolution(self)
-        if self.name_server == "il-calc1":
-            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
-            os.system(mail)
-
-class PeriodicFemCalculus(FemCalculus):  
-    """
-    Periodic Finite-Element Calculus
-    """
-    def __init__(self, **kwargs):
-        FemCalculus.__init__(self, **kwargs)
-        self.theta_d = kwargs.get("theta_d", 0.0)
-        self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
-
-    def update_frequency(self, f):
-        FemCalculus.update_frequency(self, f)
-        self.F_i, self.F_v = [], []
-        self.A_i, self.A_j, self.A_v = [], [], []
-        self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
-        self.T_i, self.T_j, self.T_v = [], [], []
-
-        self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
-        self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
-        self.delta_periodicity = np.exp(-1j*self.kx*self.period)
-
-        self.nb_dofs = self.nb_dof_FEM
-        for _ent in self.model_entities:
-            _ent.update_frequency(self.omega)
-        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
-
-    def resolution(self):
-        Calculus.resolution(self)
-        if self.name_server == "il-calc1":
-            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
-            os.system(mail)
-
-
-
-
+        self.omega = omega
 
 class PwCalculus(Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         self.theta_d = kwargs.get("theta_d", 0.0)
+        self.termination = kwargs.get("termination", "Rigid")
+        self.method = kwargs.get("method", "global")
+        self.kx, self.ky, self.k = None, None, None
         self.X = None
-        self.out_file = self.name_project + ".PW.txt"
-        self.info_file = self.name_project + ".info.PW.txt"
+        self.R = None
+        self.T = None
+        if self.method == "global":
+            self.out_file = self.name_project + ".GM.txt"
+            self.info_file = self.name_project + ".info.GM.txt"
+        elif self.method == "recursive":
+            self.out_file = self.name_project + ".RM.txt"
+            self.info_file = self.name_project + ".info.RM.txt"         
 
-    def update_frequency(self, f):
-        Calculus.update_frequency(self, f)
+    def initialisation_out_files(self):
+        Calculus.initialisation_out_files(self)
+        if self.method == "global":
+            self.info_file.write("Plane wave solver // Global method\n")        
+        elif self.method == "recursive":
+            self.info_file.write("Plane wave solver // Recursive method\n")
+
+    def update_frequency(self, omega):
+        Calculus.update_frequency(self, omega)
         self.kx = self.omega*np.sin(self.theta_d*np.pi/180)/Air.c
         self.ky = self.omega*np.cos(self.theta_d*np.pi/180)/Air.c
         self.k = self.omega/Air.c
 
+    def write_out_files(self):
+        self.out_file.write("{:.12e}\t".format(self.omega/(2*pi)))
+        self.out_file.write("{:.12e}\t".format(self.R.real))
+        self.out_file.write("{:.12e}\t".format(self.R.imag))
+        self.out_file.write("{:.12e}\t".format(self.T.real))
+        self.out_file.write("{:.12e}\t".format(self.T.imag))
+        self.out_file.write("\n")
         
+    def plot_results(self):
+        data = np.loadtxt(self.out_file_name)
+        plt.figure(1)
+        if self.method == "recursive":
+            plt.plot(data[:,0],data[:,1],'r.',label="Re(R) RM")
+            plt.plot(data[:,0],data[:,2],'b.',label="Im(R) RM")
+        elif self.method == "global":
+            plt.plot(data[:,0],data[:,1],'r+',label="Re(R) GM")
+            plt.plot(data[:,0],data[:,2],'b+',label="Im(R) GM")
+        if self.termination == "transmission":
+            plt.figure(2)
+            if self.method == "recursive":
+                plt.plot(data[:,0],data[:,3],'r.',label="Re(R) RM")
+                plt.plot(data[:,0],data[:,4],'b.',label="Im(R) RM")
+            elif self.method == "global":
+                plt.plot(data[:,0],data[:,3],'r+',label="Re(R) GM")
+                plt.plot(data[:,0],data[:,4],'b+',label="Im(R) GM")

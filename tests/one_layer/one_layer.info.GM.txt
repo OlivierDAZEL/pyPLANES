@@ -1,0 +1,4 @@
+Output File from pyPLANES
+Generated on Oliviers-MacBook-Pro.home
+Calculus started at 2020-11-20 22:45:37.817608.
+Plane wave solver // Global method

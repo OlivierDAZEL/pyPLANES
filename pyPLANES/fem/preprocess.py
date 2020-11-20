@@ -197,7 +197,7 @@ def affect_dofs_to_elements(self):
 
 def periodicity_initialisation(self):
     edges_left, edges_right = [], []
-    for _en in self.model_entities:
+    for _en in self.fem_entities:
         if _en.dim == 1:
             for _el in _en.elements:
                 _vertices_tag = [_v.tag for _v in _el.edges[0].vertices]
@@ -233,7 +233,7 @@ def periodicity_initialisation(self):
 def elementary_matrices(self):
     '''Creation of elementary matrices in the elements'''
     print("Creation of elementary matrices in the elements")
-    for _ent in self.model_entities:
+    for _ent in self.fem_entities:
         for _el in _ent.elements:
             _ent.elementary_matrices(_el)
 
@@ -274,7 +274,7 @@ def check_model(self):
                     # _e.formulation98 = True
                     _e.formulation98 = False
     # Check that the number of interfaces go by pairs
-    list_interfaces = [_ent for _ent in self.model_entities if isinstance(_ent, InterfaceFem)]
+    list_interfaces = [_ent for _ent in self.fem_entities if isinstance(_ent, InterfaceFem)]
     name_interfaces = [_ent.ml for _ent in list_interfaces]
     n_interface = len(list_interfaces)
 
@@ -363,7 +363,7 @@ def check_model(self):
             self.model_entities.remove(_int_plus)
 
 
-    for _e in self.model_entities:
+    for _e in self.pwfem_entities:
         if isinstance(_e, PwFem):
             for s in _e.neighbouring_surfaces:
                 if isinstance(s, (Air, FluidFem)):
@@ -397,7 +397,7 @@ def check_model(self):
                     for _l in _e.ml:
                         _l.thickness *= -1
 
-def preprocess(self):
+def fem_preprocess(self):
     if self.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
 

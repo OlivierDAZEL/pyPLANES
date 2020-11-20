@@ -115,21 +115,21 @@ def entities(self, f, order=2):
             if physical_tags["model"] == "FEM1D":
                 if physical_tags["condition"] == "Incident_PW":
                     _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
-                    self.model_entities.append(_)
+                    self.pwfem_entities.append(_)
                 elif physical_tags["condition"] == "Fluid_Structure":
                     _ = FluidStructureFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
-                    self.model_entities.append(_)
+                    self.fem_entities.append(_)
                 elif physical_tags["condition"] == "Transmission":
                     _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
-                    self.model_entities.append(_)
+                    self.pwfem_entities.append(_)
                 elif physical_tags["condition"] == "Rigid Wall":
                     _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
                 elif physical_tags["condition"] == "Periodicity":
                     _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
-                    self.model_entities.append(_)
+                    self.fem_entities.append(_)
                 elif physical_tags["condition"].split("/")[0] == "Interface":
                     _ = InterfaceFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities, ml_name=physical_tags["condition"].split("/")[1], side=physical_tags["condition"].split("/")[2])
-                    self.model_entities.append(_)
+                    self.fem_entities.append(_)
                 else:
                     raise NameError("FEM1D entity without physical condition")
         else: # No numerical model
@@ -150,18 +150,18 @@ def entities(self, f, order=2):
                 if "mat" in physical_tags.keys():
                     if physical_tags["mat"].split()[0] == "Air":
                         _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=Air, entities=self.entities)
-                        self.model_entities.append(_)
+                        self.fem_entities.append(_)
                     else:
                         mat = from_yaml(self.materials_directory + physical_tags["mat"].split()[0] +".yaml")
                         if mat.MODEL == "eqf":
                             _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
-                            self.model_entities.append(_)
+                            self.fem_entities.append(_)
                         elif mat.MODEL == "elastic":
                             _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
-                            self.model_entities.append(_)
+                            self.fem_entities.append(_)
                         else:
                             _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
-                            self.model_entities.append(_)
+                            self.fem_entities.append(_)
         self.entities.append(_)
     for __ in range(num_volumes):
         pass
