@@ -24,7 +24,7 @@
 import numpy as np
 
 from mediapack import Air
-from mediapack.utils import from_yaml
+from pyPLANES.utils.io import load_material
 
 from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
 from pyPLANES.fem.elements_plain import Vertex, Element
@@ -35,10 +35,10 @@ from pyPLANES.fem.entities_pw import *
 from pyPLANES.fem.entities_volumic import *
 
 
-
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]
-    order = kwargs["order"]
+    self.order = kwargs.get("order", 2)
+    self.dim = kwargs.get("dim", 2)
     self.incident_ml = kwargs.get("incident_ml", False)
     self.transmission_ml = kwargs.get("transmission_ml", False)
     self.interface_ml = kwargs.get("interface_ml", False)
@@ -55,13 +55,13 @@ def load_msh_file(self, **kwargs):
             if tag == "PhysicalNames":
                 physical_names(self, f)
             if tag == "Entities":
-                entities(self, f, order)
+                entities(self, f, self.order)
             if tag == "PartitionedEntities":
                 partition(self, f)
             if tag == "Nodes":
                 nodes(self, f)
             if tag == "Elements":
-                elements(self, f, order)
+                elements(self, f, self.order)
             if tag == "Periodic":
                 periodic(self, f)
             _ = f.readline()
@@ -116,6 +116,9 @@ def entities(self, f, order=2):
                 if physical_tags["condition"] == "Incident_PW":
                     _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
                     self.pwfem_entities.append(_)
+                elif physical_tags["condition"] == "Imposed displacement":
+                    _ = ImposedDisplacementFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    self.fem_entities.append(_)
                 elif physical_tags["condition"] == "Fluid_Structure":
                     _ = FluidStructureFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
                     self.fem_entities.append(_)
@@ -152,7 +155,7 @@ def entities(self, f, order=2):
                         _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=Air, entities=self.entities)
                         self.fem_entities.append(_)
                     else:
-                        mat = from_yaml(self.materials_directory + physical_tags["mat"].split()[0] +".yaml")
+                        mat = load_material(physical_tags["mat"].split()[0])
                         if mat.MODEL == "eqf":
                             _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
                             self.fem_entities.append(_)

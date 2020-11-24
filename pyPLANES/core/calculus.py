@@ -25,9 +25,15 @@
 import platform
 import socket
 import datetime
+
+from os import path, mkdir
+
 import time, timeit
 import numpy as np
+import numpy.linalg as LA
 from numpy import pi
+
+from termcolor import colored
 import matplotlib.pyplot as plt
 
 from scipy.sparse.linalg.dsolve import linsolve
@@ -72,23 +78,52 @@ class Calculus():
 
     def __init__(self, **kwargs):
         self.name_server = platform.node()
-        self.verbose = kwargs.get("verbose", True)
-        self.frequencies = self.init_vec_frequencies(kwargs.get("frequencies", np.array([440])))
-        self.omega = None
+        self.verbose = kwargs.get("verbose", False)
+        _ = kwargs.get("frequencies", False)
+        __ = kwargs.get("f_bounds", False)
+        if _ is not False:
+            self.frequencies = _
+        elif f_bounds is not False:
+            self.frequencies = self.init_vec_frequencies(__)
+        else:
+            self.frequencies = np.array([1e3])
+        self.plot = kwargs.get("plot_solution", [False]*6)        
+        self.outfiles_directory = kwargs.get("outfiles_directory", False)
+        if self.outfiles_directory:
+            if not path.exists(self.outfiles_directory):
+                    mkdir(self.outfiles_directory) 
+        else: 
+            self.outfiles_directory = "out"
+            if not path.exists("out"):
+                mkdir("out")
         self.name_project = kwargs.get("name_project", "unnamed_project")
         self.sub_project = kwargs.get("sub_project", False)
-        self.outfiles_directory = kwargs.get("outfiles_directory", False)
-        self.plot = kwargs.get("plot_results", [False]*6)
+        self.file_names = self.outfiles_directory + "/" + self.name_project
+        if self.sub_project:
+            self.file_names += "_" + self.sub_project
 
+    def resolution(self):
+        """  Resolution of the problem """        
+        if self.verbose:
+            print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
+        self.preprocess()
+        for f in self.frequencies:
+            self.f = f
+            omega = 2*pi*f
+            self.update_frequency(omega)
+            self.create_linear_system(omega)
+            self.solve()
+            self.write_out_files()
+            if any(self.plot):
+                self.display_sol()
+        self.close_out_files()
+
+    def preprocess(self):
+        self.initialisation_out_files()
 
     def create_linear_system(self, omega):
         """
-        Create the linear system at circular frequency f
-
-        Parameters
-        ----------
-        f : real or complex number
-            frequency of resolution 
+        Create the linear system
         """
         if self.verbose:
             print("Creation of the linear system for f={}".format(omega/(2*pi)))
@@ -101,23 +136,12 @@ class Calculus():
     def initialisation_out_files(self):
         """  Initialise out files """    
             # Creation of the directory if it .oes not exists
-        if self.outfiles_directory:
-            if self.outfiles_directory != "":
-                directory = self.outfiles_directory
-                if not path.exists(directory):
-                    mkdir(directory)
-                self.out_file = directory + "/" + self.out_file_name
-                self.info_file = directory + "/"+ self.info_file_name
+ 
+        self.out_file = open(self.out_file_name, 'w')
+        self.info_file = open(self.info_file_name, 'w')
 
-        self.out_file_name = self.out_file
-        self.info_file_name = self.info_file
-
-        self.out_file = open(self.out_file, 'w')
-        self.info_file = open(self.info_file, 'w')
-
-        name_server = socket.gethostname()
         self.info_file.write("Output File from pyPLANES\n")
-        self.info_file.write("Generated on {}\n".format(name_server))
+        self.info_file.write("Generated on {}\n".format(self.name_server))
         self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
         self.start_time = time.time()
 
@@ -133,41 +157,26 @@ class Calculus():
     def display_sol(self):
         pass
 
-    def resolution(self):
-        """  Resolution of the problem """        
-        if self.verbose:
-            print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
-        self.initialisation_out_files()
-        for f in self.frequencies:
-            omega = 2*pi*f
-            self.update_frequency(omega)
-            self.create_linear_system(omega)
-            self.solve()
-            self.write_out_files()
-            if any(self.plot):
-                self.display_sol()
-        self.close_out_files()
-
-    def init_vec_frequencies(self, frequency):
+    def init_vec_frequencies(self, f_bounds):
         """
         Create the frequency vector that will be used in the calculations
 
         Parameters
         ----------
-        frequency : array_like 
+        f_bounds : array_like 
             a list of 3 numbers corresponding to the
-            frequency[0] is the first frequency
-            frequency[1] is the last frequency
-            frequency[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
+            f_bounds[0] is the first frequency
+            f_bounds[1] is the last frequency
+            f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
 
         Returns
         -------
         ndarray of the frequencies
         """
         if frequency[2] > 0:
-                frequencies = np.linspace(frequency[0], frequency[1], frequency[2])
+                frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
         elif frequency[2]<0:
-            frequencies = np.logspace(np.log10(frequency[0]),np.log10(frequency[1]),abs(frequency[2]))
+            frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
         # else % Case of complex frequency
         #     temp_1=linspace(frequency.min,frequency.max,frequency.nb(1));
         #     temp_2=linspace(frequency.min_imag,frequency.max_imag,frequency.nb(2));
@@ -179,61 +188,5 @@ class Calculus():
         return frequencies
 
     def update_frequency(self, omega):
-        """  Update frequency  """
-        self.omega = omega
+        pass
 
-class PwCalculus(Calculus):
-    def __init__(self, **kwargs):
-        Calculus.__init__(self, **kwargs)
-        self.theta_d = kwargs.get("theta_d", 0.0)
-        self.termination = kwargs.get("termination", "Rigid")
-        self.method = kwargs.get("method", "global")
-        self.kx, self.ky, self.k = None, None, None
-        self.X = None
-        self.R = None
-        self.T = None
-        if self.method == "global":
-            self.out_file = self.name_project + ".GM.txt"
-            self.info_file = self.name_project + ".info.GM.txt"
-        elif self.method == "recursive":
-            self.out_file = self.name_project + ".RM.txt"
-            self.info_file = self.name_project + ".info.RM.txt"         
-
-    def initialisation_out_files(self):
-        Calculus.initialisation_out_files(self)
-        if self.method == "global":
-            self.info_file.write("Plane wave solver // Global method\n")        
-        elif self.method == "recursive":
-            self.info_file.write("Plane wave solver // Recursive method\n")
-
-    def update_frequency(self, omega):
-        Calculus.update_frequency(self, omega)
-        self.kx = self.omega*np.sin(self.theta_d*np.pi/180)/Air.c
-        self.ky = self.omega*np.cos(self.theta_d*np.pi/180)/Air.c
-        self.k = self.omega/Air.c
-
-    def write_out_files(self):
-        self.out_file.write("{:.12e}\t".format(self.omega/(2*pi)))
-        self.out_file.write("{:.12e}\t".format(self.R.real))
-        self.out_file.write("{:.12e}\t".format(self.R.imag))
-        self.out_file.write("{:.12e}\t".format(self.T.real))
-        self.out_file.write("{:.12e}\t".format(self.T.imag))
-        self.out_file.write("\n")
-        
-    def plot_results(self):
-        data = np.loadtxt(self.out_file_name)
-        plt.figure(1)
-        if self.method == "recursive":
-            plt.plot(data[:,0],data[:,1],'r.',label="Re(R) RM")
-            plt.plot(data[:,0],data[:,2],'b.',label="Im(R) RM")
-        elif self.method == "global":
-            plt.plot(data[:,0],data[:,1],'r+',label="Re(R) GM")
-            plt.plot(data[:,0],data[:,2],'b+',label="Im(R) GM")
-        if self.termination == "transmission":
-            plt.figure(2)
-            if self.method == "recursive":
-                plt.plot(data[:,0],data[:,3],'r.',label="Re(R) RM")
-                plt.plot(data[:,0],data[:,4],'b.',label="Im(R) RM")
-            elif self.method == "global":
-                plt.plot(data[:,0],data[:,3],'r+',label="Re(R) GM")
-                plt.plot(data[:,0],data[:,4],'b+',label="Im(R) GM")

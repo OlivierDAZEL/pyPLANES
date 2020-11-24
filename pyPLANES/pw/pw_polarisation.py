@@ -37,41 +37,36 @@ def PEM_waves(mat,ky):
     alpha_2 = -1j*mat.A_hat*mat.delta_2**2-1j*2*mat.N*kx[1]**2
     alpha_3 = -2*1j*mat.N*kx[2]*ky
 
-    SV = np.zeros((6,6), dtype=complex)
-    SV[0:6, 0] = np.array([-2*1j*mat.N*kx[0]*ky, kx[0], mat.mu_1*kx[0], alpha_1, 1j*delta[0]**2*mat.K_eq_til*mat.mu_1, ky])
-    SV[0:6, 3] = np.array([ 2*1j*mat.N*kx[0]*ky,-kx[0],-mat.mu_1*kx[0], alpha_1, 1j*delta[0]**2*mat.K_eq_til*mat.mu_1, ky])
+    Phi = np.zeros((6,6), dtype=complex)
+    Phi[0:6, 0] = np.array([-2*1j*mat.N*kx[0]*ky, kx[0], mat.mu_1*kx[0], alpha_1, 1j*delta[0]**2*mat.K_eq_til*mat.mu_1, ky])
+    Phi[0:6, 3] = np.array([ 2*1j*mat.N*kx[0]*ky,-kx[0],-mat.mu_1*kx[0], alpha_1, 1j*delta[0]**2*mat.K_eq_til*mat.mu_1, ky])
 
-    SV[0:6, 1] = np.array([-2*1j*mat.N*kx[1]*ky, kx[1], mat.mu_2*kx[1],alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, ky])
-    SV[0:6, 4] = np.array([ 2*1j*mat.N*kx[1]*ky,-kx[1],-mat.mu_2*kx[1],alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, ky])
+    Phi[0:6, 1] = np.array([-2*1j*mat.N*kx[1]*ky, kx[1], mat.mu_2*kx[1],alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, ky])
+    Phi[0:6, 4] = np.array([ 2*1j*mat.N*kx[1]*ky,-kx[1],-mat.mu_2*kx[1],alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, ky])
 
-    SV[0:6, 2] = np.array([1j*mat.N*(kx[2]**2-ky**2), ky, mat.mu_3*ky, alpha_3, 0., -kx[2]])
-    SV[0:6, 5] = np.array([1j*mat.N*(kx[2]**2-ky**2), ky, mat.mu_3*ky, -alpha_3, 0., kx[2]])
+    Phi[0:6, 2] = np.array([1j*mat.N*(kx[2]**2-ky**2), ky, mat.mu_3*ky, alpha_3, 0., -kx[2]])
+    Phi[0:6, 5] = np.array([1j*mat.N*(kx[2]**2-ky**2), ky, mat.mu_3*ky, -alpha_3, 0., kx[2]])
 
-    return SV, np.concatenate((-1j*kx, 1j*kx))
+    return Phi, np.concatenate((-1j*kx, 1j*kx))
 
 def elastic_waves(mat,ky):
     ''' S={0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
 
-    P_mat = mat.lambda_ + 2.*mat.mu
-    delta_p = omega*np.sqrt(mat.rho/P_mat)
-    delta_s = omega*np.sqrt(mat.rho/mat.mu)
-
-    kx_p = np.sqrt(delta_p**2-ky**2)
-    kx_s = np.sqrt(delta_s**2-ky**2)
+    kx_p = np.sqrt(mat.delta_p**2-ky**2)
+    kx_s = np.sqrt(mat.delta_s**2-ky**2)
 
     kx = np.array([kx_p, kx_s])
 
-    alpha_p = -1j*mat.lambda_*delta_p**2 - 2j*mat.mu*kx[0]**2
+    alpha_p = -1j*mat.lambda_*mat.delta_p**2 - 2j*mat.mu*kx[0]**2
     alpha_s = 2j*mat.mu*kx[1]*ky
 
-    SV = np.zeros((4, 4), dtype=np.complex)
-    SV[0:4, 0] = np.array([-2.*1j*mat.mu*kx[0]*ky,  kx[0], alpha_p, ky])
-    SV[0:4, 2] = np.array([ 2.*1j*mat.mu*kx[0]*ky, -kx[0], alpha_p, ky])
+    Phi = np.zeros((4, 4), dtype=np.complex)
+    Phi[0:4, 0] = np.array([-2.*1j*mat.mu*kx[0]*ky,  kx[0], alpha_p, ky])
+    Phi[0:4, 2] = np.array([ 2.*1j*mat.mu*kx[0]*ky, -kx[0], alpha_p, ky])
+    Phi[0:4, 1] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky,-alpha_s, -kx[1]])
+    Phi[0:4, 3] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky, alpha_s, kx[1]])
 
-    SV[0:4, 1] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky,-alpha_s, -kx[1]])
-    SV[0:4, 3] = np.array([1j*mat.mu*(kx[1]**2-ky**2), ky, alpha_s, kx[1]])
-
-    return SV, np.concatenate(-1j*kx, 1j*kx)
+    return Phi, np.concatenate((-1j*kx, 1j*kx))
 
 def fluid_waves(mat, ky):
     ''' S={0:u_y , 1:p}'''
@@ -81,10 +76,9 @@ def fluid_waves(mat, ky):
         K = mat.K
     else:
         raise ValueError('Provided material is not a fluid')
-    k = mat.k
-    kx = np.sqrt(k**2-ky**2)
-    SV = np.zeros((2, 2), dtype=complex)
-    SV[0, 0:2] = np.array([-1j*kx/(K*k**2), 1j*kx/(K*k**2)])
-    SV[1, 0:2] = np.array([1, 1])
-    return SV, np.array([-1j*kx, 1j*kx])
+    kx = np.sqrt(mat.k**2-ky**2)
+    Phi = np.zeros((2, 2), dtype=complex)
+    Phi[0, 0:2] = np.array([-1j*kx/(K*mat.k**2), 1j*kx/(K*mat.k**2)])
+    Phi[1, 0:2] = np.array([1, 1])
+    return Phi, np.array([-1j*kx, 1j*kx])
 

@@ -29,13 +29,10 @@ import numpy as np
 
 from pyPLANES.core.mesh import Mesh
 from pyPLANES.core.fem_calculus import FemCalculus
-from pyPLANES.fem.preprocess import fem_preprocess
 
 from pyPLANES.fem.entities_surfacic import *
 from pyPLANES.fem.entities_volumic import *
 from pyPLANES.fem.entities_pw import *
-
-
 
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
@@ -47,19 +44,9 @@ class FemProblem(Mesh, FemCalculus):
         FemCalculus.__init__(self, **kwargs)
         self.initialisation_out_files()
         Mesh.__init__(self, **kwargs)
-        fem_preprocess(self)
 
-    def linear_system_2_numpy(self):
-        FemCalculus.linear_system_2_numpy(self)
-        for _ent in self.model_entities:
-            if isinstance(_ent, PwFem):
-                _ent.phi_i = np.array(_ent.phi_i)
-                _ent.phi_j = np.array(_ent.phi_j)
-                _ent.phi_v = np.array(_ent.phi_v, dtype=complex)
 
-    def create_linear_system(self, f):
-        # Model.create_linear_system(self, f)
-        omega = 2*np.pi*f
+    def create_linear_system(self, omega):
         # Initialisation of the lists
         self.F = csr_matrix((self.nb_dof_master, 1), dtype=complex)
         self.A_i, self.A_j, self.A_v = [], [], []
@@ -67,12 +54,7 @@ class FemProblem(Mesh, FemCalculus):
         for _ent in self.fem_entities:
             _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
             self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
-
-        
-
-    def solve(self):
         self.linear_system_2_numpy()
-        X = FemCalculus.solve(self)
 
 
 class PeriodicFemProblem(FemProblem):
@@ -84,24 +66,24 @@ class PeriodicFemProblem(FemProblem):
             if isinstance(_ent, PwFem):
                 _ent.theta_d = self.theta_d
 
-    def update_frequency(self, f):
-        FemProblem.update_frequency(self, f)
+    def update_frequency(self, omega):
+        FemProblem.update_frequency(self, omega)
 
-        self.kx = (self.omega/Air.c)*np.sin(self.theta_d*np.pi/180)
-        self.ky = (self.omega/Air.c)*np.cos(self.theta_d*np.pi/180)
+        self.kx = (omega/Air.c)*np.sin(self.theta_d*np.pi/180)
+        self.ky = (omega/Air.c)*np.cos(self.theta_d*np.pi/180)
         self.delta_periodicity = np.exp(-1j*self.kx*self.period)
 
         self.nb_dofs = self.nb_dof_FEM
         for _ent in self.pwfem_entities:
-            _ent.update_frequency(self.omega)
+            _ent.update_frequency(omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
 
 
-    def create_linear_system(self, f):
-        FemProblem.create_linear_system(self, f)
+    def create_linear_system(self, omega):
+        FemProblem.create_linear_system(self, omega)
         for _ent in self.pwfem_entities:
-            self.extend_A_F_from_coo(_ent.create_dynamical_matrices(2*np.pi*f, self.nb_dof_master))
-            
+            self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
+      
 
         # Application of the periodicity
         A_i, A_j, A_v = [], [], []

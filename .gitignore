@@ -140,8 +140,8 @@ synch2KTH.py
 *_out.txt
 _info.txt
 html/
-# tests/*
-# !tests/one_layer/
+tests/*
+!tests/one_layer/
 doc/
 TeX
 

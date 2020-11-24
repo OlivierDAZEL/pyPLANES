@@ -22,7 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-from os import path, mkdir
+
 import socket
 import datetime
 import time
@@ -38,6 +38,56 @@ from pyPLANES.fem.entities_volumic import *
 
 # def initialisation_out_files_plain(self):
 #     pass
+
+from pymls import from_yaml, Solver, Layer, backing
+from mediapack import Air, Fluid
+
+
+
+def load_material(mat):
+    if mat == "Air":
+        Air_mat = Air()
+        return Fluid(c=Air_mat.c,rho=Air_mat.rho)
+    else:
+        return from_yaml("materials/" + mat + ".yaml")
+
+def result_pymls(**kwargs):
+    name_project = kwargs.get("name_project", "unnamed_project")
+    ml = kwargs.get("ml", False) 
+    termination = kwargs.get("termination", "rigid")
+    theta_d = kwargs.get("theta_d", 45) 
+    freq = kwargs.get("frequencies", np.array([440])) 
+    plot_RT = kwargs.get("plot_RT", False)
+    solver = Solver()
+    for _l in ml:
+        mat = load_material(_l[0])
+        solver.layers.append(Layer(mat, _l[1]))
+        
+    R = []
+    if termination in ["rigid", "Rigid", "Rigid Wall", "Wall"]:
+        solver.backing = backing.rigid
+        T = False 
+    else: 
+        T = []
+        solver.backing = backing.transmission
+    for _f in freq:
+        _ = solver.solve(_f, theta_d)
+        R.append(_["R"][0])
+        if termination == "transmission":
+            T.append(_["T"][0])
+    if plot_RT:
+        plt.figure(name_project + "/ Reflection coefficient")
+        plt.plot(freq, [_.real for _ in R], 'r',label="Re(R) pymls")
+        plt.plot(freq, [_.imag for _ in R], 'b',label="Im(R) pymls")
+        plt.legend()
+        if T is not False:
+            plt.figure(name_project + "/ Transmission coefficient")
+            plt.plot(freq, [_.real for _ in T], 'r',label="Re(T) pymls")
+            plt.plot(freq, [_.imag for _ in T], 'b',label="Im(T) pymls")
+            plt.legend()
+    return freq, R, T
+
+
 
 def close_out_files(self):
     duration = time.time()-self.start_time
@@ -83,9 +133,9 @@ def display_sol(self):
                 for _elem in _en.elements:
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
-                    p_elem *= np.exp(1j*self.kx*x_elem)
+                    # p_elem *= np.exp(1j*self.kx*x_elem)
                     if self.plot[2]:
-                        plt.figure(2)
+                        plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
                         plt.title("Pressure")

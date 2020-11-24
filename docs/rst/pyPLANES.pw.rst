@@ -28,10 +28,10 @@ pyPLANES.pw.pw\_layers module
    :undoc-members:
    :show-inheritance:
 
-pyPLANES.pw.state\_vectors module
----------------------------------
+pyPLANES.pw.pw\_polarisation module
+-----------------------------------
 
-.. automodule:: pyPLANES.pw.state_vectors
+.. automodule:: pyPLANES.pw.pw_polarisation
    :members:
    :undoc-members:
    :show-inheritance:

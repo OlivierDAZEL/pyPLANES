@@ -24,7 +24,6 @@
 
 from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
 
-
 def one_layer(name_mesh,L=2e-2,d=2e-2, lcar=1e-2, mat="pem_benchmark_1", termination="Rigid Wall"):
     G = Gmsh(name_mesh)
 
@@ -41,7 +40,7 @@ def one_layer(name_mesh,L=2e-2,d=2e-2, lcar=1e-2, mat="pem_benchmark_1", termina
     # G.new_physical(l_2, "condition=Transmission")
     G.new_physical(l_2, "condition="+termination)
     G.new_physical([l_1, l_3], "condition=Periodicity")
-    G.new_physical(l_0, "condition=Incident_PW")
+    G.new_physical(l_0, "condition=Imposed displacement")
     G.new_physical(matrice, "mat="+mat)
     G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
     G.new_physical([matrice], "model=FEM2D")

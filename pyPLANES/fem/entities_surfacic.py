@@ -33,11 +33,41 @@ from mediapack import Air
 Air = Air()
 
 from pyPLANES.fem.entities_plain import FemEntity
-from pyPLANES.fem.elements_surfacic import imposed_pw_elementary_vector, fsi_elementary_matrix, fsi_elementary_matrix_incompatible
+from pyPLANES.fem.elements_surfacic import imposed_pw_elementary_vector, fsi_elementary_matrix, fsi_elementary_matrix_incompatible, imposed_Neumann
 from pyPLANES.pw.utils_TM import weak_orth_terms
 from pyPLANES.fem.utils_fem import dof_p_element, dof_u_element, dof_ux_element, dof_uy_element, orient_element
 from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear_system_master, dof_up_linear_system_to_condense, dof_up_linear_system_master, dof_up_linear_system, dof_u_linear_system_master, dof_ux_linear_system_master, dof_uy_linear_system_master,dof_u_linear_system, dof_u_linear_system_to_condense
 from pyPLANES.pw.utils_TM import ZOD_terms
+
+
+class ImposedDisplacementFem(FemEntity):
+    def __init__(self, **kwargs):
+        FemEntity.__init__(self, **kwargs)
+    
+    def __str__(self):
+        out = "Imposed Displacement"
+        return out
+
+    def elementary_matrices(self, _el):
+        F = imposed_Neumann(_el)
+        orient_ = orient_element(_el)
+        _el.F = orient_ @ F
+
+    def append_linear_system(self, omega):
+        zaeeazazezeazea
+
+
+        return A_i, A_j, A_v, T_i, T_j, T_v
+
+
+
+
+
+
+
+
+
+
 
 class InterfaceFem(FemEntity):
     def __init__(self, **kwargs):

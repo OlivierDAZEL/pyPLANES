@@ -32,7 +32,7 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.core.calculus import Calculus
-
+from pyPLANES.fem.preprocess import fem_preprocess
 from pyPLANES.utils.io import display_sol
 
 from mediapack import Air
@@ -45,9 +45,9 @@ class FemCalculus(Calculus):
     """
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
-        self.out_file = self.name_project + ".FEM.txt"
-        self.info_file = self.name_project + ".info.FEM.txt"
-        self.dim = 2
+        self.out_file_name = self.name_project + ".FEM.txt"
+        self.info_file_name = self.name_project + ".info.FEM.txt"
+
         self.edges = []
         self.faces = []
         self.bubbles = []
@@ -58,20 +58,25 @@ class FemCalculus(Calculus):
         self.A_i, self.A_j, self.A_v = None, None, None
         self.A_i_c, self.A_j_c, self.A_v_c = None, None, None
         self.T_i, self.T_j, self.T_v = None, None, None
-        self.order = kwargs.get("order", 2)
+
         self.interface_zone = kwargs.get("interface_zone", 0.01)
         self.incident_ml = kwargs.get("incident_ml", False)
         self.interface_ml = kwargs.get("interface_ml", False)
 
 
-    def update_frequency(self, f):
-        Calculus.update_frequency(self, f)
+    def preprocess(self):
+        Calculus.preprocess(self)
+        fem_preprocess(self)
+
+
+    def update_frequency(self, omega):
+        Calculus.update_frequency(self, omega)
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
         self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.fem_entities:
-            _ent.update_frequency(self.omega)
+            _ent.update_frequency(omega)
 
     def extend_F(self, _F_i, _F_v):
         self.F_i.extend(_F_i)
@@ -114,6 +119,8 @@ class FemCalculus(Calculus):
     def solve(self):
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
+
+
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
         F = np.zeros(self.nb_dof_master-1, dtype=complex)

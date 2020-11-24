@@ -26,12 +26,10 @@ import numpy as np
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
 
-from mediapack import from_yaml
-from mediapack import Air, PEM, EqFluidJCA, Fluid
-import mediapack as mediapack 
+from mediapack import Air, Fluid
 
-# from pyPLANES.utils.io import initialisation_out_files_plain
-from pyPLANES.core.calculus import PwCalculus
+from pyPLANES.utils.io import load_material
+# from pyPLANES.core.calculus import PwCalculus
 
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
@@ -41,17 +39,12 @@ class MultiLayer():
     """
     Multilayer structure
     """
-    def __init__(self, **kwargs):
-        ml = kwargs.get("ml")
+    def __init__(self, ml):
         # Creation of the list of layers
         self.layers = []
         _x = 0   
         for _l in ml:
-            if _l[0] == "Air":
-                Air_mat = Air()
-                mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
-            else:
-                mat = from_yaml(_l[0]+".yaml")
+            mat = load_material(_l[0])
             d = _l[1]
             if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
                 self.layers.append(FluidLayer(mat, d, _x))
@@ -63,13 +56,27 @@ class MultiLayer():
         # Creation of the list of interfaces     
         self.interfaces = []
         for i_l, _layer in enumerate(self.layers[:-1]):
-            if _layer.medium.MEDIUM_TYPE == "fluid":
-                if self.layers[i_l+1].medium.MEDIUM_TYPE == "fluid":
+            if _layer.medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
+                if self.layers[i_l+1].medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
                     self.interfaces.append(FluidFluidInterface(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "pem":
                     self.interfaces.append(FluidPemInterface(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(FluidElasticInterface(_layer,self.layers[i_l+1]))
+            elif _layer.medium.MEDIUM_TYPE in  ["pem"]:
+                if self.layers[i_l+1].medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
+                    self.interfaces.append(PemFluidInterface(_layer,self.layers[i_l+1]))
+                elif self.layers[i_l+1].medium.MEDIUM_TYPE == "pem":
+                    self.interfaces.append(PemPemInterface(_layer,self.layers[i_l+1]))
+                elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
+                    self.interfaces.append(PemElasticInterface(_layer,self.layers[i_l+1]))
+            elif _layer.medium.MEDIUM_TYPE in  ["elastic"]:
+                if self.layers[i_l+1].medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
+                    self.interfaces.append(ElasticFluidInterface(_layer,self.layers[i_l+1]))
+                elif self.layers[i_l+1].medium.MEDIUM_TYPE == "pem":
+                    self.interfaces.append(ElasticPemInterface(_layer,self.layers[i_l+1]))
+                elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
+                    self.interfaces.append(ElasticElasticInterface(_layer,self.layers[i_l+1]))
 
     def __str__(self):
         out = "Interface #0\n"
@@ -81,8 +88,55 @@ class MultiLayer():
             out += self.interfaces[i_l+1].__str__()+"\n"
         return out 
 
-    def update_frequency(self, omega, k, kx):
+    # def add_termination(self, termination):
+
+
+    def add_excitation_and_termination(self, method, termination):
+        # Interface associated to the termination 
+        if termination in ["trans", "transmission","Transmission"]:
+            self.interfaces.append(SemiInfinite(self.layers[-1]))
+        else: # Case of a rigid backing 
+            if self.layers[-1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+                self.interfaces.append(FluidRigidBacking(self.layers[-1]))
+            elif self.layers[-1].medium.MEDIUM_TYPE == "pem":
+                self.interfaces.append(PemBacking(self.layers[-1]))
+            elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
+                self.interfaces.append(ElasticBacking(self.layers[-1]))
+        if method == "recursive":
+            if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+                self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
+            elif self.layers[0].medium.MEDIUM_TYPE == "pem":
+                self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
+            elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
+                self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
+        elif method == "global":
+            Air_mat = Air()
+            mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
+            self.layers.insert(0,FluidLayer(mat, 1.e-2, -1.e-2))
+            if self.layers[1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+                self.interfaces.insert(0,FluidFluidInterface(self.layers[0] ,self.layers[1]))
+            elif self.layers[1].medium.MEDIUM_TYPE == "pem":
+                self.interfaces.insert(0,FluidPemInterface(self.layers[0], self.layers[1]))
+            elif self.layers[1].medium.MEDIUM_TYPE == "elastic":
+                self.interfaces.insert(0,FluidElasticInterface(self.layers[0],self.layers[1]))
+            # Count of the number of plane waves for the global method
+            self.nb_PW = 0
+            for _layer in self.layers:
+                if _layer.medium.MODEL in ["fluid", "eqf"]:
+                    _layer.dofs = self.nb_PW+np.arange(2)
+                    self.nb_PW += 2
+                elif _layer.medium.MODEL == "pem":
+                    _layer.dofs = self.nb_PW+np.arange(6)
+                    self.nb_PW += 6
+                elif _layer.medium.MODEL == "elastic":
+                    _layer.dofs = self.nb_PW+np.arange(4)
+                    self.nb_PW += 4
+            if isinstance(self.interfaces[-1], SemiInfinite):
+                self.nb_PW += 1 
+
+
+    def update_frequency(self, omega, kx):
         for _l in self.layers:
-            _l.update_frequency(omega, k, kx)
+            _l.update_frequency(omega, kx)
         for _i in self.interfaces:
-            _i.update_frequency(omega, k, kx)
+            _i.update_frequency(omega, kx)
