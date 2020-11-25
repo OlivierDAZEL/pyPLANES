@@ -119,7 +119,14 @@ class Calculus():
         self.close_out_files()
 
     def preprocess(self):
-        self.initialisation_out_files()
+        """  Initialise out files """    
+            # Creation of the directory if it .oes not exists
+        self.out_file = open(self.out_file_name, 'w')
+        self.info_file = open(self.info_file_name, 'w')
+        self.info_file.write("Output File from pyPLANES\n")
+        self.info_file.write("Generated on {}\n".format(self.name_server))
+        self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
+        self.start_time = time.time()
 
     def create_linear_system(self, omega):
         """
@@ -132,18 +139,6 @@ class Calculus():
         """ Resolution of the linear system"""
         if self.verbose:
             print("Resolution of the linear system")
-
-    def initialisation_out_files(self):
-        """  Initialise out files """    
-            # Creation of the directory if it .oes not exists
- 
-        self.out_file = open(self.out_file_name, 'w')
-        self.info_file = open(self.info_file_name, 'w')
-
-        self.info_file.write("Output File from pyPLANES\n")
-        self.info_file.write("Generated on {}\n".format(self.name_server))
-        self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
-        self.start_time = time.time()
 
     def write_out_files(self):
         """  Write out files at current frequency"""    
@@ -173,9 +168,9 @@ class Calculus():
         -------
         ndarray of the frequencies
         """
-        if frequency[2] > 0:
+        if f_bounds[2] > 0:
                 frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
-        elif frequency[2]<0:
+        elif f_bounds[2]<0:
             frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
         # else % Case of complex frequency
         #     temp_1=linspace(frequency.min,frequency.max,frequency.nb(1));

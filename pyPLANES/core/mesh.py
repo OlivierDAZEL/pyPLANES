@@ -29,15 +29,16 @@ import matplotlib.tri as mtri
 
 class Mesh():
     def __init__(self, **kwargs):
-        """
-        [summary]
-        """
 
         self.entities = [] # List of all GMSH Entities
         self.fem_entities = [] # List of FEM Entities
         self.pwfem_entities = [] # List of FEM Entities
         self.vertices = []
         self.elements = []
+        self.edges = []
+        self.faces = []
+        self.bubbles = []
+        self.nb_edges = self.nb_faces = self.nb_bubbles = 0
         self.materials_directory = kwargs.get("materials_directory", "")
         self.reference_elements = dict() # dictionary of reference_elements
         load_msh_file(self, **kwargs)

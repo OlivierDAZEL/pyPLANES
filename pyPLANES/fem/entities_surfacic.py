@@ -40,7 +40,7 @@ from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear
 from pyPLANES.pw.utils_TM import ZOD_terms
 
 
-class ImposedDisplacementFem(FemEntity):
+class ImposedDisplacementFem(FemEn  tity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
     
@@ -58,13 +58,6 @@ class ImposedDisplacementFem(FemEntity):
 
 
         return A_i, A_j, A_v, T_i, T_j, T_v
-
-
-
-
-
-
-
 
 
 

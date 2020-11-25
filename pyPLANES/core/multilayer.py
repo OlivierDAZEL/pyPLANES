@@ -34,7 +34,6 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
-
 class MultiLayer():
     """
     Multilayer structure
@@ -88,9 +87,6 @@ class MultiLayer():
             out += self.interfaces[i_l+1].__str__()+"\n"
         return out 
 
-    # def add_termination(self, termination):
-
-
     def add_excitation_and_termination(self, method, termination):
         # Interface associated to the termination 
         if termination in ["trans", "transmission","Transmission"]:
@@ -102,14 +98,14 @@ class MultiLayer():
                 self.interfaces.append(PemBacking(self.layers[-1]))
             elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
-        if method == "recursive":
+        if method == "Recursive Method":
             if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
                 self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
             elif self.layers[0].medium.MEDIUM_TYPE == "pem":
                 self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
             elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
-        elif method == "global":
+        else:
             Air_mat = Air()
             mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
             self.layers.insert(0,FluidLayer(mat, 1.e-2, -1.e-2))
@@ -133,7 +129,6 @@ class MultiLayer():
                     self.nb_PW += 4
             if isinstance(self.interfaces[-1], SemiInfinite):
                 self.nb_PW += 1 
-
 
     def update_frequency(self, omega, kx):
         for _l in self.layers:
