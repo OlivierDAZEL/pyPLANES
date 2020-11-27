@@ -62,8 +62,6 @@ class ImposedDisplacementFem(FemEntity):
         return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
 
-
-
 class InterfaceFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
@@ -73,7 +71,6 @@ class InterfaceFem(FemEntity):
         self.neighbour = False # Neighbouring interface
         self.nodes = None # Bounding nodes
         self.delta = None # vector of geometrical shift with the other interface
-
 
     def __str__(self):
         out = "Interface" + FemEntity.__str__(self)

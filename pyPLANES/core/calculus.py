@@ -40,7 +40,6 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 
-from pyPLANES.utils.io import display_sol
 
 from mediapack import Air
 
@@ -115,7 +114,7 @@ class Calculus():
             self.solve()
             self.write_out_files()
             if any(self.plot):
-                self.display_sol()
+                self.plot_solution()
         self.close_out_files()
 
     def preprocess(self):
@@ -149,7 +148,7 @@ class Calculus():
         self.out_file.close()
         self.info_file.close()
 
-    def display_sol(self):
+    def plot_solution(self):
         pass
 
     def init_vec_frequencies(self, f_bounds):

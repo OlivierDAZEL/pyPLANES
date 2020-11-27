@@ -6,14 +6,13 @@ sys.path.insert(0, "../..")
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyPLANES.core.fem_problem import FemProblem, PeriodicFemProblem
+from pyPLANES.core.periodic_fem_problem import FemProblem, PeriodicFemProblem
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.gmsh.templates.layers import one_layer
 
-from pyPLANES.utils.io import result_pymls
 
 # Parameters of the simulation 
-frequencies = np.linspace(1000., 5000., 1)
+frequencies = np.linspace(2000., 5000., 1)
 theta_d = 40.000
 
 L = 5e-2
@@ -21,7 +20,7 @@ d = 5e-2
 lcar = 1e-2
 material = "Wwood"
 # material = "melamine"
-# material = "Air"
+material = "Air"
 
 name_project = "one_layer"
 ml = [(material, d)]
@@ -37,8 +36,6 @@ global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, fre
 global_method.resolution()
 
 fem = PeriodicFemProblem(name_project=name_project, name_mesh=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=True)
-
-
 fem.resolution()
 
 

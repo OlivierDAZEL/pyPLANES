@@ -129,9 +129,9 @@ class PwProblem(Calculus, MultiLayer):
             else:
                 self.T = None
 
-    def display_sol(self):
+    def plot_solution(self):
          for _layer in self.layers[1:]:
-            _layer.plot_sol(self.plot, self.X[_layer.dofs-1])  
+            _layer.plot_solution(self.plot, self.X[_layer.dofs-1])  
 
     def write_out_files(self):
         self.out_file.write("{:.12e}\t".format(self.f))

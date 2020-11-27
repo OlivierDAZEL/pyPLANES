@@ -87,8 +87,6 @@ def result_pymls(**kwargs):
             plt.legend()
     return freq, R, T
 
-
-
 def close_out_files(self):
     duration = time.time()-self.start_time
     self.info_file.write("Calculus ended at %s.\n"%(datetime.datetime.now()))
@@ -124,7 +122,7 @@ def print_model_entities(self):
 def print_reference_elements(self):
     print(self.reference_elements)
 
-def display_sol(self):
+def plot_fem_solution(self):
     if any(self.plot[3:]):
         x, y, u_x, u_y, pr = [], [], [], [], []
     for _en in self.entities:

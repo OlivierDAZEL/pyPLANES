@@ -32,13 +32,12 @@ from pyPLANES.core.calculus import Calculus
 
 from pyPLANES.fem.entities_surfacic import *
 from pyPLANES.fem.entities_volumic import *
-from pyPLANES.fem.entities_pw import *
 
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.fem.preprocess import fem_preprocess
-from pyPLANES.utils.io import display_sol
+from pyPLANES.utils.io import plot_fem_solution
 
 class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
@@ -50,7 +49,6 @@ class FemProblem(Mesh, Calculus):
 
         self.F_i, self.F_v = None, None
         self.A_i, self.A_j, self.A_v = None, None, None
-        self.A_i_c, self.A_j_c, self.A_v_c = None, None, None
         self.T_i, self.T_j, self.T_v = None, None, None
         
         self.out_file_name = self.name_project + ".FEM.txt"
@@ -66,7 +64,6 @@ class FemProblem(Mesh, Calculus):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.fem_entities:
-            print(_ent)
             self.update_system(*_ent.update_system(omega))
 
 
@@ -74,30 +71,9 @@ class FemProblem(Mesh, Calculus):
             Calculus.update_frequency(self, omega)
             self.F_i, self.F_v = [], []
             self.A_i, self.A_j, self.A_v = [], [], []
-            self.A_i_c, self.A_j_c, self.A_v_c = [], [], []
             self.T_i, self.T_j, self.T_v = [], [], []
             for _ent in self.fem_entities:
                 _ent.update_frequency(omega)
-
-    def extend_F(self, _F_i, _F_v):
-        self.F_i.extend(_F_i)
-        self.F_v.extend(_F_v)
-
-    def extend_A(self, _A_i, _A_j, _A_v):
-        self.A_i.extend(_A_i)
-        self.A_j.extend(_A_j)
-        self.A_v.extend(_A_v)
-
-    def extend_AF(self, _A_i, _A_j, _A_v, _F_i, _F_v):
-        self.extend_A(_A_i, _A_j, _A_v)
-        self.extend_F(_F_i, _F_v)
-
-    def extend_A_F_from_coo(self, AF):
-        self.A_i.extend(list(AF[0].row))
-        self.A_j.extend(list(AF[0].col))
-        self.A_v.extend(list(AF[0].data))
-        self.F_i.extend(list(AF[1].row))
-        self.F_v.extend(list(AF[1].data))
 
     def update_system(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v, _F_i, _F_v):
         self.A_i.extend(_A_i)
@@ -119,6 +95,10 @@ class FemProblem(Mesh, Calculus):
         self.T_j = np.array(self.T_j)
         self.T_v = np.array(self.T_v, dtype=complex)
 
+    def plot_solution(self):
+        plot_fem_solution(self)
+
+
     def solve(self):
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
@@ -130,7 +110,6 @@ class FemProblem(Mesh, Calculus):
         for _i, f_i in enumerate(self.F_i):
             F[f_i-1] += self.F_v[_i]
 
-        self.A_i, self.A_j, self.F_v, self.F_i, self.F_v = None, None, None, None, None
         # Resolution of the sparse linear system
         if self.verbose:
             print("Resolution of the linear system")
@@ -156,7 +135,6 @@ class FemProblem(Mesh, Calculus):
         for _bb in self.bubbles:
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]       
-        display_sol(self) 
         return X
 
     def resolution(self):
@@ -165,92 +143,3 @@ class FemProblem(Mesh, Calculus):
             mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
             os.system(mail)
 
-
-
-class PeriodicFemProblem(FemProblem):
-    def __init__(self, **kwargs):
-        FemProblem.__init__(self, **kwargs)
-        self.theta_d = kwargs.get("theta_d", 0.0)
-        self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
-        for _ent in self.pwfem_entities:
-            if isinstance(_ent, PwFem):
-                _ent.theta_d = self.theta_d
-
-    def update_frequency(self, omega):
-        FemProblem.update_frequency(self, omega)
-
-        self.kx = (omega/Air.c)*np.sin(self.theta_d*np.pi/180)
-        self.ky = (omega/Air.c)*np.cos(self.theta_d*np.pi/180)
-        self.delta_periodicity = np.exp(-1j*self.kx*self.period)
-
-        self.nb_dofs = self.nb_dof_FEM
-        for _ent in self.pwfem_entities:
-            _ent.update_frequency(omega)
-        self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
-
-    def create_linear_system(self, omega):
-        FemProblem.create_linear_system(self, omega)
-        for _ent in self.pwfem_entities:
-            print(_ent)
-            self.update_system(*_ent.update_system(omega, self.nb_dof_master))      
-        # Application of the periodicity
-        # A_i, A_j, A_v = [], [], []
- 
-        if self.dof_left != []:
-            for i_left, dof_left in enumerate(self.dof_left):
-                # Corresponding dof
-                dof_right = self.dof_right[i_left]
-                # Summation of the columns for the Matrix
-                index = [i for i, value in enumerate(self.A_j) if value == dof_right]
-                for _i in index:
-                    self.A_j[_i] = dof_left
-                    self.A_v[_i] *= self.delta_periodicity
-                # Summation of the rows for the Matrix
-                index = np.where(self.A_i == dof_right)
-                index = [i for i, value in enumerate(self.A_i) if value == dof_right]
-
-                for _i in index:
-                    self.A_i[_i] = dof_left
-                    self.A_v[_i] /= self.delta_periodicity
-                # Summation of the rows for the Matrix
-                self.A_i.append(dof_right)
-                self.A_j.append(dof_left)
-                self.A_v.append(self.delta_periodicity)
-                self.A_i.append(dof_right)
-                self.A_j.append(dof_right)
-                self.A_v.append(-1)
-                # index = np.where(self.F_i == dof_right)
-                index = [i for i, value in enumerate(self.F_i) if value == dof_right]
-                for _i in index:
-                    self.F_i[_i] = dof_left
-                    self.F_v[_i] /= self.delta_periodicity
-
-
-        # self.A_i = np.append(self.A_i, A_i)
-        # self.A_j = np.append(self.A_j, A_j)
-        # self.A_v = np.append(self.A_v, A_v)
-
-        for _ent in self.pwfem_entities:
-            _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
-
-    def solve(self):
-        out = dict()
-        X = FemProblem.solve(self)
-        # self.abs has been sent to 1 in the __init__ () of the model class
-        for _ent in self.entities[1:]:
-            if isinstance(_ent, IncidentPwFem):
-                _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
-                _ent.sol[:_ent.nb_R] -= _ent.Omega_0_orth
-                _ent.sol = _ent.eta_TM@_ent.sol
-                self.modulus_reflex = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R]**2)/np.real(self.ky)))
-                out["R"] = _ent.sol[0]
-                self.abs -= np.abs(self.modulus_reflex)**2
-            elif isinstance(_ent, TransmissionPwFem):
-                _ent.sol = _ent.phi.H@(X[:self.nb_dof_master])/_ent.period
-                _ent.sol = _ent.eta_TM@_ent.sol
-                # print("T pyPLANES_FEM   = {}".format((_ent.sol[0])))
-                out["T"] = _ent.sol[0]
-                self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R])**2/np.real(self.ky)))
-                self.abs -= self.modulus_trans**2
-        print("abs pyPLANES_FEM   = {}".format(self.abs))
-        return out

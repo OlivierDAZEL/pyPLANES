@@ -137,7 +137,7 @@ class FluidLayer(PwLayer):
         
         return Om_ , np.array([Xi])
 
-    def plot_sol(self, plot, X, nb_points=200):
+    def plot_solution(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         pr =  self.SV[1, 0]*np.exp(self.lam[0]*x_f)*X[0]
@@ -162,7 +162,7 @@ class PemLayer(PwLayer):
         self.medium.update_frequency(omega)
         self.SV, self.lam = PEM_waves(self.medium, kx)
 
-    def plot_sol(self, plot, X, nb_points=200):
+    def plot_solution(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
@@ -270,7 +270,7 @@ class ElasticLayer(PwLayer):
 
         return Om_, Xi
 
-    def plot_sol(self, plot, X, nb_points=200):
+    def plot_solution(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         ux, uy = 0*1j*x_f, 0*1j*x_f
