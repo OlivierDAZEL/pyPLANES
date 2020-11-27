@@ -38,7 +38,7 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.fem.preprocess import fem_preprocess
-
+from pyPLANES.utils.io import display_sol
 
 class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
@@ -66,8 +66,7 @@ class FemProblem(Mesh, Calculus):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.fem_entities:
-            _A_i, _A_j, _A_v, _T_i, _T_j, _T_v = _ent.append_linear_system(omega)
-            self.extend_AT(_A_i, _A_j, _A_v, _T_i, _T_j, _T_v)
+            self.extend_ATF(*_ent.update_LS(omega))
         self.linear_system_2_numpy()
 
     def update_frequency(self, omega):
@@ -99,13 +98,15 @@ class FemProblem(Mesh, Calculus):
         self.F_i.extend(list(AF[1].row))
         self.F_v.extend(list(AF[1].data))
 
-    def extend_AT(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v):
+    def extend_ATF(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v, _F_i, _F_v):
         self.A_i.extend(_A_i)
         self.A_j.extend(_A_j)
         self.A_v.extend(_A_v)
         self.T_i.extend(_T_i)
         self.T_j.extend(_T_j)
         self.T_v.extend(_T_v)
+        self.F_i.extend(_F_i)
+        self.F_v.extend(_F_v)
 
     def linear_system_2_numpy(self):
         self.F_i = np.array(self.F_i)
@@ -185,7 +186,6 @@ class PeriodicFemProblem(FemProblem):
         for _ent in self.pwfem_entities:
             _ent.update_frequency(omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
-
 
     def create_linear_system(self, omega):
         FemProblem.create_linear_system(self, omega)

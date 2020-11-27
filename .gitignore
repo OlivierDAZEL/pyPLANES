@@ -142,9 +142,11 @@ _info.txt
 html/
 tests/*
 !tests/one_layer/
+!tests/benchmark_multilayer/
 doc/
 TeX
 
 # pyPLANES
 *.msh
 *.geo
+*.txt

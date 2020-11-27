@@ -40,7 +40,7 @@ from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear
 from pyPLANES.pw.utils_TM import ZOD_terms
 
 
-class ImposedDisplacementFem(FemEn  tity):
+class ImposedDisplacementFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
     
@@ -52,12 +52,17 @@ class ImposedDisplacementFem(FemEn  tity):
         F = imposed_Neumann(_el)
         orient_ = orient_element(_el)
         _el.F = orient_ @ F
+        _el.dof_p = dof_p_linear_system_master(_el)
 
-    def append_linear_system(self, omega):
-        zaeeazazezeazea
+    def update_LS(self, omega):
+        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
+        for _el in self.elements:
+            F_i.extend(_el.dof_p)
+            F_v.extend(_el.F)
 
+        print(F_i)
 
-        return A_i, A_j, A_v, T_i, T_j, T_v
+        return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
 
 

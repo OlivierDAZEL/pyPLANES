@@ -56,10 +56,12 @@ class FluidFem(FemEntity):
         _el.H = orient_p @ H @ orient_p
         _el.Q = orient_p @ Q @ orient_p
 
-    def append_linear_system(self, omega):
-        A_i, A_j, A_v =[], [], []
-        # Translation matrix to compute internal dofs
-        T_i, T_j, T_v =[], [], []
+        _el.dof_p_m = dof_p_linear_system_master(_el)
+        _el.dof_p_c = dof_p_linear_system_to_condense(_el)
+
+    def update_LS(self, omega):
+        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
+
         for _el in self.elements:
             nb_m_SF = _el.reference_element.nb_m_SF
             nb_SF = _el.reference_element.nb_SF
@@ -78,18 +80,14 @@ class FluidFem(FemEntity):
             t = -LA.inv(cc)@cm
             mm += mc@t
 
-            dof_p_m = dof_p_linear_system_master(_el)
-            dof_p_c = dof_p_linear_system_to_condense(_el)
-
-            T_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in dof_p_c])))
-            T_j.extend(list(dof_p_m)*((nb_SF-nb_m_SF)))
+            T_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in _el.dof_p_c])))
+            T_j.extend(list(_el.dof_p_m)*((nb_SF-nb_m_SF)))
             T_v.extend(t.flatten())
 
-            A_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in dof_p_m])))
-            A_j.extend(list(dof_p_m)*(nb_m_SF))
+            A_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in _el.dof_p_m])))
+            A_j.extend(list(_el.dof_p_m)*(nb_m_SF))
             A_v.extend(mm.flatten())
-
-        return A_i, A_j, A_v, T_i, T_j, T_v
+        return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
 class PemFem(FemEntity):
     def __init__(self, **kwargs):

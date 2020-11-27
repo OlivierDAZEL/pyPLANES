@@ -113,13 +113,31 @@ class FemEntity(GmshEntity):
         pass
 
     def elementary_matrices(self, _elem):
+        """"  Create elementary matrices of the entity"""
         pass
 
-    def append_linear_system(self, omega):
-        return [], [], [], [], [], []
+    def update_LS(self, omega):
+        """
+        Loop on the element of the entities
+
+        Parameters
+        ----------
+        omega : real or complex
+            circular frequency 
+
+        Returns
+        ----------
+        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
+
+        """
+        pass
 
     def link_elem(self,n):
         self.elements.append(n)
+
+
+
+
 
 # class InterfaceFem(FemEntity):
 #     def __init__(self, **kwargs):
