@@ -112,11 +112,12 @@ class FemEntity(GmshEntity):
     def update_frequency(self, omega):
         pass
 
+
     def elementary_matrices(self, _elem):
         """"  Create elementary matrices of the entity"""
         pass
 
-    def update_LS(self, omega):
+    def update_system(self, omega):
         """
         Loop on the element of the entities
 
@@ -130,7 +131,7 @@ class FemEntity(GmshEntity):
         A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
         """
-        pass
+        raise NameError("update_system should be implemented in children classes") 
 
     def link_elem(self,n):
         self.elements.append(n)

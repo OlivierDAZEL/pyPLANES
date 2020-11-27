@@ -133,12 +133,11 @@ def display_sol(self):
                 for _elem in _en.elements:
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
-                    # p_elem *= np.exp(1j*self.kx*x_elem)
+                    p_elem *= np.exp(1j*self.kx*x_elem)
                     if self.plot[2]:
                         plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
-                        plt.title("Pressure")
                     if self.plot[5]:
                         triang = mtri.Triangulation(x_elem, y_elem)
                         plt.figure(5)
@@ -154,20 +153,17 @@ def display_sol(self):
                     uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
                     p_elem = f_elem[:, 2]*np.exp(1j*self.kx*x_elem)
                     if self.plot[0]:
-                        plt.figure(0)
+                        plt.figure("Solid displacement along x")
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
                         plt.plot(y_elem, np.imag(ux_elem), 'm.')
-                        plt.title("Solid displacement along x")
                     if self.plot[1]:
-                        plt.figure(1)
+                        plt.figure("Solid displacement along y")
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
-                        plt.title("Solid displacement along y")
                     if self.plot[2]:
-                        plt.figure(2)
+                        plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
                         plt.plot(y_elem, np.imag(p_elem), 'm.')
-                        plt.title("Pressure")
                     if self.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))
@@ -179,15 +175,14 @@ def display_sol(self):
                     ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
                     uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
                     if self.plot[0]:
-                        plt.figure(0)
+                        plt.figure("Solid displacement along x")
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
                         plt.plot(y_elem, np.imag(ux_elem), 'm.')
-                        plt.title("Solid displacement along x")
                     if self.plot[1]:
-                        plt.figure(1)
+                        plt.figure("Solid displacement along y")
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
-                        plt.title("Solid displacement along y")
+
     if any(self.plot[3:]):
         # triang = mtri.Triangulation(x, y)
         if self.plot[5]:

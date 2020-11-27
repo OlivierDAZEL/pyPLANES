@@ -66,8 +66,9 @@ class FemProblem(Mesh, Calculus):
         self.A_i, self.A_j, self.A_v = [], [], []
         self.T_i, self.T_j, self.T_v = [], [], []
         for _ent in self.fem_entities:
-            self.extend_ATF(*_ent.update_LS(omega))
-        self.linear_system_2_numpy()
+            print(_ent)
+            self.update_system(*_ent.update_system(omega))
+
 
     def update_frequency(self, omega):
             Calculus.update_frequency(self, omega)
@@ -98,7 +99,7 @@ class FemProblem(Mesh, Calculus):
         self.F_i.extend(list(AF[1].row))
         self.F_v.extend(list(AF[1].data))
 
-    def extend_ATF(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v, _F_i, _F_v):
+    def update_system(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v, _F_i, _F_v):
         self.A_i.extend(_A_i)
         self.A_j.extend(_A_j)
         self.A_v.extend(_A_v)
@@ -121,7 +122,7 @@ class FemProblem(Mesh, Calculus):
     def solve(self):
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
-
+        self.linear_system_2_numpy()
 
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         A = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
@@ -190,50 +191,51 @@ class PeriodicFemProblem(FemProblem):
     def create_linear_system(self, omega):
         FemProblem.create_linear_system(self, omega)
         for _ent in self.pwfem_entities:
-            self.extend_A_F_from_coo(_ent.create_dynamical_matrices(omega, self.nb_dof_master))
-      
+            print(_ent)
+            self.update_system(*_ent.update_system(omega, self.nb_dof_master))      
         # Application of the periodicity
-        A_i, A_j, A_v = [], [], []
+        # A_i, A_j, A_v = [], [], []
+ 
         if self.dof_left != []:
             for i_left, dof_left in enumerate(self.dof_left):
                 # Corresponding dof
                 dof_right = self.dof_right[i_left]
                 # Summation of the columns for the Matrix
-
-                index = [i for i, value in enumerate(A_j) if value == dof_right]
+                index = [i for i, value in enumerate(self.A_j) if value == dof_right]
                 for _i in index:
                     self.A_j[_i] = dof_left
                     self.A_v[_i] *= self.delta_periodicity
                 # Summation of the rows for the Matrix
                 index = np.where(self.A_i == dof_right)
-                index = [i for i, value in enumerate(A_i) if value == dof_right]
-
+                index = [i for i, value in enumerate(self.A_i) if value == dof_right]
 
                 for _i in index:
                     self.A_i[_i] = dof_left
                     self.A_v[_i] /= self.delta_periodicity
                 # Summation of the rows for the Matrix
-                A_i.append(dof_right)
-                A_j.append(dof_left)
-                A_v.append(self.delta_periodicity)
-                A_i.append(dof_right)
-                A_j.append(dof_right)
-                A_v.append(-1)
+                self.A_i.append(dof_right)
+                self.A_j.append(dof_left)
+                self.A_v.append(self.delta_periodicity)
+                self.A_i.append(dof_right)
+                self.A_j.append(dof_right)
+                self.A_v.append(-1)
                 # index = np.where(self.F_i == dof_right)
                 index = [i for i, value in enumerate(self.F_i) if value == dof_right]
                 for _i in index:
                     self.F_i[_i] = dof_left
                     self.F_v[_i] /= self.delta_periodicity
-        self.A_i = np.append(self.A_i, A_i)
-        self.A_j = np.append(self.A_j, A_j)
-        self.A_v = np.append(self.A_v, A_v)
+
+
+        # self.A_i = np.append(self.A_i, A_i)
+        # self.A_j = np.append(self.A_j, A_j)
+        # self.A_v = np.append(self.A_v, A_v)
 
         for _ent in self.pwfem_entities:
             _ent.apply_periodicity(self.nb_dof_master, self.dof_left, self.dof_right, self.delta_periodicity)
 
     def solve(self):
         out = dict()
-        X = FemCalculus.solve(self)
+        X = FemProblem.solve(self)
         # self.abs has been sent to 1 in the __init__ () of the model class
         for _ent in self.entities[1:]:
             if isinstance(_ent, IncidentPwFem):
@@ -250,5 +252,5 @@ class PeriodicFemProblem(FemProblem):
                 out["T"] = _ent.sol[0]
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R])**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
-        # print("abs pyPLANES_FEM   = {}".format(self.abs))
+        print("abs pyPLANES_FEM   = {}".format(self.abs))
         return out

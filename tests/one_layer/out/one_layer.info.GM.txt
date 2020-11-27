@@ -1,4 +1,4 @@
 Output File from pyPLANES
 Generated on mamiphone.home
-Calculus started at 2020-11-23 17:00:51.086515.
-Plane wave solver // Global method
+Calculus started at 2020-11-27 14:41:12.009093.
+Plane Wave solver // Global method

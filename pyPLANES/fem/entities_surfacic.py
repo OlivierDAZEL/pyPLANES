@@ -54,14 +54,11 @@ class ImposedDisplacementFem(FemEntity):
         _el.F = orient_ @ F
         _el.dof_p = dof_p_linear_system_master(_el)
 
-    def update_LS(self, omega):
+    def update_system(self, omega):
         A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
         for _el in self.elements:
             F_i.extend(_el.dof_p)
             F_v.extend(_el.F)
-
-        print(F_i)
-
         return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
 
@@ -204,4 +201,7 @@ class PeriodicityFem(FemEntity):
         # out = GmshEntity.__str__(self)
         out = "Periodicity" + FemEntity.__str__(self)
         return out
+
+    def update_system(self, omega):
+        return [], [], [], [], [], [], [], []
 

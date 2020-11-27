@@ -176,11 +176,11 @@ class PemLayer(PwLayer):
             ut += self.SV[2, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
             ut += self.SV[2, i_dim+3]*np.exp(-self.lam[i_dim]*x_b)*X[i_dim+3]
         if plot[0]:
-            plt.figure("Solid displacement along x")
+            plt.figure("Solid displacement along y")
             plt.plot(self.x[0]+x_f, np.abs(ux), 'r')
             plt.plot(self.x[0]+x_f, np.imag(ux), 'm')
         if plot[1]:
-            plt.figure("Solid displacement along y")
+            plt.figure("Solid displacement along x")
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm')
         if plot[2]:
@@ -280,11 +280,11 @@ class ElasticLayer(PwLayer):
             uy += self.SV[3, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
             uy += self.SV[3, i_dim+2]*np.exp(-self.lam[i_dim]*x_b)*X[i_dim+2]
         if plot[0]:
-            plt.figure("Solid displacement along x")
+            plt.figure("Solid displacement along y")
             plt.plot(self.x[0]+x_f, np.abs(ux), 'r')
             plt.plot(self.x[0]+x_f, np.imag(ux), 'm')
         if plot[1]:
-            plt.figure("Solid displacement along y")
+            plt.figure("Solid displacement along x")
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm')
 

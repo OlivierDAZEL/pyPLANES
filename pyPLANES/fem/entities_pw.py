@@ -108,8 +108,9 @@ class IncidentPwFem(PwFem):
         tau_l = np.dot(Omega_l_weak, eta_l)
         return tau_l, eta_l
 
-    def create_dynamical_matrices(self, omega, n_m):
+    def update_system(self, omega, n_m):
         phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
+        phi_i, phi_j, phi_v = [], [], []
         self.eta_TM = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
         tau = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
         Omega_0 = np.array([-1j*self.ky[0]/(Air.rho*omega**2), 1]).reshape((2, 1))
@@ -132,6 +133,9 @@ class IncidentPwFem(PwFem):
                     dof_p, orient_p, _ = dof_p_element(_elem)
                     dof_1 = [self.dofs[self.nb_R*_l]]*len(dof_p)
                     _ = orient_p@phi_l
+                    phi_i.extend(dof_p)
+                    phi_j.extend(dof_1)
+                    phi_v.extend(_)
                     phi += coo_matrix((_, (dof_p, dof_1)), shape=(n_m, self.nb_dofs))
                 elif self.typ == "elastic":
                     dof_ux, orient_ux = dof_ux_element(_elem)
@@ -157,6 +161,17 @@ class IncidentPwFem(PwFem):
                     raise ValueError("Unknown typ")
                 # print(len(dof_ux))
         A_TM = -(phi@tau@phi.H/self.period).tocoo()
+        # print("phi")
+        # print(phi)
+
+        # phi_2 = coo_matrix((phi_v, (phi_i, phi_j)), shape=(n_m, self.nb_dofs))
+        # print("phi_2")
+        # print(phi_2)
+        # print("Delta phi")
+        # print(phi-phi_2)
+
+
+        # dsqdqsqdsqsd
         F_TM = np.zeros(self.nb_dofs, dtype=complex)
         F_TM[:self.nb_R] = Omega_0_weak-tau_0@self.Omega_0_orth
 
@@ -164,7 +179,14 @@ class IncidentPwFem(PwFem):
         # print(F_TM)
         _ = phi.tocoo()
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
-        return A_TM*self.ny, F_TM*self.ny
+        A_TM *=self.ny
+        F_TM *=self.ny
+
+        # print(F_TM)
+        # print(coo_matrix(F_TM))
+        F_TM = coo_matrix(F_TM)
+
+        return A_TM.row, A_TM.col, A_TM.data, [], [], [], F_TM.row, F_TM.data
 
 class TransmissionPwFem(PwFem):
     def __init__(self, **kwargs):

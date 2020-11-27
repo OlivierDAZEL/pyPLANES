@@ -122,10 +122,10 @@ class PwProblem(Calculus, MultiLayer):
                 self.Omega = (self.back_prop*X_0_minus).flatten()
                 self.T = self.Omega[0]
         elif self.method == "Global Method":
-            X = LA.solve(self.A, self.F)
-            self.R = X[0]
+            self.X = LA.solve(self.A, self.F)
+            self.R = self.X[0]
             if self.termination == "transmission":
-                self.T = X[-1]
+                self.T = self.X[-1]
             else:
                 self.T = None
 

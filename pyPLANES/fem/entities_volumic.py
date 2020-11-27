@@ -59,7 +59,7 @@ class FluidFem(FemEntity):
         _el.dof_p_m = dof_p_linear_system_master(_el)
         _el.dof_p_c = dof_p_linear_system_to_condense(_el)
 
-    def update_LS(self, omega):
+    def update_system(self, omega):
         A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
 
         for _el in self.elements:
@@ -133,8 +133,8 @@ class PemFem(FemEntity):
         if not self.formulation98:
             _el.C2 = _el.C2[:, :][_]
 
-    def append_linear_system(self, omega):
-        A_i, A_j, A_v =[], [], []
+    def update_system(self, omega):
+        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
         for _el in self.elements:
@@ -175,7 +175,7 @@ class PemFem(FemEntity):
             A_j.extend(list(dof_up_m)*(3*nb_m_SF))
             A_v.extend(mm.flatten())
 
-        return A_i, A_j, A_v, T_i, T_j, T_v
+        return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
 class ElasticFem(FemEntity):
     def __init__(self, **kwargs):
@@ -206,8 +206,8 @@ class ElasticFem(FemEntity):
         _el.K_0 = _el.K_0[:, _][_]
         _el.K_1 = _el.K_1[:, _][_]
 
-    def append_linear_system(self, omega):
-        A_i, A_j, A_v =[], [], []
+    def update_system(self, omega):
+        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
         for _el in self.elements:
@@ -239,4 +239,4 @@ class ElasticFem(FemEntity):
             A_j.extend(list(dof_u_m)*(2*nb_m_SF))
             A_v.extend(mm.flatten())
 
-        return A_i, A_j, A_v, T_i, T_j, T_v
+        return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v

@@ -13,14 +13,15 @@ from pyPLANES.gmsh.templates.layers import one_layer
 from pyPLANES.utils.io import result_pymls
 
 # Parameters of the simulation 
-frequencies = np.linspace(10., 500., 1)
-theta_d = 0.000
+frequencies = np.linspace(1000., 5000., 1)
+theta_d = 40.000
 
 L = 5e-2
 d = 5e-2
 lcar = 1e-2
-material = "melamine"
-material = "Air"
+material = "Wwood"
+# material = "melamine"
+# material = "Air"
 
 name_project = "one_layer"
 ml = [(material, d)]
@@ -32,10 +33,10 @@ plot_solution = [True, True, True, False, False, False]
 
 one_layer(name_project, L, d, lcar, material, "Rigid Wall")
 
-# global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False)
-# global_method.resolution()
+global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False)
+global_method.resolution()
 
-fem = FemProblem(name_project=name_project, name_mesh=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=True)
+fem = PeriodicFemProblem(name_project=name_project, name_mesh=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=True)
 
 
 fem.resolution()
