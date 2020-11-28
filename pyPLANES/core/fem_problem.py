@@ -36,7 +36,7 @@ from pyPLANES.fem.entities_volumic import *
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
-from pyPLANES.fem.preprocess import fem_preprocess
+from pyPLANES.fem.fem_preprocess import fem_preprocess
 from pyPLANES.utils.io import plot_fem_solution
 
 class FemProblem(Mesh, Calculus):

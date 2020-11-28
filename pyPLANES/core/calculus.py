@@ -119,7 +119,6 @@ class Calculus():
 
     def preprocess(self):
         """  Initialise out files """    
-            # Creation of the directory if it .oes not exists
         self.out_file = open(self.out_file_name, 'w')
         self.info_file = open(self.info_file_name, 'w')
         self.info_file.write("Output File from pyPLANES\n")

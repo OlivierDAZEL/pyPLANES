@@ -45,7 +45,6 @@ class PeriodicFemProblem(FemProblem):
                 _ent.theta_d = self.theta_d
         self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
 
-
     def update_frequency(self, omega):
         FemProblem.update_frequency(self, omega)
         # Wave numbers and periodic shift
@@ -114,5 +113,12 @@ class PeriodicFemProblem(FemProblem):
                 out["T"] = _ent.sol[0]
                 self.modulus_trans = np.sqrt(np.sum(np.real(_ent.ky)*np.abs(_ent.sol[::_ent.nb_R])**2/np.real(self.ky)))
                 self.abs -= self.modulus_trans**2
+        if self.verbose:
+            print("R   pyPLANES_FEM   = {}".format(out["R"]))
+            print("abs pyPLANES_FEM   = {}".format(self.abs))
         print("abs pyPLANES_FEM   = {}".format(self.abs))
         return out
+
+
+    def compute_error():
+        pass

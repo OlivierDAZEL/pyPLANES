@@ -13,7 +13,7 @@ from pyPLANES.utils.io import result_pymls
 frequencies = np.linspace(100., 500., 100)
 theta_d = 45.000
 plot_RT = True
-# plot_RT = False
+plot_RT = False
 
 name_project_list = []
 ml_list = []
@@ -83,7 +83,6 @@ for ii, name_project in enumerate(name_project_list):
     print(name_project)
     termination= termination_list[ii]
     f_ref, R_ref, T_ref  = result_pymls(name_project=name_project, ml=ml, termination=termination, theta_d=theta_d, frequencies=frequencies, plot_RT=plot_RT)
-    # test_method = PwProblem(name_project=name_project, ml=ml, theta_d=theta_d , termination=termination, frequencies=frequencies, method="recursive").resolution()
     global_method = PwProblem(name_project=name_project, ml=ml, theta_d=theta_d , termination=termination, frequencies=frequencies, method="global").compute_error(f_ref, R_ref, T_ref, plot_RT)
     recursive_method = PwProblem(name_project=name_project, ml=ml, theta_d=theta_d , termination=termination, frequencies=frequencies, method="recursive").compute_error(f_ref, R_ref, T_ref, plot_RT)
 

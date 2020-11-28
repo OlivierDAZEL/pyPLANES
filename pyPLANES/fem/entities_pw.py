@@ -61,7 +61,7 @@ class PwFem(FemEntity):
         k_x = k_air*np.sin(self.theta_d*np.pi/180.)
         nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5)
         nb_bloch_waves = 0
-        print("nb_bloch_waves ={}".format(nb_bloch_waves))
+        # print("nb_bloch_waves ={}".format(nb_bloch_waves))
         _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
         self.nb_waves = 1+2*nb_bloch_waves
         self.kx = k_x+_*(2*pi/self.period)
@@ -179,8 +179,8 @@ class IncidentPwFem(PwFem):
         # print(F_TM)
         _ = phi.tocoo()
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
-        A_TM *=self.ny
-        F_TM *=self.ny
+        A_TM *= self.ny
+        F_TM *= self.ny
 
         # print(F_TM)
         # print(coo_matrix(F_TM))
@@ -214,7 +214,7 @@ class TransmissionPwFem(PwFem):
 
         return tau_l, eta_l
 
-    def create_dynamical_matrices(self, omega, n_m):
+    def update_system(self, omega, n_m):
         phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
         self.eta_TM = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
         tau = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
@@ -262,5 +262,11 @@ class TransmissionPwFem(PwFem):
         _ = phi.tocoo()
         self.phi_i, self.phi_j, self.phi_v = _.row, _.col, _.data
 
-        return A_TM*self.ny, F_TM*self.ny
+        A_TM *=self.ny
+        F_TM *=self.ny        
+
+        F_TM = coo_matrix(F_TM)
+
+
+        return A_TM.row, A_TM.col, A_TM.data, [], [], [], F_TM.row, F_TM.data
 

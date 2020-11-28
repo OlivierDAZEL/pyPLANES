@@ -41,12 +41,12 @@ from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear
 class FluidFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-        self.mat = Air()
+        self.mat = kwargs.get("mat", "Air")
         self.H_i, self.H_j, self.H_v = [], [], []
         self.Q_i, self.Q_j, self.Q_v = [], [], []
 
     def __str__(self):
-        out = "Air" + FemEntity.__str__(self)
+        out = "Fluid" + FemEntity.__str__(self)
         return out
 
     def elementary_matrices(self, _el):
@@ -59,15 +59,24 @@ class FluidFem(FemEntity):
         _el.dof_p_m = dof_p_linear_system_master(_el)
         _el.dof_p_c = dof_p_linear_system_to_condense(_el)
 
+    def update_frequency(self, omega):
+        self.mat.update_frequency(omega)
+
     def update_system(self, omega):
         A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
+
+        if self.mat.MEDIUM_TYPE == "eqf":
+            rho = self.mat.rho_eq_til
+            K = self.mat.K_eq_til
+        else: 
+            rho = self.mat.rho
+            K = self.mat.K 
 
         for _el in self.elements:
             nb_m_SF = _el.reference_element.nb_m_SF
             nb_SF = _el.reference_element.nb_SF
-            # With condensation
-            # Based on reordered matrix
-            pp = _el.H/(self.mat.rho*omega**2)- _el.Q/(self.mat.K)
+
+            pp = _el.H/(rho*omega**2)- _el.Q/K
 
             l_p_m = slice(nb_m_SF)
             l_p_c = slice(nb_m_SF, nb_SF)

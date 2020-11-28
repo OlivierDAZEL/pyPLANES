@@ -156,15 +156,20 @@ def entities(self, f, order=2):
                         self.fem_entities.append(_)
                     else:
                         mat = load_material(physical_tags["mat"].split()[0])
-                        if mat.MODEL == "eqf":
+                        if mat.MEDIUM_TYPE == "eqf":
                             _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
+                            # print(mat)
+                            # print(_.mat)
+                            # eazeazeza
                             self.fem_entities.append(_)
-                        elif mat.MODEL == "elastic":
+                        elif mat.MEDIUM_TYPE == "elastic":
                             _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
                             self.fem_entities.append(_)
-                        else:
+                        elif mat.MEDIUM_TYPE == "pem":
                             _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
                             self.fem_entities.append(_)
+                        else: 
+                            raise NameError(" Provided material is neither eqf, elastic nor pem")
         self.entities.append(_)
     for __ in range(num_volumes):
         pass
