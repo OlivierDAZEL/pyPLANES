@@ -143,6 +143,10 @@ html/
 tests/*
 !tests/one_layer/
 !tests/benchmark_multilayer/
+### Output files
+*.FEM.txt
+*.GM.txt
+*.RM.txt
 doc/
 TeX
 
