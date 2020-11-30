@@ -658,6 +658,7 @@ class SemiInfinite(PwInterface):
         self.kx = kx
         self.omega = omega 
 
+
     def Omega(self):
         if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
             return np.array([-self.lam[0]/(self.medium.rho*self.omega**2), 1], dtype=np.complex), np.eye(1)
