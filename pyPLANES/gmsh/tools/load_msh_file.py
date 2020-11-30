@@ -158,9 +158,6 @@ def entities(self, f, order=2):
                         mat = load_material(physical_tags["mat"].split()[0])
                         if mat.MEDIUM_TYPE == "eqf":
                             _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
-                            # print(mat)
-                            # print(_.mat)
-                            # eazeazeza
                             self.fem_entities.append(_)
                         elif mat.MEDIUM_TYPE == "elastic":
                             _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
