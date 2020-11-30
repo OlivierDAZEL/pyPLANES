@@ -26,14 +26,11 @@ import platform
 import time, timeit
 
 import numpy as np
+from mediapack import Air
 
-
-# from scipy.sparse.linalg.dsolve import linsolve
-# from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.core.fem_problem import FemProblem
-from pyPLANES.fem.entities_pw import *
-
+from pyPLANES.fem.entities_pw import PwFem, IncidentPwFem, TransmissionPwFem
 
 class PeriodicFemProblem(FemProblem):
     def __init__(self, **kwargs):
@@ -43,6 +40,8 @@ class PeriodicFemProblem(FemProblem):
         for _ent in self.pwfem_entities:
             if isinstance(_ent, PwFem):
                 _ent.theta_d = self.theta_d
+        self.incident_ml = kwargs.get("incident_ml", False)
+        # Acoustic indicators
         self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
 
     def update_frequency(self, omega):

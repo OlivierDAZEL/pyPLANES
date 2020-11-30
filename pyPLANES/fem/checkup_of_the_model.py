@@ -42,14 +42,64 @@ from pyPLANES.core.multilayer import MultiLayer
 
 def checkup_of_the_model(self):
     ''' This function checks if the model is correct and adapt it if not '''
+    check_neighbours_1D_entity(self)
+    check_IFS(self)
+    check_pem_formulation(self)
+    check_interfaces(self)
+    check_pwfem(self)
+
+
+def check_pwfem(self):
+    for _e in self.pwfem_entities:
+        if isinstance(_e, PwFem):
+            for s in _e.neighbouring_surfaces:
+                if isinstance(s, (Air, FluidFem)):
+                    _e.nb_R = 1
+                    _e.typ = "fluid"
+                elif (isinstance(s, ElasticFem)):
+                    _e.nb_R = 2
+                    _e.typ = "elastic"
+                elif isinstance(s, PemFem):
+                    if s.formulation98:
+                        _e.nb_R = 3
+                        _e.typ = "Biot98"
+                    else:
+                        _e.nb_R = 3
+                        _e.typ = "Biot01"
+            if isinstance(_e, IncidentPwFem):
+                if self.incident_ml:
+                    _e.ml = []
+                    for _l in self.incident_ml:
+                        mat = from_yaml(_l[0]+".yaml")
+                        d = _l[1]
+                        _e.ml.append(Layer(mat,d))
+            if isinstance(_e, TransmissionPwFem):
+                if self.transmission_ml:
+                    _e.ml = []
+                    for _l in self.transmission_ml:
+                        mat = from_yaml(_l[0]+".yaml")
+                        d = -_l[1]
+                        # Thickness of transmission layers is set negative
+                        _e.ml.append(Layer(mat,d))
+                    for _l in _e.ml:
+                        _l.thickness *= -1
+
+
+
+def check_neighbours_1D_entity(self):
+    for _e in self.entities:
+        if _e.dim == 1: # 1D entities
+            if len(_e.neighbouring_surfaces) > 1:
+                if isinstance(_e, (PwFem, RigidWallFem, PeriodicityFem)):
+                    raise ValueError("Error in checkup_of_the_model: 1D entity is linked to more than one surface")    
+
+def check_IFS(self):
     unfinished = True
     while unfinished:
         unfinished = False
         for _e in self.entities:
             if _e.dim == 1: # 1D entities
                 if len(_e.neighbouring_surfaces) > 1:
-                    if isinstance(_e, (PwFem, RigidWallFem, PeriodicityFem)):
-                        raise ValueError("Error in checkup_of_the_model: 1D entity is linked to more than one surface")
                     if isinstance(_e, FluidStructureFem):
                         if len(_e.neighbouring_surfaces) != 2:
                             raise NameError("For FluidStructureFem, the number of neighbours should be 2")
@@ -72,15 +122,18 @@ def checkup_of_the_model(self):
                                         _elem.normal_fluid = normal_to_element(_elem, _el)
                                         _elem.normal_struc = -_elem.normal_fluid
                                         break
-            if _e.dim == 2:
-                if isinstance(_e, PemFem):
-                    # _e.formulation98 = True
-                    _e.formulation98 = False
+
+def check_pem_formulation(self):
+    for _e in self.entities:
+        if isinstance(_e, PemFem):
+            # _e.formulation98 = True
+            _e.formulation98 = False
+
+def check_interfaces(self):
     # Check that the number of interfaces go by pairs
     list_interfaces = [_ent for _ent in self.fem_entities if isinstance(_ent, InterfaceFem)]
     name_interfaces = [_ent.ml for _ent in list_interfaces]
     n_interface = len(list_interfaces)
-
     if  n_interface%2 == 1:
         raise ValueError("Error in check model: Number of interfaces is odd")
     else:
@@ -164,44 +217,3 @@ def checkup_of_the_model(self):
             _int_minus.ml = MultiLayer(ml=self.interface_ml[_int_minus.ml_name],incident=_int_minus.neighbouring_surfaces[0].mat,termination=_int_plus.neighbouring_surfaces[0].mat)
             # Deletion of the + interface from the model_entities
             self.model_entities.remove(_int_plus)
-
-
-    for _e in self.pwfem_entities:
-        if isinstance(_e, PwFem):
-            for s in _e.neighbouring_surfaces:
-                if isinstance(s, (Air, FluidFem)):
-                    _e.nb_R = 1
-                    _e.typ = "fluid"
-                elif (isinstance(s, ElasticFem)):
-                    _e.nb_R = 2
-                    _e.typ = "elastic"
-                elif isinstance(s, PemFem):
-                    if s.formulation98:
-                        _e.nb_R = 3
-                        _e.typ = "Biot98"
-                    else:
-                        _e.nb_R = 3
-                        _e.typ = "Biot01"
-            if isinstance(_e, IncidentPwFem):
-                if self.incident_ml:
-                    _e.ml = []
-                    for _l in self.incident_ml:
-                        mat = from_yaml(_l[0]+".yaml")
-                        d = _l[1]
-                        _e.ml.append(Layer(mat,d))
-            if isinstance(_e, TransmissionPwFem):
-                if self.transmission_ml:
-                    _e.ml = []
-                    for _l in self.transmission_ml:
-                        mat = from_yaml(_l[0]+".yaml")
-                        d = -_l[1]
-                        # Thickness of transmission layers is set negative
-                        _e.ml.append(Layer(mat,d))
-                    for _l in _e.ml:
-                        _l.thickness *= -1
-
-
-
-
-
-

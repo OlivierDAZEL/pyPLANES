@@ -44,7 +44,6 @@ class FemProblem(Mesh, Calculus):
         Calculus.__init__(self, **kwargs)
         Mesh.__init__(self, **kwargs)
         self.interface_zone = kwargs.get("interface_zone", 0.01)
-        self.incident_ml = kwargs.get("incident_ml", False)
         self.interface_ml = kwargs.get("interface_ml", False)
 
         self.F_i, self.F_v = None, None

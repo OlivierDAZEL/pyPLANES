@@ -183,3 +183,4 @@ class Calculus():
     def update_frequency(self, omega):
         pass
 
+
