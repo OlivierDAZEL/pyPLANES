@@ -1,15 +1,5 @@
 Output File from pyPLANES
-<<<<<<< HEAD
 Generated on pc-278.home
-Calculus started at 2020-11-30 22:40:49.602749.
-Duration of importation =0.0002799034118652344 s
-Duration of assembly =0.0031342506408691406 s
-=======
-Generated on Oliviers-MacBook-Pro.local
-Calculus started at 2020-06-17 16:03:25.948300.
-Duration of importation =0.012463092803955078 s
-Duration of assembly =0.013798952102661133 s
-Calculus ended at 2020-06-17 16:03:26.218128.
-Total duration = 0.269805908203125 s
-duration / freq (averaged) = 0.269805908203125 s
->>>>>>> bf5bfed38de027d5d45b997bd157b85e89937121
+Calculus started at 2020-11-30 23:24:23.616659.
+Duration of importation =0.0007050037384033203 s
+Duration of assembly =0.005813121795654297 s
