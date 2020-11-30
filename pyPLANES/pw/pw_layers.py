@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 
 from numpy import pi, sqrt
 
-from pyPLANES.pw.pw_polarisation import fluid_waves, elastic_waves, PEM_waves
+from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, elastic_waves_TMM, PEM_waves_TMM
 
 class PwLayer():
     """
@@ -111,7 +111,7 @@ class FluidLayer(PwLayer):
 
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
-        self.SV, self.lam = fluid_waves(self.medium, kx)
+        self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
 
     def update_Omega(self, om, Om):
         T = np.zeros((2, 2), dtype=complex)
@@ -160,7 +160,7 @@ class PemLayer(PwLayer):
 
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
-        self.SV, self.lam = PEM_waves(self.medium, kx)
+        self.SV, self.lam = PEM_waves_TMM(self.medium, kx)
 
     def plot_solution(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
@@ -237,7 +237,7 @@ class ElasticLayer(PwLayer):
 
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
-        self.SV, self.lam = elastic_waves(self.medium, kx)
+        self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
 
     def transfert(self, Om):
         index = np.argsort(self.lam.real)

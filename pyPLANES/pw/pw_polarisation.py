@@ -24,7 +24,7 @@
 
 import numpy as np
 
-def PEM_waves(mat,ky):
+def PEM_waves_TMM(mat,ky):
     ''' S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
     kx_1 = np.sqrt(mat.delta_1**2-ky**2)
     kx_2 = np.sqrt(mat.delta_2**2-ky**2)
@@ -49,7 +49,7 @@ def PEM_waves(mat,ky):
 
     return Phi, np.concatenate((-1j*kx, 1j*kx))
 
-def elastic_waves(mat,ky):
+def elastic_waves_TMM(mat,ky):
     ''' S={0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
 
     kx_p = np.sqrt(mat.delta_p**2-ky**2)
@@ -68,7 +68,7 @@ def elastic_waves(mat,ky):
 
     return Phi, np.concatenate((-1j*kx, 1j*kx))
 
-def fluid_waves(mat, ky):
+def fluid_waves_TMM(mat, ky):
     ''' S={0:u_y , 1:p}'''
     if mat.MEDIUM_TYPE == 'eqf':
         K = mat.K_eq_til
@@ -82,3 +82,5 @@ def fluid_waves(mat, ky):
     Phi[1, 0:2] = np.array([1, 1])
     return Phi, np.array([-1j*kx, 1j*kx])
 
+# def fluid_waves(mat, nx,ny):
+#     pass

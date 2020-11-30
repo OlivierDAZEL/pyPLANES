@@ -44,7 +44,6 @@ class FemProblem(Mesh, Calculus):
         Calculus.__init__(self, **kwargs)
         Mesh.__init__(self, **kwargs)
 
-
     def preprocess(self):
         Calculus.preprocess(self)
         # fem_preprocess(self)

@@ -10,7 +10,6 @@ from pyPLANES.core.periodic_fem_problem import FemProblem, PeriodicFemProblem
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.gmsh.templates.layers import one_layer
 
-
 # Parameters of the simulation 
 frequencies = np.linspace(20., 5000., 1)
 theta_d = 40.000
@@ -43,7 +42,6 @@ fem.resolution()
 
 print("abs                = {}".format(1-np.abs(global_method.R)**2-np.abs(global_method.T)**2))
 # print("abs                = {}".format(1-np.abs(global_method.R)**2))
-
 
 
 if any(plot_solution):

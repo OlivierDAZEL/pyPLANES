@@ -25,7 +25,7 @@
 import numpy as np
 from numpy import sqrt
 from pyPLANES.utils.io import load_material
-from pyPLANES.pw.pw_polarisation import fluid_waves
+from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
 
 
 class PwInterface():
@@ -653,7 +653,7 @@ class SemiInfinite(PwInterface):
 
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
-        self.SV, self.lam = fluid_waves(self.medium, kx)
+        self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
         self.k = self.medium.k
         self.kx = kx
         self.omega = omega 
