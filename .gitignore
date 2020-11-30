@@ -140,6 +140,7 @@ synch2KTH.py
 *_out.txt
 _info.txt
 html/
+<<<<<<< HEAD
 tests/*
 !tests/one_layer/
 !tests/benchmark_multilayer/
@@ -147,10 +148,18 @@ tests/*
 *.FEM.txt
 *.GM.txt
 *.RM.txt
+=======
+# tests/*
+# !tests/one_layer/
+>>>>>>> bf5bfed38de027d5d45b997bd157b85e89937121
 doc/
 TeX
 
 # pyPLANES
 *.msh
+<<<<<<< HEAD
 *.geo
 *.txt
+=======
+*.geo
+>>>>>>> bf5bfed38de027d5d45b997bd157b85e89937121
