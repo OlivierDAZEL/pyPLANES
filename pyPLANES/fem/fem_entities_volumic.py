@@ -31,7 +31,7 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
 
-from pyPLANES.fem.entities_plain import FemEntity
+from pyPLANES.generic.entities_generic import FemEntity
 from pyPLANES.fem.elements_volumic import fluid_elementary_matrices, pem98_elementary_matrices, pem01_elementary_matrices, elas_elementary_matrices
 
 from pyPLANES.pw.utils_TM import weak_orth_terms

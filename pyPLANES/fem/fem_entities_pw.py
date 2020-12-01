@@ -31,7 +31,7 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
 
-from pyPLANES.fem.entities_plain import FemEntity
+from pyPLANES.generic.entities_generic import FemEntity
 from pyPLANES.fem.elements_surfacic import imposed_pw_elementary_vector
 from pyPLANES.pw.utils_TM import weak_orth_terms
 from pyPLANES.fem.utils_fem import *
