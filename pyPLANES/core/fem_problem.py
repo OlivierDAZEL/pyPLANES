@@ -30,8 +30,8 @@ import numpy as np
 from pyPLANES.core.mesh import Mesh
 from pyPLANES.core.calculus import Calculus
 
-from pyPLANES.fem.entities_surfacic import *
-from pyPLANES.fem.entities_volumic import *
+from pyPLANES.fem.fem_entities_surfacic import *
+from pyPLANES.fem.fem_entities_volumic import *
 
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla

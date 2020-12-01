@@ -35,9 +35,9 @@ from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
 from pyPLANES.fem.utils_fem import normal_to_element
 from pyPLANES.fem.elements_fem import FemEdge, FemFace
 from pyPLANES.core.mesh import NeighbourElement
-from pyPLANES.fem.entities_surfacic import *
-from pyPLANES.fem.entities_volumic import *
-from pyPLANES.fem.entities_pw import *
+from pyPLANES.fem.fem_entities_surfacic import *
+from pyPLANES.fem.fem_entities_volumic import *
+from pyPLANES.fem.fem_entities_pw import *
 
 from pyPLANES.utils.geometry import getOverlap, local_abscissa
 from pyPLANES.core.multilayer import MultiLayer

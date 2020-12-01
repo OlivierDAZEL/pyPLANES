@@ -33,8 +33,8 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
-from pyPLANES.fem.entities_surfacic import *
-from pyPLANES.fem.entities_volumic import *
+from pyPLANES.fem.fem_entities_surfacic import *
+from pyPLANES.fem.fem_entities_volumic import *
 
 # def initialisation_out_files_plain(self):
 #     pass

@@ -29,9 +29,9 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.fem.elements_fem import FemVertex, FemElement
 
 from pyPLANES.fem.entities_plain import *
-from pyPLANES.fem.entities_surfacic import *
-from pyPLANES.fem.entities_pw import *
-from pyPLANES.fem.entities_volumic import *
+from pyPLANES.fem.fem_entities_surfacic import *
+from pyPLANES.fem.fem_entities_pw import *
+from pyPLANES.fem.fem_entities_volumic import *
 
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]

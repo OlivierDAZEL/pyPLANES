@@ -23,8 +23,8 @@
 #
 
 import itertools
-from pyPLANES.fem.entities_surfacic import *
-from pyPLANES.fem.entities_volumic import *
+from pyPLANES.fem.fem_entities_surfacic import *
+from pyPLANES.fem.fem_entities_volumic import *
 
 def activate_dofs(self,start=0):
     # Activate dofs 
