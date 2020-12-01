@@ -33,7 +33,7 @@ from pymls import Layer
 
 from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
 from pyPLANES.fem.utils_fem import normal_to_element
-from pyPLANES.fem.elements_plain import Edge, Face
+from pyPLANES.fem.elements_fem import FemEdge, FemFace
 from pyPLANES.core.mesh import NeighbourElement
 from pyPLANES.fem.entities_surfacic import *
 from pyPLANES.fem.entities_volumic import *
@@ -126,7 +126,7 @@ def create_vertices_edges_faces_bubbles_lists(self):
                 update_edges(self, _el, existing_edges, element_vertices)
             # Faces
             element_vertices = [_el.vertices[0], _el.vertices[1], _el.vertices[2]]
-            new_face = Face(self.nb_faces, element_vertices, _el, self.order)
+            new_face = FemFace(self.nb_faces, element_vertices, _el, self.order)
             self.faces.append(new_face)
             _el.faces.append(new_face)
             _el.faces_orientation.append(1)
@@ -154,12 +154,12 @@ def update_edges(self, _el, existing_edges, element_vertices):
         existing_edges.append(element_vertices_tag_sorted)
         # Creation of the new edge
         if element_vertices_tag == element_vertices_tag_sorted:
-            new_edge = Edge(self.nb_edges, element_vertices, _el, self.order)
+            new_edge = FemEdge(self.nb_edges, element_vertices, _el, self.order)
             self.edges.append(new_edge)
             _el.edges.append(new_edge)
             _el.edges_orientation.append(1)
         else:
-            new_edge = Edge(self.nb_edges, element_vertices[::-1], _el, self.order)
+            new_edge = FemEdge(self.nb_edges, element_vertices[::-1], _el, self.order)
             self.edges.append(new_edge)
             _el.edges.append(new_edge)
             _el.edges_orientation.append(-1)

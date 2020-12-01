@@ -31,7 +31,7 @@ import numpy.linalg as LA
 from mediapack import Air, from_yaml
 from pymls import Layer
 from pyPLANES.fem.utils_fem import normal_to_element
-from pyPLANES.fem.elements_plain import Edge, Face
+from pyPLANES.fem.elements_fem import FemEdge, FemFace
 from pyPLANES.core.mesh import NeighbourElement
 from pyPLANES.fem.entities_surfacic import *
 from pyPLANES.fem.entities_volumic import *

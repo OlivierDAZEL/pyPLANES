@@ -26,14 +26,12 @@ import numpy as np
 from mediapack import Air
 from pyPLANES.utils.io import load_material
 
-
-from pyPLANES.fem.elements_plain import Vertex, Element
+from pyPLANES.fem.elements_fem import FemVertex, FemElement
 
 from pyPLANES.fem.entities_plain import *
 from pyPLANES.fem.entities_surfacic import *
 from pyPLANES.fem.entities_pw import *
 from pyPLANES.fem.entities_volumic import *
-
 
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]
@@ -67,7 +65,6 @@ def load_msh_file(self, **kwargs):
             if _.strip() != "$End"+ tag:
                 raise NameError("Error in GMSH file importation at tag:" +tag)
     
-
 def dict_physical_tags(self, _list):
     ''' create a dict from gmsh file physical tags.
         Possible keys: model and materials'''
@@ -239,7 +236,7 @@ def nodes(self, f):
         for _ in range(num_nodes_in_entity):
             coord = f.readline().split()
             coord = [float(__) for __ in coord]
-            self.vertices[list_nodes[_]] = Vertex(coord, list_nodes[_])
+            self.vertices[list_nodes[_]] = FemVertex(coord, list_nodes[_])
 
 def elements(self, f):
     num_entity_blocks, num_elements, min_element_tag, max_element_tag = readl_int(f)
@@ -252,14 +249,14 @@ def elements(self, f):
                 if entity_dim != 1:
                     raise NameError("in load_msh_file, entity_dim!1 for element_type = 1")
                 vertices = [self.vertices[n] for n in node_tag]
-                self.elements[element_tag] = Element(element_type, element_tag, vertices)
             elif element_type == 2:
                 if entity_dim != 2:
                     raise NameError("in import_msh_file, entity_dim!2 for element_type = 2")
                 vertices = [self.vertices[n] for n in node_tag]
-                self.elements[element_tag]=Element(element_type, element_tag, vertices)
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
+                self.elements[element_tag] = FemElement(element_type, element_tag, vertices)
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
+
 
 def periodic(self, f):
     self.vertices_left = []

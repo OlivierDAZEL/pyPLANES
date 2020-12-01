@@ -23,28 +23,22 @@
 #
 import numpy as np
 
-class Vertex:
+class PlainVertex:
     '''Vertex Finite-Element'''
     def __init__(self, coord, tag):
         self.coord = coord
         self.tag = tag
-        self.dofs = [0] * 4
-        self.sol = np.zeros(4,dtype=complex)
     def __str__(self):
         out = "Vertex #{}\n".format(self.tag)
         out  += "(x,y,z)=({},{},{})\n".format(*self.coord)
-        out += "dofs=" + format(self.dofs)+"\n"
         return out
 
-class Edge:
+class PlainEdge:
     ''' TODO '''
-    def __init__(self, tag, vertices, element, order):
+    def __init__(self, tag, vertices, element):
         self.tag = tag
         self.vertices = vertices
         self.elements = [element]
-        self.order = [order, order, order, order]
-        self.dofs = [[0]*(order-1)]*4
-        self.sol = [np.zeros((order-1))]*4
     def center(self):
         x = (self.vertices[0].x + self.vertices[1].x)/2.
         y = (self.vertices[0].y + self.vertices[1].y)/2.
@@ -56,77 +50,9 @@ class Edge:
         out  += "Vertices=[{},{}], ".format(self.vertices[0].tag, self.vertices[1].tag)
         related_elements = [_el.tag for _el in self.elements]
         out  += "related elements={}\n".format(related_elements)
-        out += "dofs=" + format(self.dofs)+"\n"
         return out
 
-class Face:
-    """ Finite-Element Face
-
-    Parameters
-    ----------
-    tag : int
-        GMSH tag
-    vertices : list
-        vertices linked to the element
-    element : [type]
-        [description]
-    order : [type]
-        [description]
-    """
-
-    def __init__(self, tag, vertices, element, order):
-        self.tag = tag
-        self.vertices = vertices
-        self.elements = [element]
-        self.order = [order, order, order, order]
-        _ = [0]*int((order-1)*(order-2)/2)
-        self.dofs = [_, _, _, _]
-        self.sol = [np.zeros(int((order-1)*(order-2)/2))]*4
-    def __str__(self):
-        out = "Face #{}\n".format(self.tag)
-        out  += "Vertices=[{},{},{}], ".format(self.vertices[0].tag, self.vertices[1].tag, self.vertices[2].tag)
-        related_elements = [_el.tag for _el in self.elements]
-        out  += "related elements={}\n".format(related_elements)
-        out += "dofs=" + format(self.dofs)+"\n"
-        return out
-
-class Bubble:
-    ''' Class Bubble '''
-    """
-    [summary]
-    """
-    def __init__(self,nodes,element,order,geo):
-        """
-        [summary]
-
-        Parameters
-        ----------
-        nodes : [type]
-            [description]
-        element : [type]
-            [description]
-        order : [type]
-            [description]
-        geo : [type]
-            [description]
-        """
-        self.geo = geo
-        self.nodes = nodes
-        if hasattr(self, 'elements'):
-            self.elements.append(elements)
-        else:
-            self.elements=[element]
-        self.order = [order, order, order, order]
-        self.dofs = [[],[],[],[]]
-        self.sol = [np.zeros(int((order-1)*(order-2)*(order-3)/2))]*4
-
-    def __str__(self):
-        out = "geo/Nodes/Elements/order/dofs = " + str(self.geo)+"/" + str(self.nodes)+"/"+ format(self.elements)
-        out += "/".format(self.order)
-        out += format(self.dofs)+"\n"
-        return out
-
-class Element:
+class PlainElement:
     ''' Element of pyPLANES
 
     Parameters:
@@ -154,16 +80,7 @@ class Element:
         self.typ = typ
         self.tag = tag
         self.vertices = vertices
-        # self.reference_element = reference_element
-        self.dofs = [[], [], [], []]
         # Rules for the dofs indices vector
-        if typ == 1:
-            self.edges = []
-            self.edges_orientation = []
-            self.nb_edges = 0
-        elif typ == 2:
-            self.edges, self.faces = [], []
-            self.edges_orientation, self.faces_orientation = [], []
 
     def __str__(self):
         out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
@@ -198,6 +115,57 @@ class Element:
         """
         coorde = self.get_coordinates()
         return np.mean(coorde, axis=1)
+
+
+
+    ''' Element of pyPLANES
+
+    Parameters:
+    -----------
+    typ : int
+        GMSH type of the element
+
+    coorde : numpy array
+        Array of nodes coordinates (dim = 3x nb vertices )
+
+    Ref_Elem : Reference Element
+
+
+    Attributes :
+    ------------------------
+
+    edges : List of edge instances associated to the element
+
+    faces : List of face instances associated to the element (optional)
+
+    bubbles : List of bubble instances associated to the element (optional)
+
+    '''
+    def __init__(self, typ, tag, vertices):
+        PlainElement.__init__(self, typ, tag, vertices)
+        self.reference_element = None
+        self.dofs = [[], [], [], []]
+        # Rules for the dofs indices vector
+        if typ == 1:
+            self.edges = []
+            self.edges_orientation = []
+            self.nb_edges = 0
+        elif typ == 2:
+            self.edges, self.faces = [], []
+            self.edges_orientation, self.faces_orientation = [], []
+
+    def __str__(self):
+        out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
+        if self.typ == 1:
+            out += "Vertices = [{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag)
+            print(self.edges)
+            out += "edge={} /orientation ={}\n".format(self.edges[0].tag, self.edges_orientation)
+        elif self.typ == 2:
+            out += "Vertices = [{},{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag, self.vertices[2].tag)
+            out += "edges =[{},{},{}]\n".format(self.edges[0].tag, self.edges[1].tag, self.edges[2].tag)
+            out += "edge orientation ={}\n".format(self.edges_orientation)
+        # out += "dofs={}".format(self.dofs)
+        return out
 
     def display_sol(self, field):
         """
