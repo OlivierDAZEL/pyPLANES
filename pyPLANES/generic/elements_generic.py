@@ -79,8 +79,6 @@ class GenericElement:
         elif self.typ == 2:
             out += "Vertices = [{},{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag, self.vertices[2].tag)
             out += "edges =[{},{},{}]\n".format(self.edges[0].tag, self.edges[1].tag, self.edges[2].tag)
-            out += "edge orientation ={}\n".format(self.edges_orientation)
-        # out += "dofs={}".format(self.dofs)
         return out
 
     def get_coordinates(self):

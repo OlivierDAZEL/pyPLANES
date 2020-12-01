@@ -47,6 +47,7 @@ class FemProblem(Mesh, Calculus):
         self.interface_zone = kwargs.get("interface_zone", 0.01)
         self.interface_ml = kwargs.get("interface_ml", False)
 
+
         self.F_i, self.F_v = None, None
         self.A_i, self.A_j, self.A_v = None, None, None
         self.T_i, self.T_j, self.T_v = None, None, None

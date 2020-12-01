@@ -41,6 +41,7 @@ class PeriodicFemProblem(FemProblem):
             if isinstance(_ent, PwFem):
                 _ent.theta_d = self.theta_d
         self.incident_ml = kwargs.get("incident_ml", False)
+        self.transmission_ml = kwargs.get("transmission_ml", False)
         # Acoustic indicators
         self.modulus_reflex, self.modulus_trans, self.abs = None, None, None
 

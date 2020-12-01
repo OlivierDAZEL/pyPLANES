@@ -143,6 +143,7 @@ class FemElement(GenericElement):
     bubbles : List of bubble instances associated to the element (optional)
 
     '''
+    
     def __init__(self, typ, tag, vertices):
         GenericElement.__init__(self, typ, tag, vertices)
         self.reference_element = None
