@@ -31,6 +31,8 @@ from mediapack import Air
 
 from pyPLANES.core.fem_problem import FemProblem
 from pyPLANES.fem.entities_pw import PwFem, IncidentPwFem, TransmissionPwFem
+from pyPLANES.utils.io import plot_fem_solution
+from pyPLANES.fem.dofs import periodic_dofs_identification
 
 class PeriodicFemProblem(FemProblem):
     def __init__(self, **kwargs):
@@ -56,6 +58,12 @@ class PeriodicFemProblem(FemProblem):
         for _ent in self.pwfem_entities:
             _ent.update_frequency(omega)
         self.modulus_reflex, self.modulus_trans, self.abs = 0, 0, 1
+
+    def preprocess(self):
+        FemProblem.preprocess(self)
+        periodic_dofs_identification(self)
+
+
 
     def create_linear_system(self, omega):
         FemProblem.create_linear_system(self, omega)
@@ -118,6 +126,9 @@ class PeriodicFemProblem(FemProblem):
             print("abs pyPLANES_FEM   = {}".format(self.abs))
         print("abs pyPLANES_FEM   = {}".format(self.abs))
         return out
+
+    def plot_solution(self):
+        plot_fem_solution(self, self.kx)
 
 
     def compute_error():

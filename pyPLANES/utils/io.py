@@ -122,7 +122,8 @@ def print_model_entities(self):
 def print_reference_elements(self):
     print(self.reference_elements)
 
-def plot_fem_solution(self):
+def plot_fem_solution(self, kx=0.):
+    print(self)
     if any(self.plot[3:]):
         x, y, u_x, u_y, pr = [], [], [], [], []
     for _en in self.entities:
@@ -131,7 +132,7 @@ def plot_fem_solution(self):
                 for _elem in _en.elements:
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
-                    p_elem *= np.exp(1j*self.kx*x_elem)
+                    p_elem *= np.exp(1j*kx*x_elem)
                     if self.plot[2]:
                         plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
@@ -147,9 +148,9 @@ def plot_fem_solution(self):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
-                    ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
-                    uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
-                    p_elem = f_elem[:, 2]*np.exp(1j*self.kx*x_elem)
+                    ux_elem = f_elem[:, 0]*np.exp(1j*kx*x_elem)
+                    uy_elem = f_elem[:, 1]*np.exp(1j*kx*x_elem)
+                    p_elem = f_elem[:, 2]*np.exp(1j*kx*x_elem)
                     if self.plot[0]:
                         plt.figure("Solid displacement along x")
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
@@ -170,8 +171,8 @@ def plot_fem_solution(self):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
-                    ux_elem = f_elem[:, 0]*np.exp(1j*self.kx*x_elem)
-                    uy_elem = f_elem[:, 1]*np.exp(1j*self.kx*x_elem)
+                    ux_elem = f_elem[:, 0]*np.exp(1j*kx*x_elem)
+                    uy_elem = f_elem[:, 1]*np.exp(1j*kx*x_elem)
                     if self.plot[0]:
                         plt.figure("Solid displacement along x")
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')

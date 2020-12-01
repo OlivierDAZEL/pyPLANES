@@ -42,7 +42,7 @@ from pyPLANES.fem.entities_pw import *
 from pyPLANES.utils.geometry import getOverlap, local_abscissa
 from pyPLANES.core.multilayer import MultiLayer
 
-from pyPLANES.fem.dofs import activate_dofs, affect_dofs_to_elements, periodic_dofs_identification
+from pyPLANES.fem.dofs import activate_dofs, affect_dofs_to_elements
 from pyPLANES.fem.checkup_of_the_model import checkup_of_the_model
 
 
@@ -63,7 +63,7 @@ def fem_preprocess(self):
     affect_dofs_to_elements(self)
     if self.verbose:
         print("Identification of periodic dofs" + "\t"*6 + "["+ colored("OK", "green")  +"]")
-    periodic_dofs_identification(self)
+    # periodic_dofs_identification(self)
     if self.verbose:
         print("Checkup of the model")
     checkup_of_the_model(self)
@@ -76,6 +76,7 @@ def fem_preprocess(self):
             _ent.elementary_matrices(_el)
     self.duration_assembly = time.time() - self.start_time - self.duration_importation
     self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   
+
 
 # def assign_order_to_elements
 
