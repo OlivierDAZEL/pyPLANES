@@ -123,7 +123,6 @@ def print_reference_elements(self):
     print(self.reference_elements)
 
 def plot_fem_solution(self, kx=0.):
-    print(self)
     if any(self.plot[3:]):
         x, y, u_x, u_y, pr = [], [], [], [], []
     for _en in self.entities:
