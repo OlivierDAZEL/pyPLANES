@@ -43,6 +43,7 @@ class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         Mesh.__init__(self, **kwargs)
+        self.order = kwargs.get("order", 2)
         self.interface_zone = kwargs.get("interface_zone", 0.01)
         self.interface_ml = kwargs.get("interface_ml", False)
 

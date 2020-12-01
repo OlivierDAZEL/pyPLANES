@@ -30,6 +30,8 @@ import numpy.linalg as LA
 
 from mediapack import Air, from_yaml
 from pymls import Layer
+
+from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
 from pyPLANES.fem.utils_fem import normal_to_element
 from pyPLANES.fem.elements_plain import Edge, Face
 from pyPLANES.core.mesh import NeighbourElement
@@ -47,6 +49,9 @@ from pyPLANES.fem.checkup_of_the_model import checkup_of_the_model
 def fem_preprocess(self):
     if self.verbose:
         print("%%%%%%%%%%%% Preprocess of PLANES  %%%%%%%%%%%%%%%%%")
+    # Assign reference elements and order to elements 
+    assign_reference_element(self)
+
     # Creation of edges and faces
     create_vertices_edges_faces_bubbles_lists(self)
     # Identification of active dofs and their numbering
@@ -71,6 +76,40 @@ def fem_preprocess(self):
             _ent.elementary_matrices(_el)
     self.duration_assembly = time.time() - self.start_time - self.duration_importation
     self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   
+
+# def assign_order_to_elements
+
+def assign_reference_element(self):
+    for _ent in self.fem_entities:
+        for _el in _ent.elements:
+            # For FEM entities reference element key is the type
+            reference_element_key = _el.typ
+            if reference_element_key not in self.reference_elements.keys():
+                self.reference_elements[reference_element_key] = reference_element(reference_element_key, self.order)
+            _el.reference_element = self.reference_elements[reference_element_key] 
+    for _ent in self.pwfem_entities:
+        for _el in _ent.elements:
+            # For PWFEM entities reference element key is a tuple with type and PW string
+            reference_element_key = (_el.typ, "PW")
+            if reference_element_key not in self.reference_elements.keys():
+                self.reference_elements[reference_element_key] = reference_element(reference_element_key, self.order)
+            _el.reference_element = self.reference_elements[reference_element_key]
+
+def reference_element(key, order):
+    if isinstance(key, int):
+        if key == 2:
+            out = Kt(order, 2*order)
+        elif key == 1:
+            out = Ka(order, 2*order)
+    else:
+        if key[0] == 2:
+            out = Kt(order, 2*order)
+        elif key[0] == 1:
+            out = KaPw(order, 3*order)
+
+    return out
+
+ 
 
 
 def create_vertices_edges_faces_bubbles_lists(self):

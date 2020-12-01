@@ -150,11 +150,11 @@ class Element:
     bubbles : List of bubble instances associated to the element (optional)
 
     '''
-    def __init__(self, typ, tag, vertices, reference_element):
+    def __init__(self, typ, tag, vertices):
         self.typ = typ
         self.tag = tag
         self.vertices = vertices
-        self.reference_element = reference_element
+        # self.reference_element = reference_element
         self.dofs = [[], [], [], []]
         # Rules for the dofs indices vector
         if typ == 1:

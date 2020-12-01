@@ -96,7 +96,7 @@ class GmshEntity():
 class FemEntity(GmshEntity):
     def __init__(self, **kwargs):
         GmshEntity.__init__(self, **kwargs)
-        self.order = kwargs["order"]
+        # self.order = kwargs["order"]
         self.elements = []
     def __str__(self):
         # out = GmshEntity.__str__(self)

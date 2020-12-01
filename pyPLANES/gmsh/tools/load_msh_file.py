@@ -26,7 +26,7 @@ import numpy as np
 from mediapack import Air
 from pyPLANES.utils.io import load_material
 
-from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
+
 from pyPLANES.fem.elements_plain import Vertex, Element
 
 from pyPLANES.fem.entities_plain import *
@@ -37,7 +37,6 @@ from pyPLANES.fem.entities_volumic import *
 
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]
-    self.order = kwargs.get("order", 2)
     self.dim = kwargs.get("dim", 2)
     self.incident_ml = kwargs.get("incident_ml", False)
     self.transmission_ml = kwargs.get("transmission_ml", False)
@@ -55,13 +54,13 @@ def load_msh_file(self, **kwargs):
             if tag == "PhysicalNames":
                 physical_names(self, f)
             if tag == "Entities":
-                entities(self, f, self.order)
+                entities(self, f)
             if tag == "PartitionedEntities":
                 partition(self, f)
             if tag == "Nodes":
                 nodes(self, f)
             if tag == "Elements":
-                elements(self, f, self.order)
+                elements(self, f)
             if tag == "Periodic":
                 periodic(self, f)
             _ = f.readline()
@@ -90,7 +89,7 @@ def physical_names(self, f):
         self.physical_names[tag] = key
     # print(self.physical_names)
 
-def entities(self, f, order=2):
+def entities(self, f):
     ''' creation of the list of entities '''
     _p, num_curves, num_surfaces, num_volumes = readl_int(f)
     for __ in range(_p):
@@ -114,24 +113,24 @@ def entities(self, f, order=2):
         if "model" in physical_tags.keys():
             if physical_tags["model"] == "FEM1D":
                 if physical_tags["condition"] == "Incident_PW":
-                    _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    _ = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                     self.pwfem_entities.append(_)
                 elif physical_tags["condition"] == "Imposed displacement":
-                    _ = ImposedDisplacementFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    _ = ImposedDisplacementFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                     self.fem_entities.append(_)
                 elif physical_tags["condition"] == "Fluid_Structure":
-                    _ = FluidStructureFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    _ = FluidStructureFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                     self.fem_entities.append(_)
                 elif physical_tags["condition"] == "Transmission":
-                    _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    _ = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                     self.pwfem_entities.append(_)
                 elif physical_tags["condition"] == "Rigid Wall":
-                    _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    _ = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                 elif physical_tags["condition"] == "Periodicity":
-                    _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities)
+                    _ = PeriodicityFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                     self.fem_entities.append(_)
                 elif physical_tags["condition"].split("/")[0] == "Interface":
-                    _ = InterfaceFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, order=order, entities=self.entities, ml_name=physical_tags["condition"].split("/")[1], side=physical_tags["condition"].split("/")[2])
+                    _ = InterfaceFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities, ml_name=physical_tags["condition"].split("/")[1], side=physical_tags["condition"].split("/")[2])
                     self.fem_entities.append(_)
                 else:
                     raise NameError("FEM1D entity without physical condition")
@@ -152,18 +151,18 @@ def entities(self, f, order=2):
             if physical_tags["model"].startswith("FEM"):
                 if "mat" in physical_tags.keys():
                     if physical_tags["mat"].split()[0] == "Air":
-                        _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=Air, entities=self.entities)
+                        _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
                         self.fem_entities.append(_)
                     else:
                         mat = load_material(physical_tags["mat"].split()[0])
                         if mat.MEDIUM_TYPE == "eqf":
-                            _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
+                            _ = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
                             self.fem_entities.append(_)
                         elif mat.MEDIUM_TYPE == "elastic":
-                            _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
+                            _ = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
                             self.fem_entities.append(_)
                         elif mat.MEDIUM_TYPE == "pem":
-                            _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, order=order, mat=mat, entities=self.entities)
+                            _ = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
                             self.fem_entities.append(_)
                         else: 
                             raise NameError(" Provided material is neither eqf, elastic nor pem")
@@ -242,30 +241,23 @@ def nodes(self, f):
             coord = [float(__) for __ in coord]
             self.vertices[list_nodes[_]] = Vertex(coord, list_nodes[_])
 
-def elements(self, f, order):
+def elements(self, f):
     num_entity_blocks, num_elements, min_element_tag, max_element_tag = readl_int(f)
     self.elements =[None]*(max_element_tag+1)
     for __ in range(int(num_entity_blocks)):
         entity_dim, entity_tag, element_type, num_elements_in_block = readl_int(f)
-        # Initialise the reference element key with an integer = element
-        reference_element_key = element_type
-        # Change the key for PW to have higher quadratures
-        if isinstance(self.entities[self.entity_tag[entity_tag]], PwFem):
-            reference_element_key = (element_type, "PW")
-        if reference_element_key not in self.reference_elements.keys():
-            self.reference_elements[reference_element_key] = reference_element(reference_element_key, order)
         for _i in range(num_elements_in_block):
             element_tag, *node_tag = readl_int(f)
             if element_type == 1:
                 if entity_dim != 1:
                     raise NameError("in load_msh_file, entity_dim!1 for element_type = 1")
                 vertices = [self.vertices[n] for n in node_tag]
-                self.elements[element_tag] = Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
+                self.elements[element_tag] = Element(element_type, element_tag, vertices)
             elif element_type == 2:
                 if entity_dim != 2:
                     raise NameError("in import_msh_file, entity_dim!2 for element_type = 2")
                 vertices = [self.vertices[n] for n in node_tag]
-                self.elements[element_tag]=Element(element_type, element_tag, vertices, self.reference_elements[reference_element_key])
+                self.elements[element_tag]=Element(element_type, element_tag, vertices)
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
 
@@ -299,20 +291,6 @@ def periodic(self, f):
             for _ent in self.entities:
                 if isinstance(_ent, PwFem):
                     _ent.period = period
-
-def reference_element(key, order):
-    if isinstance(key, int):
-        if key == 2:
-            out = Kt(order, 2*order)
-        elif key == 1:
-            out = Ka(order, 2*order)
-    else:
-        if key[0] == 2:
-            out = Kt(order, 2*order)
-        elif key[0] == 1:
-            out = KaPw(order, 3*order)
-
-    return out
 
 def readl_int(fid):
     return [int(_) for _ in fid.readline().split()]

@@ -1,5 +1,5 @@
 Output File from pyPLANES
-Generated on pc-278.home
-Calculus started at 2020-11-30 23:35:54.833346.
-Duration of importation =0.0003437995910644531 s
-Duration of assembly =0.0031681060791015625 s
+Generated on ods-macbook-pro.home
+Calculus started at 2020-12-01 05:51:42.061781.
+Duration of importation =0.008161067962646484 s
+Duration of assembly =0.003228902816772461 s
