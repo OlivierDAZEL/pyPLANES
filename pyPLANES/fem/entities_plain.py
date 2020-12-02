@@ -62,12 +62,12 @@ class GmshEntity():
             self.neighbouring_surfaces = [] # Neighbouring 2D entities, will be completed in preprocess
             self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
             for _e in self.bounding_curves:
-                print(_e)
                 _e.neighbouring_surfaces.append(self)
             self.center = np.array([0., 0., 0.])
             for c in self.bounding_curves:
                 self.center += c.center
             self.center /= len(self.bounding_curves)
+
 
     def __str__(self):
         out = "Entity / tag={} / dim= {}\n".format(self.tag, self.dim)
@@ -129,12 +129,15 @@ class FemEntity(GmshEntity):
         """
         raise NameError("update_system should be implemented in children classes") 
 
-    def link_elem(self,n):
-        self.elements.append(n)
+    def link_elem(self, elem):
+        self.elements.append(elem)
+
+
 
 class DgmEntity(GmshEntity):
     def __init__(self, **kwargs):
         GmshEntity.__init__(self, **kwargs)
+        # self.order = kwargs["order"]
         self.elements = []
     def __str__(self):
         # out = GmshEntity.__str__(self)
@@ -146,7 +149,6 @@ class DgmEntity(GmshEntity):
 
     def update_frequency(self, omega):
         pass
-
 
     def update_system(self, omega):
         """
@@ -164,9 +166,7 @@ class DgmEntity(GmshEntity):
         """
         raise NameError("update_system should be implemented in children classes") 
 
-    def link_elem(self,n):
-        self.elements.append(n)
-
-
+    def link_elem(self, elem):
+        self.elements.append(elem)
 
 

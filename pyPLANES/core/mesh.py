@@ -33,6 +33,7 @@ class Mesh():
         self.entities = [] # List of all GMSH Entities
         self.fem_entities = [] # List of FEM Entities
         self.pwfem_entities = [] # List of Plane Wave FEM Entities
+        self.dgm_entities = [] # List of DGM entities
         self.vertices = []
         self.elements = []
         self.edges = []

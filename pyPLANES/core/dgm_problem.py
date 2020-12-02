@@ -30,8 +30,8 @@ import numpy as np
 from pyPLANES.core.mesh import Mesh
 from pyPLANES.core.calculus import Calculus
 
-from pyPLANES.fem.entities_surfacic import *
-from pyPLANES.fem.entities_volumic import *
+from pyPLANES.dgm.dgm_entities_surfacic import *
+from pyPLANES.dgm.dgm_entities_volumic import *
 
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
@@ -39,10 +39,22 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 from pyPLANES.fem.fem_preprocess import fem_preprocess
 from pyPLANES.utils.io import plot_fem_solution
 
-class FemProblem(Mesh, Calculus):
+class DgmProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         Mesh.__init__(self, **kwargs)
+
+        self.interface_zone = kwargs.get("interface_zone", 0.01)
+        self.interface_ml = kwargs.get("interface_ml", False)
+        self.nb_theta = kwargs.get("nb_theta", 2)
+        self.theta = (np.pi/2+2*pi*np.arange(self.nb_theta)/(self.nb_theta))*180/np.pi
+
+        self.F_i, self.F_v = None, None
+        self.A_i, self.A_j, self.A_v = None, None, None
+        
+        self.out_file_name = self.name_project + ".DGM.txt"
+        self.info_file_name = self.name_project + ".info.DGM.txt"
+
 
     def preprocess(self):
         Calculus.preprocess(self)

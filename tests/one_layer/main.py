@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from pyPLANES.core.periodic_fem_problem import FemProblem, PeriodicFemProblem
+from pyPLANES.core.dgm_problem import DgmProblem
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.gmsh.templates.layers import one_layer
 
@@ -31,21 +32,29 @@ plot_solution = [True, True, True, False, False, False]
 # plot_solution = [False]*6
 # plot_solution = [True]*6
 
+method = "DGM"
+
+
 bc_bottom = "Incident_PW"
 bc_bottom = "Imposed displacement"
 bc_right = "Periodicity"
 bc_left = "Periodicity"
-# bc_right = "rigid"
-# bc_left = "rigid"
+bc_right = "rigid"
+bc_left = "rigid"
 bc_top = "rigid"
 
-one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
 
 # global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False)
 # global_method.resolution()
 
-fem = PeriodicFemProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
+one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
+fem = FemProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
 fem.resolution()
+
+
+one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="DGM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
+dgm = DgmProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
+dgm.resolution()
 
 # print("abs                = {}".format(1-np.abs(global_method.R)**2-np.abs(global_method.T)**2))
 # print("abs                = {}".format(1-np.abs(global_method.R)**2))
