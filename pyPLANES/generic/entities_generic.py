@@ -62,7 +62,6 @@ class GmshEntity():
             self.neighbouring_surfaces = [] # Neighbouring 2D entities, will be completed in preprocess
             self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
             for _e in self.bounding_curves:
-                print(_e)
                 _e.neighbouring_surfaces.append(self)
             self.center = np.array([0., 0., 0.])
             for c in self.bounding_curves:
@@ -138,7 +137,7 @@ class DgmEntity(GmshEntity):
         self.elements = []
     def __str__(self):
         # out = GmshEntity.__str__(self)
-        out = "Fem" + GmshEntity.__str__(self)
+        out = "Dgm" + GmshEntity.__str__(self)
         # out += "order:{}\n".format(self.order)
         # related_elements = [_el.tag for _el in self.elements]
         # out  += "related elements={}\n".format(related_elements)

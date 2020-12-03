@@ -154,3 +154,4 @@ TeX
 *.msh
 *.geo
 *.txt
+tests/one_layer/one_layer.info.FEM.txt

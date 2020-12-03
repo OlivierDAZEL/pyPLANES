@@ -27,6 +27,7 @@ from mediapack import Air
 from pyPLANES.utils.io import load_material
 
 from pyPLANES.fem.elements_fem import FemVertex, FemElement
+from pyPLANES.dgm.elements_dgm import DgmElement
 
 
 
@@ -148,7 +149,6 @@ def entities(self, f):
         else: # No numerical model
             _ent = GmshEntity(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
         self.entities.append(_ent)
-    print(self.entities)
     # print("surfaces")
     for _surf in range(num_surfaces):
         _f = f.readline().split()
@@ -277,6 +277,9 @@ def elements(self, f):
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.elements[element_tag] = FemElement(element_type, element_tag, vertices)
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
+            elif isinstance(self.entities[self.entity_tag[entity_tag]], DgmEntity):
+                self.elements[element_tag] = DgmElement(element_type, element_tag, vertices)
+                self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])               
 
 
 def periodic(self, f):

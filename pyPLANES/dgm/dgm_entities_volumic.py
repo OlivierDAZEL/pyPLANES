@@ -45,7 +45,7 @@ class FluidDgm(DgmEntity):
 
 
     def __str__(self):
-        out = "Fluid" + FemEntity.__str__(self)
+        out = "Fluid" + DgmEntity.__str__(self)
         return out
 
     def elementary_matrices(self, _el):
