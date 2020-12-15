@@ -3,7 +3,7 @@
 #
 # pw_polarisations.py
 #
-# This file is part of pymls, a software distributed under the MIT license.
+# This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
 #
 # Copyright (c) 2020
