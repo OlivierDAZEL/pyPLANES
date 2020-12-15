@@ -142,7 +142,7 @@ _info.txt
 html/
 tests/*
 !tests/one_layer/
-# !tests/iags/
+!tests/iags/
 # !tests/benchmark_multilayer/
 ### Output files
 *.vtk
