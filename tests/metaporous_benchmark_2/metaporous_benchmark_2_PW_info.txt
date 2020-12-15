@@ -1,2 +1,0 @@
-Output File from pyPLANES
-Generated on oliviers-macbook-pro.home

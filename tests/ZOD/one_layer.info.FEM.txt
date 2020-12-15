@@ -1,8 +1,0 @@
-Output File from pyPLANES
-Generated on Oliviers-MacBook-Pro.local
-Calculus started at 2020-06-17 15:42:41.268928.
-Duration of importation =0.024024248123168945 s
-Duration of assembly =0.010477781295776367 s
-Calculus ended at 2020-06-17 15:42:41.540919.
-Total duration = 0.2719430923461914 s
-duration / freq (averaged) = 0.2719430923461914 s

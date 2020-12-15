@@ -122,89 +122,91 @@ def iags( **kwargs):
     paths =paths[0].split("ZM")
     paths_iterator = iter(paths)
 
-    list_2D_air = []
-    list_2D_porous = []
+    list_air = []
+    list_tower = []
+    list_letter = []
+    list_rigid = []
 
     # Upper tower
-    import_surface(next(paths_iterator), G, list_2D_air, lcar/10)
+    import_surface(next(paths_iterator), G, list_tower, lcar/10)
     # Lower tower
-    import_surface(next(paths_iterator), G, list_2D_air, lcar/10)
+    import_surface(next(paths_iterator), G, list_tower, lcar/10)
     # Blason
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/30))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/30))
     # Vertical Wall 
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/30))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/30))
     # L 
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))
     # e 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # M 
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))    
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))    
     # a 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # ns Univ
     for ii in range(7): 
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))  
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))  
     # e 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # rsit + accent
     for ii in range(6): 
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))  
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))  
     # e 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # Institut 
     for ii in range(9): 
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10)) 
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10)) 
     # d 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar/10))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar/10))
     # Apostrophe
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))
     # A
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar/10))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar/10))
     # c
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))
     # o
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # usti
     for ii in range(5): 
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10)) 
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10)) 
     # q
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # u
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar))
     # e 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # Gr
     for ii in range(2):
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10)) 
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10)) 
     # ad
     for ii in range(2):
-        list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+        list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # u 
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10))
     # a 
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # t 
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10))
     # e
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))
     # Sch 
     for ii in range(3):
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10))
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10))
     # oo 
     for ii in range(2):
-        list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))     
+        list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))     
     # l
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10))
     # 2
-    list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10))
+    list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10))
     # 0
-    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_2D_air, list_2D_porous, lcar))  
+    list_interfaces.append(import_double_surface(next(paths_iterator), next(paths_iterator), G, list_letter, list_rigid, lcar))  
     # 21
     for ii in range(2):
-        list_interfaces.append(import_surface(next(paths_iterator), G, list_2D_porous,lcar/10))
+        list_interfaces.append(import_surface(next(paths_iterator), G, list_rigid,lcar/10))
 
 
-    list_negative = [-ll.tag for ll in list_interfaces]
+    list_interfaces = [-ll.tag for ll in list_interfaces]
 
     p_0 = G.new_point(0, 0, lcar/10)
     p_1 = G.new_point(L, 0,lcar/10)
@@ -217,8 +219,8 @@ def iags( **kwargs):
     lines[3] = G.new_line(p_3, p_0)
     boundary_domain = G.new_line_loop(lines)
 
-    cavite = G.new_surface([boundary_domain.tag] +list_negative)
-    list_2D_air.append(cavite)
+    cavite = G.new_surface([boundary_domain.tag] + list_interfaces)
+    list_air.append(cavite)
 
     G.new_physical(lines, "method=FEM")
     G.new_physical(lines, "typ=1D")
@@ -228,13 +230,15 @@ def iags( **kwargs):
         G.new_physical(list_lines, "condition="+ bc)
 
     if permeable_letters:
-        G.new_physical(list_2D_air + list_2D_porous, "method=FEM")
-        G.new_physical(list_2D_air + list_2D_porous, "typ=2D")
-        G.new_physical(list_2D_air, "mat=Air")
-        G.new_physical(list_2D_porous, "mat=melamine_eqf_sigma")
+        G.new_physical(list_air + list_letter + list_tower, "method=FEM")
+        G.new_physical(list_air + list_letter + list_tower, "typ=2D")
+        G.new_physical(list_air, "mat=Air")
+        G.new_physical(list_tower, "mat=tower")
+        G.new_physical(list_letter, "mat=letter")
+
     else:
-        G.new_physical(list_2D_air, "method=FEM")
-        G.new_physical(list_2D_air, "mat=Air")
+        G.new_physical(list_air, "method=FEM")
+        G.new_physical(list_air, "mat=Air")
 
 
 

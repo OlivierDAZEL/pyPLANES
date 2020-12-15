@@ -216,6 +216,28 @@ def export_paraview(self):
         self.vtk_points = [_v.coord for _v in self.vertices[1:]]
         self.vtk_triangle = [[_e.vertices[0].tag-1, _e.vertices[1].tag-1, _e.vertices[2].tag-1] for _e in self.elements[1:] if _e.typ==2]
     pressure = [np.abs(_v.sol[3]) for _v in self.vertices[1:]]
+
+    # Bidouille pour que la tour et les lettres clignotent dans IAGS 20201
+    pressure_max = max(pressure)
+    light_on = self.export_paraview%4
+    if light_on<2:
+        tower_on = 0
+    else:
+        tower_on = 1
+
+    for _ent in self.fem_entities:
+        if _ent.dim ==2:
+            if _ent.mat.MEDIUM_TYPE == "eqf":
+                if _ent.mat.name == "tower":
+                    for _elem in _ent.elements:
+                        for _v in _elem.vertices:
+                            _v.sol[3] = (1+(-1)**tower_on)*(pressure_max/2.)
+                if _ent.mat.name == "letter":
+                    for _elem in _ent.elements:
+                        for _v in _elem.vertices:
+                            _v.sol[3] = (1+(-1)**(tower_on+1))*(pressure_max/2.)
+
+    pressure = [np.abs(_v.sol[3]) for _v in self.vertices[1:]]
     vtk = pyvtk.VtkData(pyvtk.UnstructuredGrid(self.vtk_points,triangle=self.vtk_triangle), pyvtk.PointData(pyvtk.Scalars(pressure,name='Pressure')))
     vtk.tofile("vtk/"+self.name_project + "-{}".format(self.export_paraview))
     self.export_paraview +=1
