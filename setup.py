@@ -29,11 +29,11 @@ with open('README.rst', 'r') as fh:
     long_description = fh.read()
 
 setup(name='pyPLANES',
-    version='0.1.0',
+    version='0.2.0',
     description='python Porous LAum NumErical Simulator',
     long_description=long_description,
-    url='https://github.com/cpplanes/pyplanes',
-    author='O. Dazel, Mathieu (matael) Gaborit, P. Göransson',
+    url='https://github.com/OlivierDAZEL/pyplanes',
+    author='O. Dazel',
     author_email='olivier.dazel@univ-lemans.fr',
     license='MIT',
     packages=find_packages(),
@@ -43,10 +43,14 @@ setup(name='pyPLANES',
         'Operating System :: OS Independent',
     ],
     install_requires=[
-        'numpy>=1.13.1',
+        'numpy>=1.13.0',
         'PyYAML>=5.1',
+        'matplotlib>=2.0',
+        'quadpy',
+        'termcolor',
+        'scipy',
+        'mediapack>=0.4.0',
+        'pymls>=1.7.0',
+        'pyvtk'
     ],
-    extras_require={
-        'HDF5 export': ['h5py>=2.7.1']
-    }
 )
