@@ -24,6 +24,7 @@
 
 import platform
 import time, timeit
+import os
 
 import numpy as np
 
@@ -37,7 +38,7 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.fem.fem_preprocess import fem_preprocess
-from pyPLANES.utils.io import plot_fem_solution
+from pyPLANES.utils.io import plot_fem_solution, export_paraview
 
 class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
@@ -100,6 +101,9 @@ class FemProblem(Mesh, Calculus):
         plot_fem_solution(self)
 
 
+
+
+
     def solve(self):
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
@@ -136,6 +140,8 @@ class FemProblem(Mesh, Calculus):
         for _bb in self.bubbles:
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]       
+        if self.export_paraview is not False:
+            export_paraview(self)
         return X
 
     def resolution(self):

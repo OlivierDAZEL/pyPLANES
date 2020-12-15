@@ -105,7 +105,7 @@ class Kt:
 
         # For plots
         tri_Kt = mtri.Triangulation(np.asarray([-1,1,-1]), np.asarray([-1,-1,1]))
-        tri_Kt = mtri.UniformTriRefiner(tri_Kt).refine_triangulation(subdiv=5)
+        # tri_Kt = mtri.UniformTriRefiner(tri_Kt).refine_triangulation(subdiv=5)
         xi_1 = tri_Kt.x
         xi_2 = tri_Kt.y
         self.phi_plot = shape_functions_Kt(xi_1, xi_2, order)[0]

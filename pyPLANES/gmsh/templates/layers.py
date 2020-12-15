@@ -47,9 +47,9 @@ def one_layer( **kwargs):
     lines[1] = G.new_line(p_1, p_2)
     lines[2] = G.new_line(p_2, p_3)
     lines[3] = G.new_line(p_3, p_0)
-    ll_0 = G.new_line_loop(lines)
+    boundary_domain = G.new_line_loop(lines)
 
-    matrice = G.new_surface([ll_0.tag])
+    matrice = G.new_surface([boundary_domain.tag])
     for bc in set(BC):
         # Determine the lines 
         list_lines = [lines[i] for i, _bc in enumerate(BC) if _bc == bc]

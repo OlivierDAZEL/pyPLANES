@@ -86,7 +86,9 @@ class Calculus():
             self.frequencies = self.init_vec_frequencies(__)
         else:
             self.frequencies = np.array([1e3])
-        self.plot = kwargs.get("plot_solution", [False]*6)        
+        self.plot = kwargs.get("plot_solution", [False]*6)   
+        self.export_plots = kwargs.get("export_plots", [False]*6)   
+        self.export_paraview = kwargs.get("export_paraview", False)  
         self.outfiles_directory = kwargs.get("outfiles_directory", False)
         if self.outfiles_directory:
             if not path.exists(self.outfiles_directory):
@@ -95,6 +97,12 @@ class Calculus():
             self.outfiles_directory = "out"
             if not path.exists("out"):
                 mkdir("out")
+        if self.export_paraview:
+            self.paraview_directory = "vtk"
+            if not path.exists("vtk"):
+                mkdir("vtk")
+            self.export_paraview = 0 # To count the animation
+
         self.name_project = kwargs.get("name_project", "unnamed_project")
         self.sub_project = kwargs.get("sub_project", False)
         self.file_names = self.outfiles_directory + "/" + self.name_project
@@ -115,6 +123,10 @@ class Calculus():
             self.write_out_files()
             if any(self.plot):
                 self.plot_solution()
+            if any(self.export_plots):
+                if self.export_plots[5]:
+                    plt.figure("Pressure map")
+                    plt.savefig("Pressure")
         self.close_out_files()
 
     def preprocess(self):

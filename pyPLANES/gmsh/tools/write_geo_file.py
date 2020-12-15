@@ -35,6 +35,9 @@ class Gmsh():
         self.f= open(self.geo_file, "w")
         self.f.write("// This code was created by pyPLANES\n")
         self.nb_tags = 0
+        self.list_points = []
+        self.list_lines = []
+        self.list_lineloops = []
 
     class Point():
         def __init__(self, f, tag, x, y, lc):
@@ -78,9 +81,22 @@ class Gmsh():
             out.tag = -self.tag
             return out
 
-
-
-
+    class Bezier():
+        def __init__(self, f, tag, _1, _2, _3, _4):
+            self.p_1 = _1
+            self.p_2 = _2
+            self.p_3 = _3
+            self.p_3 = _4
+            self.tag = tag
+            self.typ = "Bezier"
+            f.write("Bezier({})= {{{}, {}, {}, {}}};\n".format(tag, _1.tag, _2.tag, _3.tag, _4.tag))
+        def __str__(self):
+            out ="Bezier entity from points {} to point {}. Tag={}".format(self.p_1.tag, self.p_4.tag, self.tag)
+            return out
+        def inverted(self):
+            out = deepcopy(self)
+            out.tag = -self.tag
+            return out
 
     class LineLoop():
         def __init__(self, f, tag, _list):
@@ -126,13 +142,23 @@ class Gmsh():
         self.nb_tags += 1
         p = self.Point(self.f, self.nb_tags, x, y, lc)
         # self.file.write("Point({})= {{{}, {}, {}, {}}};\n".format(self.nb_tags, x, y, 0.0, lc))
+        self.list_points.append(p)
         return p
 
     def new_line(self, _1, _2):
         self.nb_tags += 1
         l = self.Line(self.f, self.nb_tags, _1, _2)
         # self.file.write("Line({})= {{{}, {}}};\n".format(self.nb_tags, _1, _2))
+        self.list_lines.append(l)
         return l
+
+    def new_bezier(self, _1, _2, _3, _4):
+        self.nb_tags += 1
+        b = self.Bezier(self.f, self.nb_tags, _1, _2, _3, _4)
+        # self.file.write("Line({})= {{{}, {}}};\n".format(self.nb_tags, _1, _2))
+        self.list_lines.append(b)
+        return b
+
 
     def new_spline(self, _list_points):
         self.nb_tags += 1
@@ -144,6 +170,7 @@ class Gmsh():
     def new_line_loop(self, _list):
         self.nb_tags += 1
         ll = self.LineLoop(self.f, self.nb_tags, _list)
+        self.list_lineloops.append(ll)
         return ll
 
     def new_surface(self, ll):

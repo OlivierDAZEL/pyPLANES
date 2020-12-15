@@ -21,13 +21,14 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
+
 import numpy as np
 
 from mediapack import Air
 from pyPLANES.utils.io import load_material
 
 from pyPLANES.fem.elements_fem import FemVertex, FemElement
-from pyPLANES.dgm.elements_dgm import DgmElement
+from pyPLANES.dgm.dgm_elements import DgmElement
 
 
 
@@ -184,6 +185,9 @@ def entities(self, f):
                                 self.fem_entities.append(_ent)
                         else: 
                             raise NameError(" Provided material is neither eqf, elastic nor pem")
+            # elif physical_tags["typ"] == "0D":
+            #     _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
+            #     self.fem_entities.append(_ent)
         self.entities.append(_ent)
     for __ in range(num_volumes):
         pass

@@ -25,21 +25,6 @@ import numpy as np
 from pyPLANES.generic.elements_generic import GenericVertex, GenericEdge, GenericElement
 
 
-class DgmEdge(GenericEdge):
-    ''' TODO '''
-    def __init__(self, tag, vertices, element, order):
-        GenericEdge.__init__(self, tag, vertices, element)
-        self.tag = tag
-        self.vertices = vertices
-        self.elements = [element]
-        self.order = [order, order, order, order]
-        self.dofs = [[0]*(order-1)]*4
-        self.sol = [np.zeros((order-1))]*4
-
-    def __str__(self):
-        out = GenericEdge.__str__(self)
-        out += "dofs=" + format(self.dofs)+"\n"
-        return out
 
 class DgmElement(GenericElement):
     ''' Element of pyPLANES

@@ -36,8 +36,8 @@ from pyPLANES.dgm.dgm_entities_volumic import *
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
-from pyPLANES.fem.fem_preprocess import fem_preprocess
-from pyPLANES.utils.io import plot_fem_solution
+from pyPLANES.dgm.dgm_preprocess import dgm_preprocess
+# from pyPLANES.utils.io import plot_fem_solution
 
 class DgmProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
@@ -58,7 +58,7 @@ class DgmProblem(Mesh, Calculus):
 
     def preprocess(self):
         Calculus.preprocess(self)
-        # fem_preprocess(self)
+        dgm_preprocess(self)
 
     def create_linear_system(self, omega):
         # Initialisation of the lists

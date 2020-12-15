@@ -28,7 +28,7 @@ ml = [(material, d)]
 termination = "transmission" 
 termination = "rigid" 
 
-plot_solution = [True, True, True, False, False, False]
+plot_solution = [True, True, False, False, False, True]
 # plot_solution = [False]*6
 # plot_solution = [True]*6
 
@@ -50,11 +50,11 @@ bc_top = "rigid"
 one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
 fem = FemProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
 fem.resolution()
+plt.show()
 
-
-one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="DGM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
-dgm = DgmProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
-dgm.resolution()
+# one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="DGM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
+# dgm = DgmProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
+# dgm.resolution()
 
 # for _ent in dgm.entities:
 #     print(_ent)

@@ -48,18 +48,7 @@ class ImposedDisplacementDgm(DgmEntity):
         out = "Imposed Displacement"
         return out
 
-    def elementary_matrices(self, _el):
-        F = imposed_Neumann(_el)
-        orient_ = orient_element(_el)
-        _el.F = orient_ @ F
-        _el.dof_p = dof_p_linear_system_master(_el)
 
-    def update_system(self, omega):
-        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
-        for _el in self.elements:
-            F_i.extend(_el.dof_p)
-            F_v.extend(_el.F)
-        return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
 
 
 class RigidWallDgm(DgmEntity):
