@@ -107,7 +107,7 @@ def iags( **kwargs):
     BC = kwargs.get("BC", ["Incident_PW", "Periodicity", "Rigid Wall", "Periodicity"])
 
     permeable_letters = kwargs.get("permeable_letters", False)
-    permeable_letters = True
+    # permeable_letters = True
 
     G = Gmsh(name_mesh)
 
@@ -237,10 +237,9 @@ def iags( **kwargs):
         G.new_physical(list_letter, "mat=letter")
 
     else:
-        G.new_physical(list_air, "method=FEM")
-        G.new_physical(list_air, "mat=Air")
-
-
+        G.new_physical(list_air + list_letter + list_tower, "typ=2D")
+        G.new_physical(list_air + list_tower + list_letter, "method=FEM")
+        G.new_physical(list_air+ list_tower + list_letter, "mat=Air")
 
 
     option = "-2 -v 0 "

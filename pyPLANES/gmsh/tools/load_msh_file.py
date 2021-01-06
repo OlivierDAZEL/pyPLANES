@@ -193,6 +193,7 @@ def entities(self, f):
         pass
     _ = [_ent.tag for _ent in self.entities]
     self.entity_tag = [None]*(max(_)+1)
+
     for i, index in enumerate(_):
         self.entity_tag[index] = i
 
