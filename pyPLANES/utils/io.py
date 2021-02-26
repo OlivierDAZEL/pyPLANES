@@ -154,10 +154,10 @@ def plot_fem_solution(self, kx=0.):
                     if self.plot[5]:
                         triang = mtri.Triangulation(x_elem, y_elem)
                         plt.figure("Pressure map")
-                        plt.tricontourf(triang, np.abs(p_elem), cmap=cm.jet, levels=np.linspace(p_min, p_max,40))
-                        # x.extend(list(x_elem))
-                        # y.extend(list(y_elem))
-                        # pr.extend(list(p_elem))
+                        # plt.tricontourf(triang, np.abs(p_elem), cmap=cm.jet, levels=np.linspace(p_min, p_max,40))
+                        x.extend(list(x_elem))
+                        y.extend(list(y_elem))
+                        pr.extend(list(p_elem))
         elif isinstance(_en, PemFem):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
@@ -197,12 +197,12 @@ def plot_fem_solution(self, kx=0.):
                         plt.plot(y_elem, np.imag(uy_elem), 'm.')
 
     if any(self.plot[3:]):
-        # triang = mtri.Triangulation(x, y)
+        triang = mtri.Triangulation(x, y)
         if self.plot[5]:
             plt.figure("Pressure map")
-            # plt.tricontourf(triang, np.abs(pr), 40, cmap=cm.jet)
-        # self.display_mesh()
-        # plt.colorbar()
+            plt.tricontourf(triang, np.abs(pr), 40, cmap=cm.jet)
+        self.display_mesh()
+        plt.colorbar()
         plt.axis("off")
         plt.axis('equal')
 
