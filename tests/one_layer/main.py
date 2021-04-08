@@ -28,18 +28,15 @@ ml = [(material, d)]
 termination = "transmission" 
 termination = "rigid" 
 
-plot_solution = [True, True, True, False, False, True]
+plot_solution = [True, True, True, False, False, True]==
 # plot_solution = [False]*6
 # plot_solution = [True]*6
 
 method = "FEM"
 
 bc_bottom = "Incident_PW"
-# bc_bottom = "Imposed displacement"
 bc_right = "Periodicity"
 bc_left = "Periodicity"
-# bc_right = "rigid"
-# bc_left = "rigid"
 bc_top = "rigid"
 
 

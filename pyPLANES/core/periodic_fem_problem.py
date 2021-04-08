@@ -63,8 +63,6 @@ class PeriodicFemProblem(FemProblem):
         FemProblem.preprocess(self)
         periodic_dofs_identification(self)
 
-
-
     def create_linear_system(self, omega):
         FemProblem.create_linear_system(self, omega)
         for _ent in self.pwfem_entities:

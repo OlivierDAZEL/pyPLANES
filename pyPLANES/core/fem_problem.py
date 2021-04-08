@@ -101,9 +101,6 @@ class FemProblem(Mesh, Calculus):
         plot_fem_solution(self)
 
 
-
-
-
     def solve(self):
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
