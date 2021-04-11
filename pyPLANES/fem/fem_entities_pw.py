@@ -109,6 +109,7 @@ class IncidentPwFem(PwFem):
         return tau_l, eta_l
 
     def update_system(self, omega, n_m):
+
         phi = coo_matrix((n_m, self.nb_dofs), dtype=complex)
         phi_i, phi_j, phi_v = [], [], []
         self.eta_TM = coo_matrix((self.nb_dofs, self.nb_dofs), dtype=complex)
@@ -161,14 +162,6 @@ class IncidentPwFem(PwFem):
                     raise ValueError("Unknown typ")
                 # print(len(dof_ux))
         A_TM = -(phi@tau@phi.H/self.period).tocoo()
-        # print("phi")
-        # print(phi)
-
-        # phi_2 = coo_matrix((phi_v, (phi_i, phi_j)), shape=(n_m, self.nb_dofs))
-        # print("phi_2")
-        # print(phi_2)
-        # print("Delta phi")
-        # print(phi-phi_2)
 
 
         # dsqdqsqdsqsd
@@ -185,7 +178,6 @@ class IncidentPwFem(PwFem):
         # print(F_TM)
         # print(coo_matrix(F_TM))
         F_TM = coo_matrix(F_TM)
-
         return A_TM.row, A_TM.col, A_TM.data, [], [], [], F_TM.row, F_TM.data
 
 class TransmissionPwFem(PwFem):

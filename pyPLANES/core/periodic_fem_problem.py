@@ -129,5 +129,5 @@ class PeriodicFemProblem(FemProblem):
         plot_fem_solution(self, self.kx)
 
 
-    def compute_error():
+    def compute_error(self):
         pass

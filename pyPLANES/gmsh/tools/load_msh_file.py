@@ -32,17 +32,18 @@ from pyPLANES.dgm.dgm_elements import DgmElement
 
 
 
-from pyPLANES.generic.entities_generic import *
-from pyPLANES.fem.fem_entities_surfacic import *
-from pyPLANES.fem.fem_entities_volumic import *
-from pyPLANES.fem.fem_entities_pw import *
-from pyPLANES.dgm.dgm_entities_surfacic import *
-from pyPLANES.dgm.dgm_entities_volumic import *
+from pyPLANES.generic.entities_generic import GmshEntity, FemEntity
+from pyPLANES.fem.fem_entities_surfacic import ImposedDisplacementFem, FluidStructureFem, RigidWallFem, InterfaceFem, PeriodicityFem
+from pyPLANES.fem.fem_entities_volumic import FluidFem, ElasticFem, PemFem
+from pyPLANES.fem.fem_entities_pw import PwFem, IncidentPwFem, TransmissionPwFem
+from pyPLANES.dgm.dgm_entities_surfacic import ImposedDisplacementDgm
+from pyPLANES.dgm.dgm_entities_volumic import FluidDgm
 
 
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]
     self.dim = kwargs.get("dim", 2)
+    self.verbose = kwargs.get("verbose", False)
     if self.verbose:
         print("Reading "+ name_mesh + ".msh")
     f = open(name_mesh + ".msh", "r")
@@ -57,8 +58,8 @@ def load_msh_file(self, **kwargs):
                 physical_names(self, f)
             if tag == "Entities":
                 entities(self, f)
-            if tag == "PartitionedEntities":
-                partition(self, f)
+            # if tag == "PartitionedEntities":
+            #     partition(self, f)
             if tag == "Nodes":
                 nodes(self, f)
             if tag == "Elements":

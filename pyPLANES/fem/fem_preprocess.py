@@ -66,7 +66,7 @@ def fem_preprocess(self):
     # periodic_dofs_identification(self)
     if self.verbose:
         print("Checkup of the model")
-    checkup_of_the_model(self)
+    # checkup_of_the_model(self)
     self.duration_importation = time.time() - self.start_time
     self.info_file.write("Duration of importation ={} s\n".format(self.duration_importation))
     if self.verbose:

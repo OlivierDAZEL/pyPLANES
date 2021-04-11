@@ -26,7 +26,7 @@
 import socket
 import datetime
 import time
-
+import os.path
 import numpy as np
 
 import pyvtk 
@@ -50,8 +50,11 @@ def load_material(mat):
     if mat == "Air":
         Air_mat = Air()
         return Fluid(c=Air_mat.c,rho=Air_mat.rho)
-    else:
+    elif os.path.isfile("materials/" + mat + ".yaml") :
         return from_yaml("materials/" + mat + ".yaml")
+    else:
+        return None
+
 
 def result_pymls(**kwargs):
     name_project = kwargs.get("name_project", "unnamed_project")

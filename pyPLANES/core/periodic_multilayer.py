@@ -25,35 +25,43 @@
 import numpy as np
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
-
+import os.path
 from mediapack import Air, Fluid
 
 from pyPLANES.utils.io import load_material
+from pyPLANES.pw.periodic_layer import PeriodicLayer
 # from pyPLANES.core.calculus import PwCalculus
 
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
-class MultiLayer():
+class PeriodicMultiLayer():
     """
-    Multilayer structure
+    Periodic Multilayer structure
     """
-    def __init__(self, ml):
+    def __init__(self, ml, **kwargs):
         # Creation of the list of layers
         self.layers = []
-        _x = 0   
+        self.interfaces = []
+        self.verbose = kwargs.get("dim", True)
+        _x = 0
         for _l in ml:
             mat = load_material(_l[0])
-            d = _l[1]
-            if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.layers.append(FluidLayer(mat, d, _x))
-            if mat.MEDIUM_TYPE == "pem":
-                self.layers.append(PemLayer(mat, d, _x))
-            if mat.MEDIUM_TYPE == "elastic":
-                self.layers.append(ElasticLayer(mat, d, _x))
-            _x += d
+            print(_l[0])
+            if mat != None:
+                d = _l[1]
+                if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
+                    self.layers.append(FluidLayer(mat, d, _x))
+                if mat.MEDIUM_TYPE == "pem":
+                    self.layers.append(PemLayer(mat, d, _x))
+                if mat.MEDIUM_TYPE == "elastic":
+                    self.layers.append(ElasticLayer(mat, d, _x))
+                _x += d
+            
+            elif os.path.isfile(_l[0] + ".msh"):
+                self.layers.append(PeriodicLayer(name_mesh=_l[0], verbose=self.verbose))
+
         # Creation of the list of interfaces
-        self.interfaces = []
         for i_l, _layer in enumerate(self.layers[:-1]):
             if _layer.medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
                 if self.layers[i_l+1].medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
@@ -88,24 +96,30 @@ class MultiLayer():
         return out 
 
     def add_excitation_and_termination(self, method, termination):
-        # Interface associated to the termination
+        # Interface associated to the termination 
         if termination in ["trans", "transmission","Transmission"]:
             self.interfaces.append(SemiInfinite(self.layers[-1]))
         else: # Case of a rigid backing 
-            if self.layers[-1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+            if isinstance(self.layers[-1].medium, list):
                 self.interfaces.append(FluidRigidBacking(self.layers[-1]))
-            elif self.layers[-1].medium.MEDIUM_TYPE == "pem":
-                self.interfaces.append(PemBacking(self.layers[-1]))
-            elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
-                self.interfaces.append(ElasticBacking(self.layers[-1]))
+            else:
+                if self.layers[-1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+                    self.interfaces.append(FluidRigidBacking(self.layers[-1]))
+                elif self.layers[-1].medium.MEDIUM_TYPE == "pem":
+                    self.interfaces.append(PemBacking(self.layers[-1]))
+                elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
+                    self.interfaces.append(ElasticBacking(self.layers[-1]))
         if method == "Recursive Method":
-            if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+            if isinstance(self.layers[-1].medium, list):
                 self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
-            elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-                self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
-            elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-                self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
-        else:
+            else:
+                if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+                    self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
+                elif self.layers[0].medium.MEDIUM_TYPE == "pem":
+                    self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
+                elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
+                    self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
+        else: # Global method
             Air_mat = Air()
             mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
             self.layers.insert(0,FluidLayer(mat, 1.e-2, -1.e-2))
