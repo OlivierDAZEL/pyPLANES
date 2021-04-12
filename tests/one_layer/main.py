@@ -13,7 +13,7 @@ from pyPLANES.core.dgm_problem import DgmProblem
 
 # Parameters of the simulation 
 frequencies = np.linspace(1., 5000., 1)
-theta_d = 80.000
+theta_d = 40.000
 
 L = 5e-2
 d = 5e-2

@@ -75,6 +75,7 @@ class PeriodicLayer(Mesh):
             _ent.update_frequency(omega)
         # Wave numbers and periodic shift
         self.kx = kx
+        self.nb_waves = len(kx)
         self.delta_periodicity = np.exp(-1j*self.kx[0]*self.period)
         # self.nb_dofs = self.nb_dof_FEM
         for _ent in self.pwfem_entities:
@@ -120,44 +121,96 @@ class PeriodicLayer(Mesh):
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()
 
-        R = [] # Initialisation of the list of the R will be [R_b R_t]
-        D = [] # Initialisation of the list of the R will be [D_bb D_tt]
-        D_i = [] # Initialisation of the list of the R will be [D_bi D_ti]
+        # R = [] # Initialisation of the list of the R will be [R_b R_t]
+        # D = [] # Initialisation of the list of the R will be [D_bb D_tt]
+        # D_i = [] # Initialisation of the list of the R will be [D_bi D_ti]
+
+
+        RR = [] # Initialisation of the list of the R will be [R_b R_t]
+        DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
+        DD_xi = [] # Initialisation of the list of the R will be [D_bi D_ti]
+        # for _ent in self.pwfem_entities:
+        #     M_global = np.zeros((self.nb_dof_master-1), dtype=complex)
+        #     for _elem in _ent.elements:
+        #         _l = 0
+        #         M_elem = imposed_pw_elementary_vector(_elem, self.kx[_l])
+        #         if _ent.typ == "fluid":
+        #             dof_p, orient_p, _ = dof_p_element(_elem)
+        #             dof_p = [d-1 for d in dof_p]
+        #             _ = orient_p@M_elem
+        #             M_global[dof_p] += _
+        #             # D_ib += coo_matrix((_, (dof_p, dof_1)), shape=(self.nb_dof_master-1, _ent.nb_dofs))
+        #         # Matrices D_bb and D_tt
+        #         D_ =np.zeros((_ent.nb_dof_per_node, 2*_ent.nb_dof_per_node))
+        #         D_[:_ent.nb_dof_per_node, _ent.primal[0]] = -_ent.period
+        #         D.append(D_)
+        #         # Matrices D_bi and D_ti
+
+        #         D_ = np.zeros((_ent.nb_dofs, self.nb_dof_master-1), dtype=complex)
+        #         D_[_ent.dual[0], :] = np.conj(M_global)
+        #         D_i.append(D_)
+
+        #         D_ = np.zeros((self.nb_dof_master-1, 2*_ent.nb_dofs), dtype=complex)
+        #         D_[:, _ent.dual[0]] = M_global
+        #         for i_left, dof_left in enumerate(self.dof_left):
+        #             D_[dof_left-1, :] += D_[self.dof_right[i_left]-1, :]/self.delta_periodicity
+        #             D_[self.dof_right[i_left]-1, :] = 0
+        #         R.append(-_ent.ny*linsolve.spsolve(D_ii, D_))
+
+        
         for _ent in self.pwfem_entities:
-            M_global = np.zeros((self.nb_dof_master-1), dtype=complex)
-            for _elem in _ent.elements:
-                _l = 0
-                M_elem = imposed_pw_elementary_vector(_elem, self.kx[_l])
-                if _ent.typ == "fluid":
-                    dof_p, orient_p, _ = dof_p_element(_elem)
-                    dof_p = [d-1 for d in dof_p]
-                    _ = orient_p@M_elem
-                    M_global[dof_p] += _
-                    # D_ib += coo_matrix((_, (dof_p, dof_1)), shape=(self.nb_dof_master-1, _ent.nb_dofs))
-                # Matrices D_bb and D_tt
-                D_ =np.zeros((_ent.nb_dof_per_node, 2*_ent.nb_dof_per_node))
-                D_[:_ent.nb_dof_per_node, _ent.primal[0]] = -_ent.period
-                D.append(D_)
-                # Matrices D_bi and D_ti
+            dof_FEM, dof_S_primal, dof_S_dual, dof_S, D_val = [], [], [], [], []
+            D_period = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
+            for _w, kx in enumerate(self.kx):
+                for _elem in _ent.elements:
+                    M_elem = imposed_pw_elementary_vector(_elem, kx)
+                    if _ent.typ == "fluid":
+                        dof_p, orient_p, _ = dof_p_element(_elem)
+                        dof_FEM.extend([d-1 for d in dof_p])
+                        D_period[_w, _ent.primal[0]+self.nb_waves*_w] = -_ent.period
+                        dof_S_dual.extend(len(dof_p)*[_ent.dual[0]+self.nb_waves*_w])
+                        dof_S.extend(len(dof_p)*[_w])
+                        D_val.extend(list(orient_p@M_elem))
+            # print(_ent.nb_dof_per_node*self.nb_waves)
+            # print( self.nb_dof_master-1)
+            # print(dof_S_primal)
+            # print(dof_FEM)
+            
 
-                D_ = np.zeros((_ent.nb_dofs, self.nb_dof_master-1), dtype=complex)
-                D_[_ent.dual[0], :] = np.conj(M_global)
-                D_i.append(D_)
+            DD.append(D_period)
+            DD_xi.append(coo_matrix((np.conj(D_val), (dof_S, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.nb_dof_master-1)))
+            for i_left, _dof_left in enumerate(self.dof_left):
+                # Corresponding dof
+                _dof_right = self.dof_right[i_left]-1
+                index = [i for i,d in enumerate(dof_FEM) if d==_dof_right]
+                for _i in index:
+                    dof_FEM[_i] = _dof_left-1
+                    D_val[_i] /= self.delta_periodicity
+            D_ix = coo_matrix((D_val, (dof_FEM, dof_S_dual)), shape=(self.nb_dof_master-1, 2*_ent.nb_dof_per_node*self.nb_waves))
+            RR.append(-_ent.ny*linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.nb_dof_master-1, 2*_ent.nb_dof_per_node*self.nb_waves)))
 
-                D_ = np.zeros((self.nb_dof_master-1, 2*_ent.nb_dofs), dtype=complex)
-                D_[:, _ent.dual[0]] = M_global
+        # print("---")
 
-                for i_left, dof_left in enumerate(self.dof_left):
-                    D_[dof_left-1, :] += D_[self.dof_right[i_left]-1, :]/self.delta_periodicity
-                    D_[dof_right-1, :] = 0
-                R.append(-_ent.ny*linsolve.spsolve(D_ii, D_))
-                
         M_1 = np.zeros((2*self.pwfem_entities[0].nb_dof_per_node, 2), dtype=complex)
-        M_1[0,:] = D_i[1]@R[0] 
-        M_1[1,:] = D[0]+D_i[0]@R[0] 
+        # print(DD_xi[1]@RR[0])
+        # M_1[0,:] = (DD_xi[1]@R[0])
+        # M_1[1,:] = (D[0]+DD_xi[0]@R[0]) 
+        # M_2 = np.zeros((2,2), dtype=complex)
+        # M_2[0,:] = D[1]+DD_xi[1]@RR[1] 
+        # M_2[1,:] = D_i[0]@RR[1]
+
+        # print(DD_xi[1]@RR[0])
+        M_1[0,:] = (DD_xi[1]@RR[0])#.todense()
+        M_1[1,:] = DD[0]+DD_xi[0]@RR[0] 
         M_2 = np.zeros((2,2), dtype=complex)
-        M_2[0,:] = D[1]+D_i[1]@R[1] 
-        M_2[1,:] = D_i[0]@R[1]
+        M_2[0,:] = DD[1]+DD_xi[1]@RR[1] 
+        # print(DD_xi[0])
+        # print("---")
+        # print(RR[1].shape)
+        # print("------")
+        # print((DD_xi[0]@RR[1]).shape)
+        M_2[1,:] = (DD_xi[0]@RR[1])#.todense()
+
         self.TM = -LA.solve(M_1, M_2)
 
 
