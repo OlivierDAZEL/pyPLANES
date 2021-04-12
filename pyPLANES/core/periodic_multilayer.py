@@ -43,12 +43,13 @@ class PeriodicMultiLayer():
         # Creation of the list of layers
         self.layers = []
         self.interfaces = []
-        self.verbose = kwargs.get("dim", True)
+        self.verbose = kwargs.get("verbose", False)
+        self.theta_d = kwargs.get("theta_d", 0.0)
+        self.period = False # If period is false: homogeneous layer
         _x = 0
         for _l in ml:
             mat = load_material(_l[0])
-            print(_l[0])
-            if mat != None:
+            if mat is not None:
                 d = _l[1]
                 if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
                     self.layers.append(FluidLayer(mat, d, _x))
@@ -57,9 +58,10 @@ class PeriodicMultiLayer():
                 if mat.MEDIUM_TYPE == "elastic":
                     self.layers.append(ElasticLayer(mat, d, _x))
                 _x += d
-            
             elif os.path.isfile(_l[0] + ".msh"):
-                self.layers.append(PeriodicLayer(name_mesh=_l[0], verbose=self.verbose))
+                self.layers.append(PeriodicLayer(name_mesh=_l[0], theta_d= self.theta_d, verbose=self.verbose))
+                self.period = self.layers[-1].period
+
 
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):
@@ -94,6 +96,7 @@ class PeriodicMultiLayer():
             out +="Interface #{}".format(i_l+1)+"\n"
             out += self.interfaces[i_l+1].__str__()+"\n"
         return out 
+
 
     def add_excitation_and_termination(self, method, termination):
         # Interface associated to the termination 

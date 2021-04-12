@@ -47,15 +47,14 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         assert "ml" in kwargs
         ml = kwargs.get("ml")
         Calculus.__init__(self, **kwargs)
-        PeriodicMultiLayer.__init__(self, ml)
         self.termination = kwargs.get("termination", "rigid")
         self.theta_d = kwargs.get("theta_d", 0.0)
+        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d)
         self.method = "Recursive Method"
         self.add_excitation_and_termination(self.method, self.termination)
-
         # Out files
         self.out_file_name = self.file_names + ".eTMM.txt"
-        self.info_file_name = self.file_names + ".info.eTMM.txt"     
+        self.info_file_name = self.file_names + ".info.eTMM.txt"
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
@@ -63,15 +62,25 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def preprocess(self):
         Calculus.preprocess(self)
         if self.method == "Global Method":
-            self.info_file.write("Plane Wave solver // Global method\n")        
+            self.info_file.write("Plane Wave solver // Global method\n")
         elif self.method == "Recursive Method":
             self.info_file.write("Plane Wave solver // Recursive method\n")
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
-        self.kx = omega*np.sin(self.theta_d*np.pi/180)/Air.c
-        self.ky = omega*np.cos(self.theta_d*np.pi/180)/Air.c
-        self.k = omega/Air.c
+        self.k_air = omega/Air.c
+        k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
+        if self.period:
+            nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
+        else:
+            nb_bloch_waves = 0
+        nb_bloch_waves = 0
+        # print("nb_bloch_waves ={}".format(nb_bloch_waves))
+        _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
+        self.nb_waves = 1+2*nb_bloch_waves
+        self.kx = k_x+_*(2*pi/self.period)
+        k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
+        self.ky = np.real(k_y)-1j*np.imag(k_y)
         PeriodicMultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
@@ -92,15 +101,14 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def solve(self):
         Calculus.solve(self)
         self.Omega = self.Omega.reshape(2)
-        _ = (self.ky/self.k)/(1j*2*pi*self.f*Air.Z) 
+        _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z) 
         detM = -self.Omega[0]+_*self.Omega[1]
         self.R = (self.Omega[0]+_*self.Omega[1])/detM
         if self.termination == "transmission":
             X_0_minus = 2*_/detM
             self.Omega = (self.back_prop*X_0_minus).flatten()
             self.T = self.Omega[0]
-        print(np.abs(self.R))
-
+        print(self.R)
 
     def plot_solution(self):
          for _layer in self.layers[1:]:

@@ -124,6 +124,7 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.R = self.X[0]
+            print(self.R)
             if self.termination == "transmission":
                 self.T = self.X[-1]
             else:

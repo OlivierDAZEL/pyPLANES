@@ -54,36 +54,26 @@ def check_pwfem(self):
         if isinstance(_e, PwFem):
             for s in _e.neighbouring_surfaces:
                 if isinstance(s, (Air, FluidFem)):
-                    _e.nb_R = 1
+                    _e.nb_dof_per_node = 1
                     _e.typ = "fluid"
+                    _e.primal = [1]
+                    _e.dual = [0]
                 elif (isinstance(s, ElasticFem)):
-                    _e.nb_R = 2
+                    _e.nb_per_node = 2
                     _e.typ = "elastic"
+                    _e.primal = [3, 1]
+                    _e.dual = [0, 2]
                 elif isinstance(s, PemFem):
                     if s.formulation98:
-                        _e.nb_R = 3
+                        _e.nb_per_node = 3
                         _e.typ = "Biot98"
+                        _e.primal = [3, 1]
+                        _e.dual = [0, 2]
                     else:
-                        _e.nb_R = 3
+                        _e.nb_per_node = 3
                         _e.typ = "Biot01"
-            if isinstance(_e, IncidentPwFem):
-                if self.incident_ml:
-                    _e.ml = []
-                    for _l in self.incident_ml:
-                        mat = from_yaml(_l[0]+".yaml")
-                        d = _l[1]
-                        _e.ml.append(Layer(mat,d))
-            if isinstance(_e, TransmissionPwFem):
-                if self.transmission_ml:
-                    _e.ml = []
-                    for _l in self.transmission_ml:
-                        mat = from_yaml(_l[0]+".yaml")
-                        d = -_l[1]
-                        # Thickness of transmission layers is set negative
-                        _e.ml.append(Layer(mat,d))
-                    for _l in _e.ml:
-                        _l.thickness *= -1
-
+                        _e.primal = [5, 1, 4]
+                        _e.dual = [0, 3, 2]
 
 
 def check_neighbours_1D_entity(self):

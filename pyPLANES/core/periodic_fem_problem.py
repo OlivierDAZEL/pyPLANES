@@ -30,7 +30,7 @@ from mediapack import Air
 
 
 from pyPLANES.core.fem_problem import FemProblem
-from pyPLANES.fem.fem_entities_pw import PwFem, IncidentPwFem, TransmissionPwFem
+from pyPLANES.fem.fem_entities_pw import PwFem
 from pyPLANES.utils.io import plot_fem_solution
 from pyPLANES.fem.dofs import periodic_dofs_identification
 

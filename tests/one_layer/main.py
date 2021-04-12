@@ -12,8 +12,8 @@ from pyPLANES.core.dgm_problem import DgmProblem
 
 
 # Parameters of the simulation 
-frequencies = np.linspace(100., 5000., 1)
-theta_d = 0.000
+frequencies = np.linspace(1., 5000., 1)
+theta_d = 80.000
 
 L = 5e-2
 d = 5e-2
@@ -39,31 +39,32 @@ bc_right = "Periodicity"
 bc_left = "Periodicity"
 bc_top = "rigid"
 
-one_layer(name_mesh="one_layer_TMM", L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=["Incident_PW", bc_right, "transmission", bc_left])
-
+# one_layer(name_mesh="one_layer_TMM", L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
 
 global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False)
 global_method.resolution()
 
-om = 2*np.pi*frequencies[0]
-from mediapack import Air
-k = om/Air.c
-T = np.zeros((2, 2), dtype=complex)
-T[0, 0] = np.cos(k*d)
-T[1, 0] = (om**2*Air.rho/k)*np.sin(k*d)
-T[0, 1] = -(k/(om**2*Air.rho))*np.sin(k*d)
-T[1, 1] = np.cos(k*d)
-print(T)
+# om = 2*np.pi*frequencies[0]
+# from mediapack import Air
+# k = om/Air.c
+# T = np.zeros((2, 2), dtype=complex)
+# T[0, 0] = np.cos(k*d)
+# T[1, 0] = (om**2*Air.rho/k)*np.sin(k*d)
+# T[0, 1] = -(k/(om**2*Air.rho))*np.sin(k*d)
+# T[1, 1] = np.cos(k*d)
+# # print(T)
+
+# Z = -1j*Air.Z/np.tan(k*d)
 
 ml = [("one_layer_TMM", d)]
-eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=True)
+eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
 eTMM_method.resolution()
+# print((Z-Air.Z)/(Z+Air.Z))
 
-
-one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
+# one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
 # fem = PeriodicFemProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
 # fem.resolution()
-plt.show()
+# plt.show()
 
 
 

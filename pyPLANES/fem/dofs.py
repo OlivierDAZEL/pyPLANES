@@ -162,3 +162,6 @@ def periodic_dofs_identification(self):
     _nz = np.where(_!=0)[0].tolist()
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
+
+
+

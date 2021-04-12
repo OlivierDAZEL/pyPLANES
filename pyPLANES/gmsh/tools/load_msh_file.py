@@ -35,7 +35,7 @@ from pyPLANES.dgm.dgm_elements import DgmElement
 from pyPLANES.generic.entities_generic import GmshEntity, FemEntity
 from pyPLANES.fem.fem_entities_surfacic import ImposedDisplacementFem, FluidStructureFem, RigidWallFem, InterfaceFem, PeriodicityFem
 from pyPLANES.fem.fem_entities_volumic import FluidFem, ElasticFem, PemFem
-from pyPLANES.fem.fem_entities_pw import PwFem, IncidentPwFem, TransmissionPwFem
+from pyPLANES.fem.fem_entities_pw import PwFem
 from pyPLANES.dgm.dgm_entities_surfacic import ImposedDisplacementDgm
 from pyPLANES.dgm.dgm_entities_volumic import FluidDgm
 
@@ -113,9 +113,11 @@ def entities(self, f):
         bounding_points = [int(_l) for _l in _f[_+1:]] if num_bounding_points != 0 else []
         if "typ" in physical_tags.keys():
             if physical_tags["typ"] == "1D":
-                if physical_tags["condition"] == "Incident_PW":
+                if physical_tags["condition"].lower() in ["top", "bottom"]:
                     if physical_tags["method"] == "FEM":
-                        _ent = IncidentPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
+                        _ent = PwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
+                        if physical_tags["condition"].lower() == "bottom":
+                            _ent.ny = -1.
                         self.pwfem_entities.append(_ent)
                 elif physical_tags["condition"] == "Imposed displacement":
                     if physical_tags["method"] == "FEM":

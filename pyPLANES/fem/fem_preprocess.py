@@ -66,7 +66,7 @@ def fem_preprocess(self):
     # periodic_dofs_identification(self)
     if self.verbose:
         print("Checkup of the model")
-    # checkup_of_the_model(self)
+    checkup_of_the_model(self)
     self.duration_importation = time.time() - self.start_time
     self.info_file.write("Duration of importation ={} s\n".format(self.duration_importation))
     if self.verbose:
@@ -74,6 +74,8 @@ def fem_preprocess(self):
     for _ent in self.fem_entities:
         for _el in _ent.elements:
             _ent.elementary_matrices(_el)
+    for _ent in self.pwfem_entities:
+        _ent.determine_typ_and_waves()
     self.duration_assembly = time.time() - self.start_time - self.duration_importation
     self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   
 
