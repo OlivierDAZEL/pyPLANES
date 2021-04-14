@@ -74,41 +74,65 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
         else:
             nb_bloch_waves = 0
-        nb_bloch_waves = 0
+        nb_bloch_waves = 1
+        self.period = 5e-2
         # print("nb_bloch_waves ={}".format(nb_bloch_waves))
         _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
         self.nb_waves = 1+2*nb_bloch_waves
         self.kx = k_x+_*(2*pi/self.period)
         k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
-        PeriodicMultiLayer.update_frequency(self, omega, self.kx)
+        PeriodicMultiLayer.update_frequency(self, omega)
 
     def create_linear_system(self, omega):
         Calculus.create_linear_system(self, omega)
         if self.termination == "transmission":
-            self.Omega, self.back_prop = self.interfaces[-1].Omega()
+            self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 self.Omega, Xi = _l.transfert(self.Omega)
                 self.back_prop = self.back_prop@Xi
                 self.Omega, Tau = self.interfaces[-i-2].transfert(self.Omega)
                 self.back_prop = self.back_prop@Tau
         else: # Rigid backing
-            self.Omega = self.interfaces[-1].Omega()
+            self.Omega = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 self.Omega = _l.transfert(self.Omega)[0]
                 self.Omega = self.interfaces[-i-2].transfert(self.Omega)[0]
 
     def solve(self):
         Calculus.solve(self)
-        self.Omega = self.Omega.reshape(2)
-        _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z) 
-        detM = -self.Omega[0]+_*self.Omega[1]
-        self.R = (self.Omega[0]+_*self.Omega[1])/detM
-        if self.termination == "transmission":
-            X_0_minus = 2*_/detM
-            self.Omega = (self.back_prop*X_0_minus).flatten()
-            self.T = self.Omega[0]
+        if self.nb_waves == 1:
+            self.Omega = self.Omega[0:2,0]
+            self.Omega = self.Omega.reshape(2)
+            _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z) 
+            detM = -self.Omega[0]+_*self.Omega[1]
+            self.R = (self.Omega[0]+_*self.Omega[1])/detM
+            if self.termination == "transmission":
+                X_0_minus = 2*_/detM
+                self.Omega = (self.back_prop*X_0_minus).flatten()
+                self.T = self.Omega[0]
+        else:
+            # self.nb_waves = 1
+            _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z)
+            M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
+            Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
+            M[:,:self.nb_waves] = self.Omega[:2*self.nb_waves,:self.nb_waves]
+            for _w in range(self.nb_waves):
+                _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z)
+                Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
+                M[2*_w:2+2*_w,self.nb_waves+_w] = -Omega_0.reshape(2)
+            E_0 = np.zeros(2*self.nb_waves, dtype=complex)
+            E_0[:2] = np.array([-_, 1]).reshape((2))
+            X = LA.solve(M,E_0)
+            # print(M)
+            # print(X)
+            self.R = X[self.nb_waves]
+            if self.termination == "transmission":
+                X_0_minus = X[:self.nb_waves]
+                self.Omega = (self.back_prop@X_0_minus)
+                self.T = self.Omega[0]
         print(self.R)
+
 
     def plot_solution(self):
          for _layer in self.layers[1:]:

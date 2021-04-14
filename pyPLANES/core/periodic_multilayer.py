@@ -103,6 +103,9 @@ class PeriodicMultiLayer():
         if termination in ["trans", "transmission","Transmission"]:
             self.interfaces.append(SemiInfinite(self.layers[-1]))
         else: # Case of a rigid backing 
+            # print(self.layers[-1])
+            # print(self.layers[-1].medium)
+            # qsddsqds
             if isinstance(self.layers[-1].medium, list):
                 self.interfaces.append(FluidRigidBacking(self.layers[-1]))
             else:
@@ -147,8 +150,8 @@ class PeriodicMultiLayer():
             if isinstance(self.interfaces[-1], SemiInfinite):
                 self.nb_PW += 1 
 
-    def update_frequency(self, omega, kx):
+    def update_frequency(self, omega):
         for _l in self.layers:
-            _l.update_frequency(omega, kx)
+            _l.update_frequency(omega, self.kx)
         for _i in self.interfaces:
-            _i.update_frequency(omega, kx)
+            _i.update_frequency(omega, self.kx)

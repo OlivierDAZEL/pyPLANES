@@ -62,6 +62,8 @@ class PwLayer():
         # pymls layer constructor 
         self.x = [x_0, x_0+self.d]  # 
         self.interfaces = [None, None]  # 
+        self.nb_waves = None
+        self.nb_fields_SV = None
         self.dofs = None
         self.lam = None
         self.SV = None
@@ -97,13 +99,19 @@ class PwLayer():
         pass 
 
     def order_lam(self):
-        index = np.argsort(self.lam.real)[::-1]
-        self.SV = self.SV[:, index]
-        self.lam = self.lam[index] 
+        _index_block = []
+        for _w in range(self.nb_waves):
+            index_block = range(_w*self.nb_fields_SV, (_w+1)*self.nb_fields_SV)
+            index = np.argsort(self.lam[index_block].real)[::-1]
+            _index_block += [index_block[i] for i in index]
+        self.SV = self.SV[np.ix_(range(self.nb_fields_SV*self.nb_waves), _index_block)]
+        self.lam = self.lam[np.ix_(_index_block)]
+
 
 class FluidLayer(PwLayer):
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
+        self.nb_fields_SV = 2
 
     def __str__(self):
         out = "\t Fluid Layer / " + self.medium.name
@@ -111,31 +119,37 @@ class FluidLayer(PwLayer):
 
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
+        self.nb_waves = len(kx)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
 
-    def update_Omega(self, om, Om):
+    def update_Omega(self, om, Om, ky):
         T = np.zeros((2, 2), dtype=complex)
-        T[0, 0] = np.cos(self.ky*self.d)
-        T[1, 0] = (om**2*self.medium.rho/self.ky)*np.sin(self.ky*self.d)
-        T[0, 1] = -(self.ky/(om**2*self.medium.rho))*np.sin(self.ky*self.d)
-        T[1, 1] = np.cos(self.ky*self.d)
+        T[0, 0] = np.cos(ky*self.d)
+        T[1, 0] = (om**2*self.medium.rho/ky)*np.sin(ky*self.d)
+        T[0, 1] = -(ky/(om**2*self.medium.rho))*np.sin(ky*self.d)
+        T[1, 1] = np.cos(ky*self.d)
         return T@Om 
 
     def transfert(self, Om):
         self.order_lam()
-        alpha = self.SV[0,0]
-        xi_prime = (Om[0]/alpha+Om[1])/2.
+        Om_ = np.zeros(Om.shape, dtype=complex)
+        Xi = np.zeros((self.nb_waves, self.nb_waves), dtype=complex)
+        for _w in range(self.nb_waves):
+            index_0 = _w*self.nb_fields_SV
+            index_1 = _w*self.nb_fields_SV+1
+            alpha = self.SV[index_0, index_0]
+            xi_prime = (Om[index_0, _w]/alpha+Om[index_1, _w])/2.
 
-        Om_0 = (Om[0]-alpha*Om[1])/2. 
-        Om_1 = -Om_0/alpha
-        Om_ = np.array([Om_0, Om_1])*np.exp(-2.*self.lam[0]*self.d)/xi_prime
+            Om_0 = (Om[index_0, _w]-alpha*Om[index_1, _w])/2. 
+            Om_1 = -Om_0/alpha
+            # Om_ = np.array([Om_0, Om_1])*np.exp(-2.*self.lam[index_0]*self.d)/xi_prime
         
-        Om_[0] += alpha
-        Om_[1] += 1.
+            Om_[index_0, _w] = Om_0*np.exp(-2.*self.lam[index_0]*self.d)/xi_prime+ alpha
+            Om_[index_1, _w] = Om_1*np.exp(-2.*self.lam[index_0]*self.d)/xi_prime+ 1.
 
-        Xi = np.exp(-self.lam[0]*self.d)/xi_prime
+            Xi[_w, _w] = np.exp(-self.lam[index_0]*self.d)/xi_prime
         
-        return Om_ , np.array([Xi])
+        return Om_ , Xi
 
     def plot_solution(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)

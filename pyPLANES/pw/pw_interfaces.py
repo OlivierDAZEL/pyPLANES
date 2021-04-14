@@ -25,6 +25,7 @@
 import numpy as np
 from numpy import sqrt
 from pyPLANES.utils.io import load_material
+from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
 
 
@@ -70,7 +71,8 @@ class FluidFluidInterface(PwInterface):
         return i_eq
 
     def transfert(self, Om):
-        return Om.reshape(2,1), np.eye(1)
+        _w = Om.shape[1]
+        return Om.reshape(2*_w,_w), np.eye(_w)
 
 class FluidPemInterface(PwInterface):
     """
@@ -556,8 +558,11 @@ class FluidRigidBacking(PwInterface):
         i_eq += 1
         return i_eq
 
-    def Omega(self):
-        return np.array([0,1], dtype=np.complex)
+    def Omega(self, nb_bloch_waves=0):
+        out = np.array([0,1]).reshape(2,1)
+        if nb_bloch_waves !=0:
+            out = np.kron(np.eye(nb_bloch_waves), out)
+        return np.array(out, dtype=np.complex)
 
 class PemBacking(PwInterface):
     """
@@ -659,22 +664,34 @@ class SemiInfinite(PwInterface):
         self.omega = omega 
 
 
-    def Omega(self):
-        if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-            return np.array([-self.lam[0]/(self.medium.rho*self.omega**2), 1], dtype=np.complex), np.eye(1)
-        elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-            Om = np.zeros((4, 2), dtype=complex)
-            Om[1, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
-            Om[2, 0] = -1. # \sigma_{yy} is -p
-            Om[3, 1] = 1.
-            return Om, np.eye(2)     
-        elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-            Om = np.zeros((6, 3), dtype=complex)
-            Om[1, 1] = 1.
-            Om[2, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
-            Om[4, 0] = 1. 
-            Om[5, 2] = 1.
-            return Om, np.eye(3)
+    def Omega(self, nb_bloch_waves=0):
+        
+        typ =[]
+        if isinstance(self.layers[0], PwLayer):
+            if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+                typ = "fluid"
+        else:
+            typ ="fluid"
+
+        if typ == "fluid":
+            out = np.array([-self.lam[0]/(self.medium.rho*self.omega**2), 1], dtype=np.complex).reshape(2,1)
+            if nb_bloch_waves !=0:
+                out = np.kron(np.eye(nb_bloch_waves), out)
+            return out, np.eye(max([nb_bloch_waves,1]))
+
+        # elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
+        #     Om = np.zeros((4, 2), dtype=complex)
+        #     Om[1, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
+        #     Om[2, 0] = -1. # \sigma_{yy} is -p
+        #     Om[3, 1] = 1.
+        #     return Om, np.eye(2)     
+        # elif self.layers[0].medium.MEDIUM_TYPE == "pem":
+        #     Om = np.zeros((6, 3), dtype=complex)
+        #     Om[1, 1] = 1.
+        #     Om[2, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
+        #     Om[4, 0] = 1. 
+        #     Om[5, 2] = 1.
+        #     return Om, np.eye(3)
          
 
 

@@ -76,11 +76,16 @@ def fluid_waves_TMM(mat, ky):
         K = mat.K
     else:
         raise ValueError('Provided material is not a fluid')
-    kx = np.sqrt(mat.k**2-ky**2)
-    Phi = np.zeros((2, 2), dtype=complex)
-    Phi[0, 0:2] = np.array([-1j*kx/(K*mat.k**2), 1j*kx/(K*mat.k**2)])
-    Phi[1, 0:2] = np.array([1, 1])
-    return Phi, np.array([-1j*kx, 1j*kx])
+    n_w = len(ky)
+    kx = np.sqrt(mat.k**2-ky**2+0j)
+    Phi = np.zeros((2*n_w, 2*n_w), dtype=complex)
+    for _w, _kx in enumerate(kx):
+        Phi[0+2*_w, 0+2*_w:2+2*_w] = np.array([-1j*_kx/(K*mat.k**2), 1j*_kx/(K*mat.k**2)])
+        Phi[1+2*_w, 0+2*_w:2+2*_w] = np.array([1, 1])
+    lam = np.zeros(2*n_w, dtype=complex)
+    lam[::2] = -1j*kx
+    lam[1::2] = 1j*kx
+    return Phi, lam
 
 # def fluid_waves(mat, nx,ny):
 #     pass

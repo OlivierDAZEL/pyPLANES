@@ -56,10 +56,10 @@ class PwProblem(Calculus, MultiLayer):
         else: 
             self.method = "Global Method"
         # Add the adequate interfaces for the PEM. Compute the number of PW for glabal method
-        self.add_excitation_and_termination(self.method, self.termination)
         # Move to the global method if plots are required or if incidence is normal
-        if self.theta_d == 0 or any(self.plot):
-            self.method = "Global Method"
+        # if self.theta_d == 0 or any(self.plot):
+        #     self.method = "Global Method"
+        self.add_excitation_and_termination(self.method, self.termination)
         # Out files
         if self.method == "Global Method":
             self.out_file_name = self.file_names + ".GM.txt"
@@ -80,9 +80,9 @@ class PwProblem(Calculus, MultiLayer):
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
-        self.kx = omega*np.sin(self.theta_d*np.pi/180)/Air.c
-        self.ky = omega*np.cos(self.theta_d*np.pi/180)/Air.c
-        self.k = omega/Air.c
+        self.kx = np.array([omega*np.sin(self.theta_d*np.pi/180)/Air.c])
+        self.ky = np.array([omega*np.cos(self.theta_d*np.pi/180)/Air.c])
+        self.k_air = omega/Air.c
         MultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
@@ -99,6 +99,7 @@ class PwProblem(Calculus, MultiLayer):
                 self.Omega = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
                     self.Omega = _l.transfert(self.Omega)[0]
+                    # self.Omega = _l.update_Omega(omega, self.Omega, self.ky)
                     self.Omega = self.interfaces[-i-2].transfert(self.Omega)[0]
         elif self.method == "Global Method":
             self.A = np.zeros((self.nb_PW-1, self.nb_PW), dtype=complex)
@@ -114,9 +115,10 @@ class PwProblem(Calculus, MultiLayer):
         Calculus.solve(self)
         if self.method == "Recursive Method":
             self.Omega = self.Omega.reshape(2)
-            _ = (self.ky/self.k)/(1j*2*pi*self.f*Air.Z) 
+            _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z) 
             detM = -self.Omega[0]+_*self.Omega[1]
             self.R = (self.Omega[0]+_*self.Omega[1])/detM
+            print(self.R)
             if self.termination == "transmission":
                 X_0_minus = 2*_/detM
                 self.Omega = (self.back_prop*X_0_minus).flatten()

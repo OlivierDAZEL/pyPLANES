@@ -161,14 +161,16 @@ class PeriodicLayer(Mesh):
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, dof_S, D_val = [], [], [], [], []
             D_period = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
+
+
             for _w, kx in enumerate(self.kx):
                 for _elem in _ent.elements:
                     M_elem = imposed_pw_elementary_vector(_elem, kx)
                     if _ent.typ == "fluid":
                         dof_p, orient_p, _ = dof_p_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_p])
-                        D_period[_w, _ent.primal[0]+self.nb_waves*_w] = -_ent.period
-                        dof_S_dual.extend(len(dof_p)*[_ent.dual[0]+self.nb_waves*_w])
+                        D_period[_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        dof_S_dual.extend(len(dof_p)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
                         dof_S.extend(len(dof_p)*[_w])
                         D_val.extend(list(orient_p@M_elem))
             # print(_ent.nb_dof_per_node*self.nb_waves)
@@ -190,8 +192,9 @@ class PeriodicLayer(Mesh):
             RR.append(-_ent.ny*linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.nb_dof_master-1, 2*_ent.nb_dof_per_node*self.nb_waves)))
 
         # print("---")
-
-        M_1 = np.zeros((2*self.pwfem_entities[0].nb_dof_per_node, 2), dtype=complex)
+        _s = _ent.nb_dof_per_node*self.nb_waves
+        M_1 = np.zeros((2*_s, 2*_s), dtype=complex)
+        M_2 = np.zeros((2*_s, 2*_s), dtype=complex)
         # print(DD_xi[1]@RR[0])
         # M_1[0,:] = (DD_xi[1]@R[0])
         # M_1[1,:] = (D[0]+DD_xi[0]@R[0]) 
@@ -200,16 +203,17 @@ class PeriodicLayer(Mesh):
         # M_2[1,:] = D_i[0]@RR[1]
 
         # print(DD_xi[1]@RR[0])
-        M_1[0,:] = (DD_xi[1]@RR[0])#.todense()
-        M_1[1,:] = DD[0]+DD_xi[0]@RR[0] 
-        M_2 = np.zeros((2,2), dtype=complex)
-        M_2[0,:] = DD[1]+DD_xi[1]@RR[1] 
+
+        M_1[:_s,:] = (DD_xi[1]@RR[0])#.todense()
+        M_1[_s:,:] = DD[0]+DD_xi[0]@RR[0] 
+        
+        M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1] 
         # print(DD_xi[0])
         # print("---")
         # print(RR[1].shape)
         # print("------")
         # print((DD_xi[0]@RR[1]).shape)
-        M_2[1,:] = (DD_xi[0]@RR[1])#.todense()
+        M_2[_s:,:] = (DD_xi[0]@RR[1])#.todense()
 
         self.TM = -LA.solve(M_1, M_2)
 
@@ -219,7 +223,7 @@ class PeriodicLayer(Mesh):
         # Creation of the Transfer Matrix 
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
-        return self.TM@Om, LA.inv(self.TM)
+        return self.TM@Om, np.eye(Om.shape[1])
 
 
     def update_system(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v, _F_i, _F_v):
