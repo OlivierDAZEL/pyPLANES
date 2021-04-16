@@ -55,34 +55,9 @@ class PwFem(FemEntity):
         out = "Pw" + FemEntity.__str__(self)
         return out
 
-    def update_frequency(self, omega):
-        k_air = omega/Air.c
-        # k_x = k_air*np.sin(self.theta_d*np.pi/180.)
-        # nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(k_air)-k_x))+5)
-        # nb_bloch_waves = 0
-        # # print("nb_bloch_waves ={}".format(nb_bloch_waves))
-        # _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
-        # self.nb_waves = 1+2*nb_bloch_waves
-        # self.kx = k_x+_*(2*pi/self.period)
-        # k_y = np.sqrt(k_air**2-self.kx**2+0*1j)
-        # self.ky = np.real(k_y)-1j*np.imag(k_y)
-        # self.dofs = np.arange(self.nb_w*(1+2*nb_bloch_waves))
-        # self.nb_dofs = self.nb_w*(1+2*nb_bloch_waves)
-
-
-    def apply_periodicity(self, nb_dof_m, dof_left, dof_right, delta):
-        for i_left, _dof_left in enumerate(dof_left):
-            # Corresponding dof
-            _dof_right = dof_right[i_left]
-            index = np.where(self.phi_i == _dof_right)
-            self.phi_i[index] = _dof_left
-            for _i in index:
-                self.phi_v[_i] /= delta
-        self.phi = coo_matrix((self.phi_v, (self.phi_i, self.phi_j)), shape=(nb_dof_m, self.nb_dofs)).tocsr()
-
     def determine_typ_and_waves(self):
         if isinstance (self.neighbouring_surfaces[0], FluidFem):
-            self.type = "fluid"
+            self.typ = "fluid"
 
 
 

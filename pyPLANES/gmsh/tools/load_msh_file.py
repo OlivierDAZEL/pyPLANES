@@ -130,10 +130,6 @@ def entities(self, f):
                     if physical_tags["method"] == "FEM":
                         _ent = FluidStructureFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                         self.fem_entities.append(_ent)
-                elif physical_tags["condition"].lower() in ["transmission"]:
-                    if physical_tags["method"] == "FEM":
-                        _ent = TransmissionPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
-                        self.pwfem_entities.append(_ent)
                 elif physical_tags["condition"].lower() in ["rigid wall", "rigid", "wall"]:
                     if physical_tags["method"] == "FEM":
                         _ent = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
@@ -171,7 +167,7 @@ def entities(self, f):
                             self.fem_entities.append(_ent)
                         elif physical_tags["method"] == "DGM":
                             _ent = FluidDgm(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
-                            self.dgm_entities.append(_ent)                            
+                            self.dgm_entities.append(_ent)
                     else:
                         mat = load_material(physical_tags["mat"].split()[0])
                         if mat.MEDIUM_TYPE == "eqf":
@@ -288,7 +284,6 @@ def elements(self, f):
             elif isinstance(self.entities[self.entity_tag[entity_tag]], DgmEntity):
                 self.elements[element_tag] = DgmElement(element_type, element_tag, vertices)
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])               
-
 
 def periodic(self, f):
     self.vertices_left = []

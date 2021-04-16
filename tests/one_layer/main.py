@@ -10,18 +10,16 @@ from pyPLANES.core.periodic_fem_problem import FemProblem, PeriodicFemProblem
 from pyPLANES.core.periodic_pw_problem import PeriodicPwProblem
 from pyPLANES.core.dgm_problem import DgmProblem
 
-
 # Parameters of the simulation 
-frequencies = np.linspace(100., 5000., 1)
-theta_d = 80
-
+frequencies = np.linspace(1., 5000., 1)
+theta_d = 50
 L = 5e-2
 d = 5e-2
-lcar = 1e-2
+lcar = 5e-2
 material = "Wwood"
 material = "melamine"
 # material = "melamine_eqf"
-material = "Air"
+# material = "Air"
 
 name_project = "one_layer"
 ml = [(material, d)]
@@ -39,13 +37,26 @@ bc_right = "Periodicity"
 bc_left = "Periodicity"
 bc_top = "top"
 
+ml = [(material, d), (material, d), (material, d)]
+global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
+global_method.resolution()
+
+recursive_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=[False]*6,termination=termination, method="JAP", verbose=False, print_result=True)
+recursive_method.resolution()
+
+
 one_layer(name_mesh="one_layer_TMM", L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
+ml = [(material, d), ("one_layer_TMM", d), (material, d)]
+# ml = [("one_layer_TMM", d)]
+eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, order=4, frequencies=frequencies, plot_solution=[False]*6,termination=termination, verbose=False, print_result=True)
+eTMM_method.resolution()
+# print((Z-Air.Z)/(Z+Air.Z))
 
-global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False)
-global_method.resolution()
+# one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
+# fem = PeriodicFemProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
+# fem.resolution()
+# plt.show()
 
-global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="JAP", verbose=False)
-global_method.resolution()
 
 # om = 2*np.pi*frequencies[0]
 # from mediapack import Air
@@ -58,22 +69,6 @@ global_method.resolution()
 # # print(T)
 
 # Z = -1j*Air.Z/np.tan(k*d)
-
-ml = [("one_layer_TMM", d)]
-# ml = [(material, d)]
-eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
-eTMM_method.resolution()
-# print((Z-Air.Z)/(Z+Air.Z))
-
-# one_layer(name_mesh=name_project, L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
-# fem = PeriodicFemProblem(name_project=name_project, name_mesh=name_project, order=3, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False)
-# fem.resolution()
-# plt.show()
-
-
-
-
-
 
 
 

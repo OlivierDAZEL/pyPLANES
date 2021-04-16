@@ -27,7 +27,7 @@ from numpy import sqrt
 from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
-
+from scipy.linalg import block_diag
 
 class PwInterface():
     """
@@ -40,7 +40,7 @@ class PwInterface():
     def update_Omega(self, Om):
         pass 
     def update_frequency(self, omega, kx):
-        pass
+        self.nb_waves = len(kx)
 
 class FluidFluidInterface(PwInterface):
     """
@@ -51,9 +51,6 @@ class FluidFluidInterface(PwInterface):
     def __str__(self):
         out = "\t Fluid-fluid interface"
         return out
-
-    def update_frequency(self, omega, kx):    
-        pass
 
     def update_M_global(self, M, i_eq):
         delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
@@ -84,17 +81,36 @@ class FluidPemInterface(PwInterface):
         out = "\t Fluid-PEM interface"
         return out
 
-    def transfert(self, Om):
-        a = -np.array([
-            [Om[0,1],Om[0,2]],
-            [Om[3,1],Om[3,2]]
-        ])
-        Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
-        Tau_tilde = np.concatenate([np.eye(1),Tau])
+    def transfert(self, Om_):
+        Omega_moins, Tau_tilde = [], []
+        n_w = self.nb_waves
+        for _w in range(n_w):
+            Om = Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
 
-        Omega_moins = np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau)
+            a = -np.array([
+                [Om[0,1],Om[0,2]],
+                [Om[3,1],Om[3,2]]
+            ])
+            Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
+            Tau_tilde.append(np.concatenate([np.eye(1),Tau]))
 
-        return Omega_moins.reshape(2,1), Tau_tilde
+            # Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1))
+            Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1).tolist())
+
+
+        # print(Omega_moins)    
+        # print(Tau_tilde)
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.spy(np.block(Omega_moins))
+        # plt.show()
+        
+        Omega_moins = block_diag(*Omega_moins)
+        Tau_tilde = block_diag(*Tau_tilde)
+
+
+
+        return np.block(Omega_moins), np.block(Tau_tilde)
 
     def update_M_global(self, M, i_eq):
         delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
@@ -350,7 +366,7 @@ class PemPemInterface(PwInterface):
         return i_eq
 
     def transfert(self, O):
-        return (O, np.eye(3))
+        return (O, np.eye(3*self.nb_waves))
 
 class ElasticPemInterface(PwInterface):
     """
@@ -602,12 +618,14 @@ class PemBacking(PwInterface):
         i_eq += 1
         return i_eq
 
-    def Omega(self):
-        Om = np.zeros((6,3), dtype=np.complex)
-        Om[0,1] = 1.
-        Om[3,2] = 1.
-        Om[4,0] = 1.
-        return Om
+    def Omega(self, nb_bloch_waves=0):
+        out = np.zeros((6,3), dtype=np.complex)
+        out[0,1] = 1.
+        out[3,2] = 1.
+        out[4,0] = 1.
+        if nb_bloch_waves !=0:
+            out = np.kron(np.eye(nb_bloch_waves), out)
+        return np.array(out, dtype=np.complex)
 
 class ElasticBacking(PwInterface):
 

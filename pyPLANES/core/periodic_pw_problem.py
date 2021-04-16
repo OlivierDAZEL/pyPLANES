@@ -49,7 +49,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         Calculus.__init__(self, **kwargs)
         self.termination = kwargs.get("termination", "rigid")
         self.theta_d = kwargs.get("theta_d", 0.0)
-        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d)
+        self.order = kwargs.get("order", 2)
+        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order)
         self.method = "Recursive Method"
         self.add_excitation_and_termination(self.method, self.termination)
         # Out files
@@ -72,15 +73,17 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
         if self.period:
             nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
+            nb_bloch_waves = 1
+            self.nb_waves = 1+2*nb_bloch_waves
+            _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
+            self.kx = k_x+_*(2*pi/self.period)
+            k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
+            # self.ky = np.real(k_y)-1j*np.imag(k_y)
         else:
-            nb_bloch_waves = 0
-        nb_bloch_waves = 1
-        self.period = 5e-2
-        # print("nb_bloch_waves ={}".format(nb_bloch_waves))
-        _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
-        self.nb_waves = 1+2*nb_bloch_waves
-        self.kx = k_x+_*(2*pi/self.period)
-        k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
+            self.nb_waves = 1
+            _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
+            self.kx = np.array([k_x])
+            k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
         PeriodicMultiLayer.update_frequency(self, omega)
 
@@ -125,13 +128,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             E_0[:2] = np.array([-_, 1]).reshape((2))
             X = LA.solve(M,E_0)
             # print(M)
-            # print(X)
             self.R = X[self.nb_waves]
             if self.termination == "transmission":
                 X_0_minus = X[:self.nb_waves]
                 self.Omega = (self.back_prop@X_0_minus)
                 self.T = self.Omega[0]
-        print(self.R)
+        if self.print_result:
+            print("R={}".format(self.R))
 
 
     def plot_solution(self):

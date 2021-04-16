@@ -86,6 +86,7 @@ class Calculus():
             self.frequencies = self.init_vec_frequencies(__)
         else:
             self.frequencies = np.array([1e3])
+        self.print_result = kwargs.get("print_result", False)    
         self.plot = kwargs.get("plot_solution", [False]*6)   
         self.export_plots = kwargs.get("export_plots", [False]*6)   
         self.export_paraview = kwargs.get("export_paraview", False)  

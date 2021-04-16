@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 from numpy import pi, sqrt
 
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, elastic_waves_TMM, PEM_waves_TMM
+from scipy.linalg import block_diag
 
 class PwLayer():
     """
@@ -107,7 +108,6 @@ class PwLayer():
         self.SV = self.SV[np.ix_(range(self.nb_fields_SV*self.nb_waves), _index_block)]
         self.lam = self.lam[np.ix_(_index_block)]
 
-
 class FluidLayer(PwLayer):
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
@@ -167,6 +167,7 @@ class PemLayer(PwLayer):
 
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
+        self.nb_fields_SV = 6
 
     def __str__(self):
         out = "\t Poroelastic Layer / " + self.medium.name
@@ -175,6 +176,8 @@ class PemLayer(PwLayer):
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
         self.SV, self.lam = PEM_waves_TMM(self.medium, kx)
+        self.nb_waves = len(kx)
+
 
     def plot_solution(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
@@ -204,40 +207,47 @@ class PemLayer(PwLayer):
 
 
     def transfert(self, Om):
-        index = np.argsort(self.lam.real)
-        index = index[::-1]        
+        self.order_lam()
 
-        Phi = self.SV[:,index]
-        lambda_ = self.lam[index]
+        Om_stack, Xi_stack = [], []
+        for _w in range(self.nb_waves):
+            index_w = list(range(6*_w, 6*(_w+1)))
+            index_X = list(range(3*_w, 3*(_w+1)))
 
-        Phi_inv = np.linalg.inv(Phi)
+            Phi = self.SV[index_w,:][:,index_w]
+            lambda_ = self.lam[index_w]
+            Phi_inv = np.linalg.inv(Phi)
 
-        Lambda = np.diag([
-            0,
-            0,
-            1,
-            np.exp((lambda_[3]-lambda_[2])*self.d),
-            np.exp((lambda_[4]-lambda_[2])*self.d),
-            np.exp((lambda_[5]-lambda_[2])*self.d)
-        ])
+            Lambda = np.diag([
+                0,
+                0,
+                1,
+                np.exp((lambda_[3]-lambda_[2])*self.d),
+                np.exp((lambda_[4]-lambda_[2])*self.d),
+                np.exp((lambda_[5]-lambda_[2])*self.d)
+            ])
 
-        alpha_prime = Phi.dot(Lambda).dot(Phi_inv)
-        xi_prime = Phi_inv[:2,:] @ Om
-        xi_prime = np.concatenate([xi_prime, np.array([[0,0,1]])])  # TODO
-        xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
-            np.exp((lambda_[2]-lambda_[0])*self.d),
-            np.exp((lambda_[2]-lambda_[1])*self.d),
-            1
-        ]))
+            alpha_prime = Phi.dot(Lambda).dot(Phi_inv)
+            xi_prime = Phi_inv[:2,:] @ Om[index_w,:][:,index_X]
+            xi_prime = np.concatenate([xi_prime, np.array([[0,0,1]])])  # TODO
+            xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
+                np.exp((lambda_[2]-lambda_[0])*self.d),
+                np.exp((lambda_[2]-lambda_[1])*self.d),
+                1
+            ]))
 
-        Om_ = alpha_prime.dot(Om).dot(xi_prime_lambda)
-        Om_[:,0] += Phi[:,0]
-        Om_[:,1] += Phi[:,1]
+            Om_ = alpha_prime.dot(Om[index_w,:][:,index_X]).dot(xi_prime_lambda)
+            Om_[:,0] += Phi[:,0]
+            Om_[:,1] += Phi[:,1]
 
-        # eq. 24
-        Xi = xi_prime_lambda*np.exp(-lambda_[2]*self.d)
-    
-        return Om_, Xi
+            # eq. 24
+            Xi = xi_prime_lambda*np.exp(-lambda_[2]*self.d)
+
+            Om_stack.append(Om_)
+            Xi_stack.append(Xi)
+        Om = block_diag(*Om_stack)
+        Xi = block_diag(*Xi_stack)
+        return Om, Xi
 
 
 class ElasticLayer(PwLayer):

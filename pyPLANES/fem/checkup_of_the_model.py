@@ -55,26 +55,29 @@ def check_pwfem(self):
             for s in _e.neighbouring_surfaces:
                 if isinstance(s, (Air, FluidFem)):
                     _e.nb_dof_per_node = 1
-                    _e.typ = "fluid"
+                    _e.medium = s.mat
                     _e.primal = [1]
                     _e.dual = [0]
                 elif (isinstance(s, ElasticFem)):
-                    _e.nb_per_node = 2
-                    _e.typ = "elastic"
+                    _e.nb_dof_per_node = 2
+                    _e.medium = s.mat
                     _e.primal = [3, 1]
                     _e.dual = [0, 2]
                 elif isinstance(s, PemFem):
                     if s.formulation98:
-                        _e.nb_per_node = 3
+                        _e.nb_dof_per_node = 3
+                        _e.medium = s.mat
                         _e.typ = "Biot98"
-                        _e.primal = [3, 1]
-                        _e.dual = [0, 2]
+                        _e.primal = [5, 1, 4]
+                        _e.dual = [0, 3, 2]
                     else:
-                        _e.nb_per_node = 3
+                        _e.nb_dof_per_node = 3
+                        _e.medium = s.mat
                         _e.typ = "Biot01"
                         _e.primal = [5, 1, 4]
                         _e.dual = [0, 3, 2]
-
+    self.medium[0] = self.pwfem_entities[0].medium
+    self.medium[1] = self.pwfem_entities[1].medium
 
 def check_neighbours_1D_entity(self):
     for _e in self.entities:
@@ -116,8 +119,8 @@ def check_IFS(self):
 def check_pem_formulation(self):
     for _e in self.entities:
         if isinstance(_e, PemFem):
-            # _e.formulation98 = True
-            _e.formulation98 = False
+            _e.formulation98 = True
+            # _e.formulation98 = False
 
 def check_interfaces(self):
     # Check that the number of interfaces go by pairs

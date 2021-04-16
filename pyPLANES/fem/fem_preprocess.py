@@ -78,8 +78,6 @@ def fem_preprocess(self):
         _ent.determine_typ_and_waves()
     self.duration_assembly = time.time() - self.start_time - self.duration_importation
     self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   
-
-
 # def assign_order_to_elements
 
 def assign_reference_element(self):
@@ -112,9 +110,6 @@ def reference_element(key, order):
 
     return out
 
- 
-
-
 def create_vertices_edges_faces_bubbles_lists(self):
     ''' Create the list of edges, faces and bubbles of the Model '''
     existing_edges = [] # List of element vertices for redundancy check
@@ -134,8 +129,6 @@ def create_vertices_edges_faces_bubbles_lists(self):
             _el.faces.append(new_face)
             _el.faces_orientation.append(1)
             self.nb_faces +=1
-
-
 
 def update_edges(self, _el, existing_edges, element_vertices):
     element_vertices_tag = [element_vertices[0].tag, element_vertices[1].tag]
