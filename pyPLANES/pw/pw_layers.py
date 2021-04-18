@@ -208,7 +208,6 @@ class PemLayer(PwLayer):
 
     def transfert(self, Om):
         self.order_lam()
-
         Om_stack, Xi_stack = [], []
         for _w in range(self.nb_waves):
             index_w = list(range(6*_w, 6*(_w+1)))

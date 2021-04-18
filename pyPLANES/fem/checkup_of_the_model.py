@@ -61,6 +61,7 @@ def check_pwfem(self):
                 elif (isinstance(s, ElasticFem)):
                     _e.nb_dof_per_node = 2
                     _e.medium = s.mat
+                    _e.typ = "elastic"
                     _e.primal = [3, 1]
                     _e.dual = [0, 2]
                 elif isinstance(s, PemFem):

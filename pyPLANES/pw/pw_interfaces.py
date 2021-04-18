@@ -26,6 +26,7 @@ import numpy as np
 from numpy import sqrt
 from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
+# from pyPLANES.pw.periodic_layer import PeriodicLayer
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
 from scipy.linalg import block_diag
 
@@ -682,34 +683,49 @@ class SemiInfinite(PwInterface):
         self.omega = omega 
 
 
-    def Omega(self, nb_bloch_waves=0):
+    def Omega(self, nb_bloch_waves=1):
         
-        typ =[]
+        typ =None
         if isinstance(self.layers[0], PwLayer):
             if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
                 typ = "fluid"
+            elif self.layers[0].medium.MEDIUM_TYPE in ["pem"]:
+                typ ="pem"
+            elif self.layers[0].medium.MEDIUM_TYPE in ["elastic"]:
+                typ ="elastic"
         else:
-            typ ="fluid"
+            if self.layers[0].medium[1].MEDIUM_TYPE in ["fluid", "eqf"]:
+                typ ="fluid"
+            elif self.layers[0].medium[1].MEDIUM_TYPE in ["pem"]:
+                typ ="pem"
+            elif self.layers[0].medium[1].MEDIUM_TYPE in ["elastic"]:
+                typ ="elastic"
+        # else:
+        #     raise NameError("Layer is neither PwLayer nor PeriodicLayer")
 
         if typ == "fluid":
-            out = np.array([-self.lam[0]/(self.medium.rho*self.omega**2), 1], dtype=np.complex).reshape(2,1)
-            if nb_bloch_waves !=0:
-                out = np.kron(np.eye(nb_bloch_waves), out)
+            out = np.zeros((2*nb_bloch_waves, nb_bloch_waves), dtype=complex)
+            for _w in range(nb_bloch_waves):
+                out[0+_w*6, 1+_w] = -self.lam[_w]/(self.medium.rho*self.omega**2)
+                out[1+_w*6, 0+_w] = 1
             return out, np.eye(max([nb_bloch_waves,1]))
+        elif typ == "pem":
+            out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
+            for _w in range(nb_bloch_waves):
+                out[1+_w*6, 1+_w*3] = 1.
+                out[2+_w*6, 0+_w*3] = -self.lam[_w]/(self.medium.rho*self.omega**2)
+                out[4+_w*6, 0+_w*3] = 1. 
+                out[5+_w*6, 2+_w*3] = 1.
+            return out, np.eye(3*max([nb_bloch_waves,1]))
+        elif typ  == "elastic":
+            out = np.zeros((4*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)
+            for _w in range(nb_bloch_waves):
+                out[1+_w*4, 0+_w*2] = -self.lam[0]/(self.medium.rho*self.omega**2)
+                out[2+_w*4, 0+_w*2] = -1. # \sigma_{yy} is -p
+                out[3+_w*4, 1+_w*2] = 1.
 
-        # elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-        #     Om = np.zeros((4, 2), dtype=complex)
-        #     Om[1, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
-        #     Om[2, 0] = -1. # \sigma_{yy} is -p
-        #     Om[3, 1] = 1.
-        #     return Om, np.eye(2)     
-        # elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-        #     Om = np.zeros((6, 3), dtype=complex)
-        #     Om[1, 1] = 1.
-        #     Om[2, 0] = -self.lam[0]/(self.medium.rho*self.omega**2)
-        #     Om[4, 0] = 1. 
-        #     Om[5, 2] = 1.
-        #     return Om, np.eye(3)
+            return out, np.eye(2*max([nb_bloch_waves,1]))
+
          
 
 

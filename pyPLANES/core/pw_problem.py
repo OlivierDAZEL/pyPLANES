@@ -118,8 +118,6 @@ class PwProblem(Calculus, MultiLayer):
             _ = (self.ky[0]/self.k_air)/(1j*2*pi*self.f*Air.Z) 
             detM = -self.Omega[0]+_*self.Omega[1]
             self.R = (self.Omega[0]+_*self.Omega[1])/detM
-            if self.print_result:
-                print("R={}".format(self.R))
             if self.termination == "transmission":
                 X_0_minus = 2*_/detM
                 self.Omega = (self.back_prop*X_0_minus).flatten()
@@ -127,12 +125,15 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.R = self.X[0]
-            if self.print_result:
-                print("R={}".format(self.R))
             if self.termination == "transmission":
                 self.T = self.X[-1]
             else:
                 self.T = None
+        if self.print_result:
+            _text = "R={:+.15f}".format(self.R)
+            if self.termination == "transmission":
+                _text += " / T={:+.15f}".format(self.T)
+            print(_text)
 
     def plot_solution(self):
          for _layer in self.layers[1:]:

@@ -51,6 +51,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.order = kwargs.get("order", 2)
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order)
+        # self.period = 5e-2
+        # print(self.period)
         self.method = "Recursive Method"
         self.add_excitation_and_termination(self.method, self.termination)
         # Out files
@@ -73,7 +75,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
         if self.period:
             nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
-            nb_bloch_waves = 1
+            nb_bloch_waves = 0
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = k_x+_*(2*pi/self.period)
@@ -81,7 +83,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             # self.ky = np.real(k_y)-1j*np.imag(k_y)
         else:
             self.nb_waves = 1
-            _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = np.array([k_x])
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y)
@@ -127,6 +128,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             E_0 = np.zeros(2*self.nb_waves, dtype=complex)
             E_0[:2] = np.array([-_, 1]).reshape((2))
             X = LA.solve(M,E_0)
+            # print(X)
             # print(M)
             self.R = X[self.nb_waves]
             if self.termination == "transmission":
@@ -134,8 +136,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 self.Omega = (self.back_prop@X_0_minus)
                 self.T = self.Omega[0]
         if self.print_result:
-            print("R={}".format(self.R))
-
+            _text = "R={:+.15f}".format(self.R)
+            if self.termination == "transmission":
+                _text += " / T={:+.15f}".format(self.T)
+            print(_text)
 
     def plot_solution(self):
          for _layer in self.layers[1:]:

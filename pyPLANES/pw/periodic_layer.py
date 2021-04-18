@@ -128,8 +128,6 @@ class PeriodicLayer(Mesh):
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
             D_period = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
-
-
             for _w, kx in enumerate(self.kx):
                 for _elem in _ent.elements:
                     M_elem = imposed_pw_elementary_vector(_elem, kx)
@@ -142,33 +140,37 @@ class PeriodicLayer(Mesh):
                         D_period[_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     elif _ent.typ == "Biot98":
                         dof_ux, orient_ux = dof_ux_element(_elem)
-
-
                         dof_FEM.extend([d-1 for d in dof_ux])
                         dof_S_dual.extend(len(dof_ux)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_ux)*[0+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_ux@M_elem))
                         D_period[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
-
                         dof_uy, orient_uy = dof_uy_element(_elem)
-
                         dof_FEM.extend([d-1 for d in dof_uy])
                         dof_S_dual.extend(len(dof_uy)*[_ent.dual[1]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_uy@M_elem))
                         D_period[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
-
                         dof_p, orient_p, _ = dof_p_element(_elem)
-
                         dof_FEM.extend([d-1 for d in dof_p])
                         dof_S_dual.extend(len(dof_ux)*[_ent.dual[2]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_p)*[2+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_p@M_elem))
                         D_period[2+_ent.nb_dof_per_node*_w, _ent.primal[2]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                    elif _ent.typ == "elastic":
+                        dof_ux, orient_ux = dof_ux_element(_elem)
+                        dof_FEM.extend([d-1 for d in dof_ux])
+                        dof_S_dual.extend(len(dof_ux)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
+                        dof_S_primal.extend(len(dof_ux)*[0+_ent.nb_dof_per_node*_w])
+                        D_val.extend(list(orient_ux@M_elem))
+                        D_period[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        dof_uy, orient_uy = dof_uy_element(_elem)
+                        dof_FEM.extend([d-1 for d in dof_uy])
+                        dof_S_dual.extend(len(dof_uy)*[_ent.dual[1]+2*_ent.nb_dof_per_node*_w])
+                        dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
+                        D_val.extend(list(orient_uy@M_elem))
+                        D_period[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
             
-            # print(dof_S_primal)
-            # print(dof_S_dual)
-
             DD.append(D_period)
             DD_xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.nb_dof_master-1)))
             for i_left, _dof_left in enumerate(self.dof_left):

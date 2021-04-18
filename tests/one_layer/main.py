@@ -12,19 +12,19 @@ from pyPLANES.core.dgm_problem import DgmProblem
 
 # Parameters of the simulation 
 frequencies = np.linspace(1., 5000., 1)
-theta_d = 50
+theta_d = 1e-5
 L = 5e-2
 d = 5e-2
-lcar = 5e-2
+lcar = 1e-2
 material = "Wwood"
-material = "melamine"
+# material = "melamine"
 # material = "melamine_eqf"
 # material = "Air"
 
 name_project = "one_layer"
 ml = [(material, d)]
 termination = "transmission"
-termination = "rigid"
+# termination = "rigid"
 
 plot_solution = [True, True, True, False, False, True]
 # plot_solution = [False]*6
@@ -37,7 +37,8 @@ bc_right = "Periodicity"
 bc_left = "Periodicity"
 bc_top = "top"
 
-ml = [(material, d), (material, d), (material, d)]
+ml = [(material, d/3), (material, d/3), (material, d/3)]
+# ml = [(material, d)]
 global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
 global_method.resolution()
 
@@ -47,8 +48,9 @@ recursive_method.resolution()
 
 one_layer(name_mesh="one_layer_TMM", L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
 ml = [(material, d), ("one_layer_TMM", d), (material, d)]
-# ml = [("one_layer_TMM", d)]
-eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, order=4, frequencies=frequencies, plot_solution=[False]*6,termination=termination, verbose=False, print_result=True)
+ml = [("one_layer_TMM", 3*d)]
+
+eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, order=2, frequencies=frequencies, plot_solution=[False]*6,termination=termination, verbose=False, print_result=True)
 eTMM_method.resolution()
 # print((Z-Air.Z)/(Z+Air.Z))
 
