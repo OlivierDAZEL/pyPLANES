@@ -4,6 +4,14 @@ pyPLANES.pw package
 Submodules
 ----------
 
+pyPLANES.pw.periodic\_layer module
+----------------------------------
+
+.. automodule:: pyPLANES.pw.periodic_layer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pyPLANES.pw.pw\_classes module
 ------------------------------
 

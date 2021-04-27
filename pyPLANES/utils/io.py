@@ -44,8 +44,6 @@ from pyPLANES.fem.fem_entities_volumic import *
 from pymls import from_yaml, Solver, Layer, backing
 from mediapack import Air, Fluid
 
-
-
 def load_material(mat):
     if mat == "Air":
         Air_mat = Air()
@@ -54,7 +52,6 @@ def load_material(mat):
         return from_yaml("materials/" + mat + ".yaml")
     else:
         return None
-
 
 def result_pymls(**kwargs):
     name_project = kwargs.get("name_project", "unnamed_project")
@@ -211,16 +208,13 @@ def plot_fem_solution(self, kx=0.):
 
     # plt.show()
 
-
-
-
 def export_paraview(self):
     if self.export_paraview == 0: 
         self.vtk_points = [_v.coord for _v in self.vertices[1:]]
         self.vtk_triangle = [[_e.vertices[0].tag-1, _e.vertices[1].tag-1, _e.vertices[2].tag-1] for _e in self.elements[1:] if _e.typ==2]
     pressure = [np.abs(_v.sol[3]) for _v in self.vertices[1:]]
 
-    # Bidouille pour que la tour et les lettres clignotent dans IAGS 20201
+    # Bidouille pour que la tour et les lettres clignotent dans IAGS 2021
     pressure_max = max(pressure)
     light_on = self.export_paraview%4
     if light_on<2:

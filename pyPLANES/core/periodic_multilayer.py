@@ -62,18 +62,10 @@ class PeriodicMultiLayer():
                     self.layers.append(ElasticLayer(mat, d, _x))
                 _x += d
             elif os.path.isfile(_l[0] + ".msh"):
-                self.layers.append(PeriodicLayer(name_mesh=_l[0], theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot))
+                self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot))
                 self.period = self.layers[-1].period
+                _x += self.layers[-1].d
 
-        # Put the right y value in the case of a Periodic layer
-        if self.period:
-            _y = 0.
-            for _l in self.layers:
-                if isinstance(_l, PeriodicLayer):
-                    for _v in _l.vertices[1:]:
-                        _v.coord[1] += _y
-                else:
-                    _y += _l.d
 
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):
@@ -133,41 +125,16 @@ class PeriodicMultiLayer():
                 self.interfaces.append(PemBacking(self.layers[-1]))
             elif medium_type == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
-        if method == "Recursive Method":
-            if isinstance(self.layers[0].medium, list):
-                medium_type = self.layers[0].medium[0].MEDIUM_TYPE
-            else: 
-                medium_type = self.layers[0].medium.MEDIUM_TYPE
-            if medium_type in ["fluid", "eqf"]:
-                self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
-            elif medium_type == "pem":
-                self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
-            elif medium_type == "elastic":
-                self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
-        else: # Global method
-            Air_mat = Air()
-            mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
-            self.layers.insert(0,FluidLayer(mat, 1.e-2, -1.e-2))
-            if self.layers[1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.interfaces.insert(0,FluidFluidInterface(self.layers[0] ,self.layers[1]))
-            elif self.layers[1].medium.MEDIUM_TYPE == "pem":
-                self.interfaces.insert(0,FluidPemInterface(self.layers[0], self.layers[1]))
-            elif self.layers[1].medium.MEDIUM_TYPE == "elastic":
-                self.interfaces.insert(0,FluidElasticInterface(self.layers[0],self.layers[1]))
-            # Count of the number of plane waves for the global method
-            self.nb_PW = 0
-            for _layer in self.layers:
-                if _layer.medium.MODEL in ["fluid", "eqf"]:
-                    _layer.dofs = self.nb_PW+np.arange(2)
-                    self.nb_PW += 2
-                elif _layer.medium.MODEL == "pem":
-                    _layer.dofs = self.nb_PW+np.arange(6)
-                    self.nb_PW += 6
-                elif _layer.medium.MODEL == "elastic":
-                    _layer.dofs = self.nb_PW+np.arange(4)
-                    self.nb_PW += 4
-            if isinstance(self.interfaces[-1], SemiInfinite):
-                self.nb_PW += 1 
+        if isinstance(self.layers[0].medium, list):
+            medium_type = self.layers[0].medium[0].MEDIUM_TYPE
+        else: 
+            medium_type = self.layers[0].medium.MEDIUM_TYPE
+        if medium_type in ["fluid", "eqf"]:
+            self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
+        elif medium_type == "pem":
+            self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
+        elif medium_type == "elastic":
+            self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
 
     def update_frequency(self, omega, kx):
         for _l in self.layers:

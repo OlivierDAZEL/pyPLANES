@@ -75,7 +75,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
         if self.period:
             nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
-            nb_bloch_waves = 1
+            print(nb_bloch_waves)
+            nb_bloch_waves = 40
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = k_x+_*(2*pi/self.period)
@@ -128,15 +129,19 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             E_0 = np.zeros(2*self.nb_waves, dtype=complex)
             E_0[:2] = np.array([-_, 1]).reshape((2))
             X = LA.solve(M,E_0)
-            self.R = X[self.nb_waves]
+            self.R = X[self.nb_waves:]
+
+            self.abs = 1-np.sum(np.real(self.ky)*np.abs(self.R**2))/np.real(self.ky[0])
+
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
-                self.Omega = (self.back_prop@self.X_0_minus)
-                self.T = self.Omega[0]
+                self.T = (self.back_prop@self.X_0_minus)[::self.nb_waves]
+                self.abs = 1-np.sum(np.real(self.ky)*np.abs(self.T**2))/np.real(self.ky[0])
+
         if self.print_result:
-            _text = "R={:+.15f}".format(self.R)
+            _text = "R={:+.15f}".format(self.R[0])
             if self.termination == "transmission":
-                _text += " / T={:+.15f}".format(self.T)
+                _text += " / T={:+.15f}".format(self.T[0])
             print(_text)
 
     def plot_solution(self):
@@ -159,11 +164,11 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
     def write_out_files(self):
         self.out_file.write("{:.12e}\t".format(self.f))
-        self.out_file.write("{:.12e}\t".format(self.R.real))
-        self.out_file.write("{:.12e}\t".format(self.R.imag))
+        self.out_file.write("{:.12e}\t".format(self.R[0].real))
+        self.out_file.write("{:.12e}\t".format(self.R[0].imag))
         if self.termination == "transmission":
-            self.out_file.write("{:.12e}\t".format(self.T.real))
-            self.out_file.write("{:.12e}\t".format(self.T.imag))
+            self.out_file.write("{:.12e}\t".format(self.T[0].real))
+            self.out_file.write("{:.12e}\t".format(self.T[0].imag))
         self.out_file.write("\n")
 
     def load_results(self):

@@ -46,10 +46,17 @@ from pyPLANES.fem.fem_entities_pw import PwFem
 class PeriodicLayer(Mesh):
     def __init__(self, **kwargs):
         Mesh.__init__(self, **kwargs)
+        _x = kwargs.get("_x", 0)
+        for _v in self.vertices[1:]:
+            _v.coord[1] += _x
+        y = [_v.coord[1] for _v in self.vertices[1:]]
+        self.d = np.max(y)-np.min(y)
+
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.order = kwargs.get("order", 2)
         self.verbose = kwargs.get("verbose", False)
         self.plot = kwargs.get("plot", [False]*6)
+
         self.F_i, self.F_v = None, None
         self.A_i, self.A_j, self.A_v = None, None, None
         self.T_i, self.T_j, self.T_v = None, None, None
@@ -83,8 +90,6 @@ class PeriodicLayer(Mesh):
             _ent.dofs = np.arange(_ent.nb_dof_per_node*len(self.kx))
             _ent.nb_dofs = len(_ent.dofs)
         self.create_TM(omega)
-
-
 
     def create_TM(self, omega):
         # Initialisation of the lists
@@ -203,19 +208,16 @@ class PeriodicLayer(Mesh):
         M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1] 
         M_2[_s:,:] = (DD_xi[0]@RR[1])#.todense()
 
-
         if any(self.plot):
             self.RR = RR
 
         self.TM = -LA.solve(M_1, M_2)
-
 
     def transfert(self, Om):
         # Creation of the Transfer Matrix 
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
         return self.TM@Om, np.eye(Om.shape[1])
-
 
     def update_system(self, _A_i, _A_j, _A_v, _T_i, _T_j, _T_v, _F_i, _F_v):
         self.A_i.extend(_A_i)
