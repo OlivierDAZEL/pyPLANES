@@ -738,8 +738,8 @@ class SemiInfinite(PwInterface):
         if typ == "fluid":
             out = np.zeros((2*nb_bloch_waves, nb_bloch_waves), dtype=complex)
             for _w in range(nb_bloch_waves):
-                out[0+_w*6, 0+_w] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
-                out[1+_w*6, 0+_w] = 1
+                out[0+_w*2, 0+_w] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
+                out[1+_w*2, 0+_w] = 1
             return out, np.eye(max([nb_bloch_waves,1]))
         elif typ == "pem":
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)

@@ -149,11 +149,11 @@ def plot_fem_solution(self, kx=0.):
                     # print(ie/len(_en.elements))
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
-                    p_elem *= np.exp(1j*kx*x_elem)
+                    p_elem *= np.exp(1j*kx[0]*x_elem)
                     if self.plot[2]:
                         plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
-                        plt.plot(y_elem, np.imag(p_elem), 'm.')
+                        plt.plot(y_elem, np.imag(p_elem), 'm+')
                     if self.plot[5]:
                         triang = mtri.Triangulation(x_elem, y_elem)
                         plt.figure("Pressure map")
@@ -165,21 +165,21 @@ def plot_fem_solution(self, kx=0.):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
-                    ux_elem = f_elem[:, 0]*np.exp(1j*kx*x_elem)
-                    uy_elem = f_elem[:, 1]*np.exp(1j*kx*x_elem)
-                    p_elem = f_elem[:, 2]*np.exp(1j*kx*x_elem)
+                    ux_elem = f_elem[:, 0]*np.exp(1j*kx[0]*x_elem)
+                    uy_elem = f_elem[:, 1]*np.exp(1j*kx[0]*x_elem)
+                    p_elem = f_elem[:, 2]*np.exp(1j*kx[0]*x_elem)
                     if self.plot[0]:
                         plt.figure("Solid displacement along x")
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')
-                        plt.plot(y_elem, np.imag(ux_elem), 'm.')
+                        plt.plot(y_elem, np.imag(ux_elem), 'm+')
                     if self.plot[1]:
                         plt.figure("Solid displacement along y")
                         plt.plot(y_elem, np.abs(uy_elem), 'r+')
-                        plt.plot(y_elem, np.imag(uy_elem), 'm.')
+                        plt.plot(y_elem, np.imag(uy_elem), 'm+')
                     if self.plot[2]:
                         plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
-                        plt.plot(y_elem, np.imag(p_elem), 'm.')
+                        plt.plot(y_elem, np.imag(p_elem), 'm+')
                     if self.plot[5]:
                         x.extend(list(x_elem))
                         y.extend(list(y_elem))
@@ -188,8 +188,8 @@ def plot_fem_solution(self, kx=0.):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
-                    ux_elem = f_elem[:, 0]*np.exp(1j*kx*x_elem)
-                    uy_elem = f_elem[:, 1]*np.exp(1j*kx*x_elem)
+                    ux_elem = f_elem[:, 0]*np.exp(1j*kx[0]*x_elem)
+                    uy_elem = f_elem[:, 1]*np.exp(1j*kx[0]*x_elem)
                     if self.plot[0]:
                         plt.figure("Solid displacement along x")
                         plt.plot(y_elem, np.abs(ux_elem), 'r+')

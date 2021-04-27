@@ -65,6 +65,15 @@ class PeriodicMultiLayer():
                 self.layers.append(PeriodicLayer(name_mesh=_l[0], theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot))
                 self.period = self.layers[-1].period
 
+        # Put the right y value in the case of a Periodic layer
+        if self.period:
+            _y = 0.
+            for _l in self.layers:
+                if isinstance(_l, PeriodicLayer):
+                    for _v in _l.vertices[1:]:
+                        _v.coord[1] += _y
+                else:
+                    _y += _l.d
 
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):

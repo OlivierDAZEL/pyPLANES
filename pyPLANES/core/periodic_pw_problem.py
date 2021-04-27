@@ -75,7 +75,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
         if self.period:
             nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
-            nb_bloch_waves = 0
+            nb_bloch_waves = 1
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = k_x+_*(2*pi/self.period)

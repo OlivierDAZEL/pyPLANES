@@ -74,7 +74,6 @@ class GenericElement:
         out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
         if self.typ == 1:
             out += "Vertices = [{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag)
-            print(self.edges)
             out += "edge={} /orientation ={}\n".format(self.edges[0].tag, self.edges_orientation)
         elif self.typ == 2:
             out += "Vertices = [{},{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag, self.vertices[2].tag)

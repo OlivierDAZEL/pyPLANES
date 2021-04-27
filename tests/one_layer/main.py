@@ -51,13 +51,13 @@ bc_top = "top"
 # ml = [(material, 2*d)]
 # ml = [("Air", d), ("melamine", d)]
 
-# material = "melamine"
+material = "melamine"
 # material = "Air"
 # material = "Wwood"
 
 ml = [(material, d)]
 # ml = [("Air", d)]
-ml = [("melamine", d)]*2
+# ml = [("melamine", d)]
 # ml = [("Air", d), (melamine, d)]
 
 global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
@@ -70,7 +70,7 @@ recursive_method.resolution()
 one_layer(name_mesh=material + "_FEM", L=L, d=d, lcar=lcar, mat=material, method="FEM",  BC=[bc_bottom, bc_right, bc_top, bc_left])
 
 ml = [("melamine", d), (melamine+"_FEM", d)]
-# ml = [(material + "_FEM" , d)]
+ml = [(material + "_FEM" , d)]
 
 eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, order=3, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True)
 eTMM_method.resolution()
