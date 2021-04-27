@@ -47,6 +47,7 @@ class PeriodicMultiLayer():
         self.verbose = kwargs.get("verbose", False)
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.order = kwargs.get("order", 2)
+        self.plot = kwargs.get("plot", [False*6])
         self.period = False # If period is false: homogeneous layer
         _x = 0
         for _l in ml:
@@ -61,7 +62,7 @@ class PeriodicMultiLayer():
                     self.layers.append(ElasticLayer(mat, d, _x))
                 _x += d
             elif os.path.isfile(_l[0] + ".msh"):
-                self.layers.append(PeriodicLayer(name_mesh=_l[0], theta_d= self.theta_d, verbose=self.verbose, order=self.order))
+                self.layers.append(PeriodicLayer(name_mesh=_l[0], theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot))
                 self.period = self.layers[-1].period
 
 
@@ -107,7 +108,6 @@ class PeriodicMultiLayer():
             out +="Interface #{}".format(i_l+1)+"\n"
             out += self.interfaces[i_l+1].__str__()+"\n"
         return out 
-
 
     def add_excitation_and_termination(self, method, termination):
         # Interface associated to the termination 
@@ -160,8 +160,8 @@ class PeriodicMultiLayer():
             if isinstance(self.interfaces[-1], SemiInfinite):
                 self.nb_PW += 1 
 
-    def update_frequency(self, omega):
+    def update_frequency(self, omega, kx):
         for _l in self.layers:
-            _l.update_frequency(omega, self.kx)
+            _l.update_frequency(omega, kx)
         for _i in self.interfaces:
-            _i.update_frequency(omega, self.kx)
+            _i.update_frequency(omega, kx)

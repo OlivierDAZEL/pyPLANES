@@ -122,6 +122,15 @@ class FluidLayer(PwLayer):
         self.nb_waves = len(kx)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
 
+    def transfert_matrix(self, om, ky):
+        T = np.zeros((2, 2), dtype=complex)
+        T[0, 0] = np.cos(ky*self.d)
+        T[1, 0] = (om**2*self.medium.rho/ky)*np.sin(ky*self.d)
+        T[0, 1] = -(ky/(om**2*self.medium.rho))*np.sin(ky*self.d)
+        T[1, 1] = np.cos(ky*self.d)
+        return T
+
+
     def update_Omega(self, om, Om, ky):
         T = np.zeros((2, 2), dtype=complex)
         T[0, 0] = np.cos(ky*self.d)
@@ -138,20 +147,19 @@ class FluidLayer(PwLayer):
             index_0 = _w*self.nb_fields_SV
             index_1 = _w*self.nb_fields_SV+1
             alpha = self.SV[index_0, index_0]
-            xi_prime = (Om[index_0, _w]/alpha+Om[index_1, _w])/2.
-
+            xi_prime = (Om[index_0, _w]/alpha+Om[index_1, _w])/2. #Ok
             Om_0 = (Om[index_0, _w]-alpha*Om[index_1, _w])/2. 
             Om_1 = -Om_0/alpha
             # Om_ = np.array([Om_0, Om_1])*np.exp(-2.*self.lam[index_0]*self.d)/xi_prime
-        
-            Om_[index_0, _w] = Om_0*np.exp(-2.*self.lam[index_0]*self.d)/xi_prime+ alpha
-            Om_[index_1, _w] = Om_1*np.exp(-2.*self.lam[index_0]*self.d)/xi_prime+ 1.
+            Om_[index_0, _w] = Om_0*np.exp(2.*self.lam[index_0]*self.d)/xi_prime+ alpha
+            Om_[index_1, _w] = Om_1*np.exp(2.*self.lam[index_0]*self.d)/xi_prime+ 1.
 
-            Xi[_w, _w] = np.exp(-self.lam[index_0]*self.d)/xi_prime
-        
+            Xi[_w, _w] = np.exp(self.lam[index_0]*self.d)/xi_prime
+
         return Om_ , Xi
 
-    def plot_solution(self, plot, X, nb_points=200):
+    def plot_solution_global(self, plot, X, nb_points=200):
+
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         pr =  self.SV[1, 0]*np.exp(self.lam[0]*x_f)*X[0]
@@ -162,6 +170,21 @@ class FluidLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm')
+            # plt.figure("ut")
+            # plt.plot(self.x[0]+x_f, np.real(ut), 'r')
+            # plt.plot(self.x[0]+x_f, np.imag(ut), 'm')
+
+    def plot_solution_recursive(self, plot, X, nb_points=10):
+        x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
+        pr =  self.SV[1, 0]*np.exp(self.lam[0]*x_f)*X[0]
+        pr += self.SV[1, 1]*np.exp(self.lam[1]*x_f)*X[1]
+        ut =  self.SV[0, 0]*np.exp(self.lam[0]*x_f)*X[0]
+        ut += self.SV[0, 1]*np.exp(self.lam[1]*x_f)*X[1]
+        if plot[2]:
+            plt.figure("Pressure")
+            plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
+            plt.plot(self.x[0]+x_f, np.imag(pr), 'm.')
+
 
 class PemLayer(PwLayer):
 
@@ -178,20 +201,19 @@ class PemLayer(PwLayer):
         self.SV, self.lam = PEM_waves_TMM(self.medium, kx)
         self.nb_waves = len(kx)
 
-
-    def plot_solution(self, plot, X, nb_points=200):
+    def plot_solution_global(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
         for i_dim in range(3):
-            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            ux += self.SV[1, i_dim+3]*np.exp(-self.lam[i_dim]*x_b)*X[i_dim+3]
-            uy += self.SV[5, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            uy += self.SV[5, i_dim+3]*np.exp(-self.lam[i_dim]*x_b)*X[i_dim+3]
-            pr += self.SV[4, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            pr += self.SV[4, i_dim+3]*np.exp(-self.lam[i_dim]*x_b)*X[i_dim+3]
-            ut += self.SV[2, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            ut += self.SV[2, i_dim+3]*np.exp(-self.lam[i_dim]*x_b)*X[i_dim+3]
+            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]  *x_f)*X[i_dim]
+            ux += self.SV[1, i_dim+3]*np.exp(self.lam[i_dim+3]*x_b)*X[i_dim+3]
+            uy += self.SV[5, i_dim  ]*np.exp(self.lam[i_dim]  *x_f)*X[i_dim]
+            uy += self.SV[5, i_dim+3]*np.exp(self.lam[i_dim+3]*x_b)*X[i_dim+3]
+            pr += self.SV[4, i_dim  ]*np.exp(self.lam[i_dim]  *x_f)*X[i_dim]
+            pr += self.SV[4, i_dim+3]*np.exp(self.lam[i_dim+3]*x_b)*X[i_dim+3]
+            ut += self.SV[2, i_dim  ]*np.exp(self.lam[i_dim]  *x_f)*X[i_dim]
+            ut += self.SV[2, i_dim+3]*np.exp(self.lam[i_dim+3]*x_b)*X[i_dim+3]
         if plot[0]:
             plt.figure("Solid displacement along y")
             plt.plot(self.x[0]+x_f, np.abs(ux), 'r')
@@ -204,6 +226,27 @@ class PemLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm')
+
+    def plot_solution_recursive(self, plot, X, nb_points=10):
+        x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
+        ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(6):
+            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
+            uy += self.SV[5, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
+            pr += self.SV[4, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
+        if plot[0]:
+            plt.figure("Solid displacement along y")
+            plt.plot(self.x[0]+x_f, np.abs(ux), 'r.')
+            plt.plot(self.x[0]+x_f, np.imag(ux), 'm.')
+        if plot[1]:
+            plt.figure("Solid displacement along x")
+            plt.plot(self.x[0]+x_f, np.abs(uy), 'r.')
+            plt.plot(self.x[0]+x_f, np.imag(uy), 'm.')
+        if plot[2]:
+            plt.figure("Pressure")
+            plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
+            plt.plot(self.x[0]+x_f, np.imag(pr), 'm.')
+
 
 
     def transfert(self, Om):
@@ -221,17 +264,17 @@ class PemLayer(PwLayer):
                 0,
                 0,
                 1,
-                np.exp((lambda_[3]-lambda_[2])*self.d),
-                np.exp((lambda_[4]-lambda_[2])*self.d),
-                np.exp((lambda_[5]-lambda_[2])*self.d)
+                np.exp(-(lambda_[3]-lambda_[2])*self.d),
+                np.exp(-(lambda_[4]-lambda_[2])*self.d),
+                np.exp(-(lambda_[5]-lambda_[2])*self.d)
             ])
 
             alpha_prime = Phi.dot(Lambda).dot(Phi_inv)
             xi_prime = Phi_inv[:2,:] @ Om[index_w,:][:,index_X]
             xi_prime = np.concatenate([xi_prime, np.array([[0,0,1]])])  # TODO
             xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
-                np.exp((lambda_[2]-lambda_[0])*self.d),
-                np.exp((lambda_[2]-lambda_[1])*self.d),
+                np.exp(-(lambda_[2]-lambda_[0])*self.d),
+                np.exp(-(lambda_[2]-lambda_[1])*self.d),
                 1
             ]))
 
@@ -240,7 +283,7 @@ class PemLayer(PwLayer):
             Om_[:,1] += Phi[:,1]
 
             # eq. 24
-            Xi = xi_prime_lambda*np.exp(-lambda_[2]*self.d)
+            Xi = xi_prime_lambda*np.exp(lambda_[2]*self.d)
 
             Om_stack.append(Om_)
             Xi_stack.append(Xi)
@@ -253,6 +296,7 @@ class ElasticLayer(PwLayer):
 
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
+        self.nb_fields_SV = 4
 
     def __str__(self):
         out = "\t Elastic Layer / " + self.medium.name
@@ -261,39 +305,47 @@ class ElasticLayer(PwLayer):
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
         self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
+        self.nb_waves = len(kx)
 
     def transfert(self, Om):
-        index = np.argsort(self.lam.real)
-        index = index[::-1]        
-        Phi = self.SV[:,index]
-        lambda_ = self.lam[index]
+        self.order_lam()
+        Om_stack, Xi_stack = [], [] 
+        for _w in range(self.nb_waves):
+            index_w = list(range(4*_w, 4*(_w+1)))
+            index_X = list(range(2*_w, 2*(_w+1)))
 
-        Phi_inv = np.linalg.inv(Phi)
+            Phi = self.SV[index_w,:][:,index_w]
+            lambda_ = self.lam[index_w]
+            Phi_inv = np.linalg.inv(Phi)
 
-        Lambda = np.diag([
-            0,
-            1,
-            np.exp((lambda_[2]-lambda_[1])*self.d),
-            np.exp((lambda_[3]-lambda_[1])*self.d)
-        ])
+            Lambda = np.diag([
+                0,
+                1,
+                np.exp(-(lambda_[2]-lambda_[1])*self.d),
+                np.exp(-(lambda_[3]-lambda_[1])*self.d)
+            ])
 
-        alpha_prime = Phi.dot(Lambda).dot(Phi_inv)
-        
-        xi_prime = Phi_inv[:1,:] @ Om
-        xi_prime = np.concatenate([xi_prime, np.array([[0,1]])])  # TODO
-        xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
-            np.exp((lambda_[1]-lambda_[0])*self.d),
-            1
-        ]))
+            alpha_prime = Phi.dot(Lambda).dot(Phi_inv)
+            
+            xi_prime = Phi_inv[:1,:] @ Om[index_w,:][:,index_X]
+            xi_prime = np.concatenate([xi_prime, np.array([[0,1]])])  # TODO
+            xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
+                np.exp(-(lambda_[1]-lambda_[0])*self.d),
+                1
+            ]))
 
-        Om_ = alpha_prime.dot(Om).dot(xi_prime_lambda)
-        Om_[:,0] += Phi[:,0]
+            Om_ = alpha_prime.dot(Om[index_w,:][:,index_X]).dot(xi_prime_lambda)
+            Om_[:,0] += Phi[:,0]
 
-        Xi = xi_prime_lambda*np.exp(-lambda_[1]*self.d)
+            Xi = xi_prime_lambda*np.exp(lambda_[1]*self.d)
 
-        return Om_, Xi
+            Om_stack.append(Om_)
+            Xi_stack.append(Xi)
+        Om = block_diag(*Om_stack)
+        Xi = block_diag(*Xi_stack)
+        return Om, Xi
 
-    def plot_solution(self, plot, X, nb_points=200):
+    def plot_solution_global(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         ux, uy = 0*1j*x_f, 0*1j*x_f
@@ -311,3 +363,18 @@ class ElasticLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm')
 
+    def plot_solution_recursive(self, plot, X, nb_points=10):
+        x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
+        x_b = x_f - (self.x[1]-self.x[0])
+        ux, uy = 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(4):
+            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
+            uy += self.SV[3, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
+        if plot[0]:
+            plt.figure("Solid displacement along y")
+            plt.plot(self.x[0]+x_f, np.abs(ux), 'r.')
+            plt.plot(self.x[0]+x_f, np.imag(ux), 'm.')
+        if plot[1]:
+            plt.figure("Solid displacement along x")
+            plt.plot(self.x[0]+x_f, np.abs(uy), 'r.')
+            plt.plot(self.x[0]+x_f, np.imag(uy), 'm.')

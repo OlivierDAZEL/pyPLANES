@@ -26,7 +26,7 @@ import numpy as np
 from numpy import sqrt
 from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
-# from pyPLANES.pw.periodic_layer import PeriodicLayer
+from pyPLANES.pw.periodic_layer import PeriodicLayer
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
 from scipy.linalg import block_diag
 
@@ -95,22 +95,10 @@ class FluidPemInterface(PwInterface):
             Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
             Tau_tilde.append(np.concatenate([np.eye(1),Tau]))
 
-            # Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1))
             Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1).tolist())
-
-
-        # print(Omega_moins)    
-        # print(Tau_tilde)
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.spy(np.block(Omega_moins))
-        # plt.show()
         
         Omega_moins = block_diag(*Omega_moins)
         Tau_tilde = block_diag(*Tau_tilde)
-
-
-
         return np.block(Omega_moins), np.block(Tau_tilde)
 
     def update_M_global(self, M, i_eq):
@@ -242,12 +230,18 @@ class FluidElasticInterface(PwInterface):
         i_eq += 1
         return i_eq
 
-    def transfert(self, O):
-        tau = -O[0,0]/O[0,1]
-        Omega_minus = np.array([[O[1,1]], [-O[2,1]]])*tau + np.array([[O[1,0]], [-O[2,0]]])
-        tau_tilde = np.concatenate([np.eye(1,1), np.array([[tau]])])
+    def transfert(self, Om_):
+        Omega_moins, Tau_tilde = [], []
+        n_w = self.nb_waves
+        for _w in range(n_w):
+            Om = Om_[4*_w:4*(_w+1), 2*_w:2*(_w+1)]
+            tau = -Om_[0,0]/Om_[0,1]
+            Omega_moins.append(np.array([[Om[1,1]], [-Om[2,1]]])*tau + np.array([[Om[1,0]], [-Om[2,0]]]))
+            Tau_tilde.append(np.concatenate([np.eye(1,1), np.array([[tau]])]))
 
-        return (Omega_minus, tau_tilde)
+        Omega_moins = block_diag(*Omega_moins)
+        Tau_tilde = block_diag(*Tau_tilde)
+        return np.block(Omega_moins), np.block(Tau_tilde)
 
 class ElasticFluidInterface(PwInterface):
     """
@@ -288,17 +282,23 @@ class ElasticFluidInterface(PwInterface):
         i_eq += 1
         return i_eq
 
-    def transfert(self, Om):
-        Omega_moins = np.zeros((4,2), dtype=np.complex)
-        Omega_moins[1,0] = Om[0,0]
-        Omega_moins[2,0] = -Om[1,0]
-        Omega_moins[3,1] = 1
+    def transfert(self, Om_):
+        Omega_moins, Tau_tilde = [], []
+        n_w = self.nb_waves
+        for _w in range(n_w):
+            Om = Om_[2*_w:2*(_w+1), 1*_w:1*(_w+1)]
+            Om_moins = np.zeros((4,2), dtype=np.complex)
+            Om_moins[1,0] = Om[0,0]
+            Om_moins[2,0] = -Om[1,0]
+            Om_moins[3,1] = 1
+            Omega_moins.append(Om_moins)
+            T_tilde = np.zeros((1,2), dtype=np.complex)
+            T_tilde[0,0] = 1
+            Tau_tilde.append(T_tilde)
 
-        Tau_tilde = np.zeros((1,2), dtype=np.complex)
-        Tau_tilde[0,0] = 1
-
-        return (Omega_moins, Tau_tilde.reshape(1,2))
-
+        Omega_moins = block_diag(*Omega_moins)
+        Tau_tilde = block_diag(*Tau_tilde)
+        return np.block(Omega_moins), np.block(Tau_tilde)
 
 class ElasticElasticInterface(PwInterface):
     """
@@ -307,7 +307,7 @@ class ElasticElasticInterface(PwInterface):
     def __init__(self, layer1=None, layer2=None):
         super().__init__(layer1,layer2)
     def __str__(self):
-        out = "\t Elastic-Fluid interface"
+        out = "\t Elastic-Elastic interface"
         return out
 
     def update_M_global(self, M, i_eq):
@@ -330,7 +330,6 @@ class ElasticElasticInterface(PwInterface):
 
     def transfert(self, Om):
         return Om, np.eye(2)
-
 
 class PemPemInterface(PwInterface):
     """
@@ -448,7 +447,9 @@ class ElasticPemInterface(PwInterface):
         i_eq += 1
         return i_eq
 
-    def transfert(self, O):
+    def transfert(self, Om_):
+        Omega_moins, Tau_tilde = [], []
+        n_w = self.nb_waves
         Dplus = np.array([0, 1, -1, 0, 0, 0])
         Dmoins = np.zeros((4,6), dtype=np.complex)
         Dmoins[0,0] = 1
@@ -456,13 +457,15 @@ class ElasticPemInterface(PwInterface):
         Dmoins[2,3] = 1
         Dmoins[2,4] = -1
         Dmoins[3,5] = 1
-        Tau = -Dplus.dot(O[:,2:4])**-1 * np.dot(Dplus, O[:,0:2])
+        for _w in range(n_w):
+            Om = Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
+            Tau = -Dplus.dot(Om[:,2:4])**-1 * np.dot(Dplus, Om[:,0:2])
+            Omega_moins.append(Dmoins.dot(Om[:,0:2] + Om[:,2:4]*Tau))
+            Tau_tilde.append(np.vstack([np.eye(2), Tau]))
 
-        Omega_moins = Dmoins.dot(O[:,0:2] + O[:,2:4]*Tau)
-
-        Tau_tilde = np.vstack([np.eye(2), Tau])
-
-        return (Omega_moins, Tau_tilde)
+        Omega_moins = block_diag(*Omega_moins)
+        Tau_tilde = block_diag(*Tau_tilde)
+        return np.block(Omega_moins), np.block(Tau_tilde)
 
 class PemElasticInterface(PwInterface):
     """
@@ -541,22 +544,50 @@ class PemElasticInterface(PwInterface):
         i_eq += 1
         return i_eq
 
-    def transfert(self, O):
-        Omega_moins = np.zeros((6,3), dtype=np.complex)
-        Omega_moins[0,0:2] = O[0,0:2]
-        Omega_moins[1,0:2] = O[1,0:2]
-        Omega_moins[2,0:2] = O[1,0:2]
-        Omega_moins[3,0:2] = O[2,0:2]
-        Omega_moins[3,2] = 1
-        Omega_moins[4,2] = 1
-        Omega_moins[5,0:2] = O[3,0:2]
+    def transfert(self, Om_):
+        is_infinite_layer = not any([isinstance(_l, PeriodicLayer) for _l in self.layers])
+        Omega_moins, Tau_tilde = [], []
+        n_w = self.nb_waves
+        for _w in range(n_w):
+            if is_infinite_layer:
+                Om = Om_[4*_w:4*(_w+1), 2*_w:2*(_w+1)]
+                Om_moins = np.zeros((6,3), dtype=np.complex)
+                Om_moins[0,0:2] = Om[0,0:2]
+                Om_moins[1,0:2] = Om[1,0:2]
+                Om_moins[2,0:2] = Om[1,0:2]
+                Om_moins[3,0:2] = Om[2,0:2]
+                Om_moins[3,2] = 1
+                Om_moins[4,2] = 1
+                Om_moins[5,0:2] = Om[3,0:2]
+                Omega_moins.append(Om_moins)
+                T_tilde = np.zeros((2,3), dtype=np.complex)
+                T_tilde[0,0] = 1
+                T_tilde[1,1] = 1
+                Tau_tilde.append(T_tilde)
+            else:
+                # elastic {0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
+                # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
+                # print(self.layers[0].entities[-1].formulation98)
+                Om = Om_[4*_w:4*(_w+1), 2*_w:2*(_w+1)]
+                Om_moins = np.zeros((6,3), dtype=np.complex)
+                Om_moins[0,0:2] = Om[0,0:2] #\sigma_{xy}
+                Om_moins[1,0:2] = Om[1,0:2] #u_y
+                Om_moins[2,0:2] = Om[1,0:2] #2:u_y^t
+                Om_moins[3,0:2] = Om[2,0:2] #\hat{\sigma}_{yy} = \sigma_{yy}^e + p
+                Om_moins[3,2] = 1
+                Om_moins[4,2] = 1
+                Om_moins[5,0:2] = Om[3,0:2]
+                Omega_moins.append(Om_moins)
+                T_tilde = np.zeros((2,3), dtype=np.complex)
+                T_tilde[0,0] = 1
+                T_tilde[1,1] = 1
+                Tau_tilde.append(T_tilde)
+        Omega_moins = block_diag(*Omega_moins)
+        Tau_tilde = block_diag(*Tau_tilde)
 
-        Tau_tilde = np.zeros((2,3), dtype=np.complex)
-        Tau_tilde[0,0] = 1
-        Tau_tilde[1,1] = 1
 
-        return (Omega_moins, Tau_tilde)
 
+        return np.block(Omega_moins), np.block(Tau_tilde)
 
 class FluidRigidBacking(PwInterface):
     """
@@ -619,7 +650,7 @@ class PemBacking(PwInterface):
         i_eq += 1
         return i_eq
 
-    def Omega(self, nb_bloch_waves=0):
+    def Omega(self, nb_bloch_waves=1):
         out = np.zeros((6,3), dtype=np.complex)
         out[0,1] = 1.
         out[3,2] = 1.
@@ -640,11 +671,13 @@ class ElasticBacking(PwInterface):
         out = "\t Rigid backing"
         return out
 
-    def Omega(self):
-        Om = np.zeros((4,2), dtype=np.complex)
-        Om[0,1] = 1.
-        Om[2,0] = 1.
-        return Om
+    def Omega(self, nb_bloch_waves=1):
+        out = np.zeros((4,2), dtype=np.complex)
+        out[0,1] = 1.
+        out[2,0] = 1.
+        if nb_bloch_waves !=0:
+            out = np.kron(np.eye(nb_bloch_waves), out)
+        return np.array(out, dtype=np.complex)
 
 
     def update_M_global(self, M, i_eq):
@@ -682,7 +715,6 @@ class SemiInfinite(PwInterface):
         self.kx = kx
         self.omega = omega 
 
-
     def Omega(self, nb_bloch_waves=1):
         
         typ =None
@@ -706,28 +738,26 @@ class SemiInfinite(PwInterface):
         if typ == "fluid":
             out = np.zeros((2*nb_bloch_waves, nb_bloch_waves), dtype=complex)
             for _w in range(nb_bloch_waves):
-                out[0+_w*6, 1+_w] = -self.lam[_w]/(self.medium.rho*self.omega**2)
+                out[0+_w*6, 0+_w] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
                 out[1+_w*6, 0+_w] = 1
             return out, np.eye(max([nb_bloch_waves,1]))
         elif typ == "pem":
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
             for _w in range(nb_bloch_waves):
+                # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
                 out[1+_w*6, 1+_w*3] = 1.
-                out[2+_w*6, 0+_w*3] = -self.lam[_w]/(self.medium.rho*self.omega**2)
-                out[4+_w*6, 0+_w*3] = 1. 
+                out[2+_w*6, 0+_w*3] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
+                out[4+_w*6, 0+_w*3] = 1.
                 out[5+_w*6, 2+_w*3] = 1.
             return out, np.eye(3*max([nb_bloch_waves,1]))
         elif typ  == "elastic":
             out = np.zeros((4*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)
             for _w in range(nb_bloch_waves):
-                out[1+_w*4, 0+_w*2] = -self.lam[0]/(self.medium.rho*self.omega**2)
+                out[1+_w*4, 0+_w*2] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
                 out[2+_w*4, 0+_w*2] = -1. # \sigma_{yy} is -p
                 out[3+_w*4, 1+_w*2] = 1.
 
             return out, np.eye(2*max([nb_bloch_waves,1]))
-
-         
-
 
     def update_M_global(self, M, i_eq):
         if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:

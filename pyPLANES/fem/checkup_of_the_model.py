@@ -38,7 +38,7 @@ from pyPLANES.fem.fem_entities_volumic import *
 from pyPLANES.fem.fem_entities_pw import *
 
 from pyPLANES.utils.geometry import getOverlap, local_abscissa
-from pyPLANES.core.multilayer import MultiLayer
+# from pyPLANES.core.multilayer import MultiLayer
 
 def checkup_of_the_model(self):
     ''' This function checks if the model is correct and adapt it if not '''
@@ -72,6 +72,7 @@ def check_pwfem(self):
                         _e.primal = [5, 1, 4]
                         _e.dual = [0, 3, 2]
                     else:
+                        TBD
                         _e.nb_dof_per_node = 3
                         _e.medium = s.mat
                         _e.typ = "Biot01"
