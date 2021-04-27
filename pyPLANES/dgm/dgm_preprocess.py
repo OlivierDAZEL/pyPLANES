@@ -40,7 +40,7 @@ from pymls import Layer
 # from pyPLANES.fem.fem_entities_pw import *
 
 from pyPLANES.utils.geometry import getOverlap, local_abscissa
-from pyPLANES.core.multilayer import MultiLayer
+from pyPLANES.pw.multilayer import MultiLayer
 
 from pyPLANES.fem.dofs import activate_dofs, affect_dofs_to_elements
 from pyPLANES.fem.checkup_of_the_model import checkup_of_the_model

@@ -33,7 +33,7 @@ from mediapack import Air, Fluid
 
 # from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
-from pyPLANES.core.multilayer import MultiLayer
+from pyPLANES.pw.multilayer import MultiLayer
 
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *

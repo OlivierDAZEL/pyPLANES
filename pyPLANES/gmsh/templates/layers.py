@@ -31,7 +31,7 @@ def one_layer( **kwargs):
     lcar = kwargs.get("lcar", 0.5)
     mat = kwargs.get("mat", "Air")
     method = kwargs.get("method", "FEM")
-    BC = kwargs.get("BC", ["Incident_PW", "Periodicity", "Rigid Wall", "Periodicity"])
+    BC = kwargs.get("BC", ["bottom", "Periodicity", "top", "Periodicity"])
 
 
 

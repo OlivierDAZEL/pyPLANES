@@ -110,7 +110,7 @@ class PeriodicMultiLayer():
             out += self.interfaces[i_l+1].__str__()+"\n"
         return out 
 
-    def add_excitation_and_termination(self, method, termination):
+    def add_excitation_and_termination(self, termination):
         # Interface associated to the termination 
         if termination in ["trans", "transmission","Transmission"]:
             self.interfaces.append(SemiInfinite(self.layers[-1]))
