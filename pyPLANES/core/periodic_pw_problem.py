@@ -50,14 +50,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.termination = kwargs.get("termination", "rigid")
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.order = kwargs.get("order", 2)
+
+        # Out files
+        self.out_file_extension = "eTMM"
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot)
         # self.period = 5e-2
         # print(self.period)
-        # self.method = "Recursive Method"
         self.add_excitation_and_termination(self.termination)
-        # Out files
-        self.out_file_name = self.file_names + ".eTMM.txt"
-        self.info_file_name = self.file_names + ".info.eTMM.txt"
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
@@ -72,8 +71,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
         if self.period:
             nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
-            # print(nb_bloch_waves)
+            
             nb_bloch_waves = 0
+            print("nb_bloch_waves={}".format(nb_bloch_waves))
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = k_x+_*(2*pi/self.period)
@@ -181,7 +181,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def compute_error(self, f_ref, R_ref, T_ref, plot_RT=False, eps=1e-8):
         # self.frequencies = f_ref
         self.resolution()
-        R, T = self.load_results()[1:] 
+        R, T = self.load_results()[1:]
         error_R = LA.norm(R-R_ref)
         error_T = LA.norm(T-T_ref)
         _ = np.sqrt(error_R**2+error_T**2)/len(f_ref)

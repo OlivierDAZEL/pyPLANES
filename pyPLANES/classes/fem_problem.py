@@ -29,7 +29,7 @@ import numpy as np
 from pyPLANES.classes.fem_model import FemModel
 from pyPLANES.classes.mesh import FemMesh
 from pyPLANES.classes.calculus import FemCalculus
-from pyPLANES.gmsh.load_msh_file import load_msh_file
+from pyPLANES.gmsh.tools.load_msh_file import load_msh_file
 from pyPLANES.model.preprocess import create_lists, activate_dofs, desactivate_dofs_dimension, desactivate_dofs_BC, renumber_dofs, affect_dofs_to_elements, periodicity_initialisation, check_model, elementary_matrices
 from pyPLANES.classes.entity_classes import PwFem
 

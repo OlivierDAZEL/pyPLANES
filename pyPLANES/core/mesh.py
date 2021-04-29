@@ -29,7 +29,6 @@ import matplotlib.tri as mtri
 
 class Mesh():
     def __init__(self, **kwargs):
-
         self.entities = [] # List of all GMSH Entities
         self.fem_entities = [] # List of FEM Entities
         self.pwfem_entities = [] # List of Plane Wave FEM Entities

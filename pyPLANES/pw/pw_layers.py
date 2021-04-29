@@ -43,7 +43,7 @@ class PwLayer():
 
     d : thickness of the layer 
 
-    x : list with the abscissa of the layers 
+    x : list with the abscissa of the layer
 
     interfaces : list with the interfaces of the layer
     
@@ -247,8 +247,6 @@ class PemLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm.')
 
-
-
     def transfert(self, Om):
         self.order_lam()
         Om_stack, Xi_stack = [], []
@@ -258,7 +256,7 @@ class PemLayer(PwLayer):
 
             Phi = self.SV[index_w,:][:,index_w]
             lambda_ = self.lam[index_w]
-            Phi_inv = np.linalg.inv(Phi)
+            Phi_inv = LA.inv(Phi)
 
             Lambda = np.diag([
                 0,
@@ -272,7 +270,7 @@ class PemLayer(PwLayer):
             alpha_prime = Phi.dot(Lambda).dot(Phi_inv)
             xi_prime = Phi_inv[:2,:] @ Om[index_w,:][:,index_X]
             xi_prime = np.concatenate([xi_prime, np.array([[0,0,1]])])  # TODO
-            xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
+            xi_prime_lambda = LA.inv(xi_prime).dot(np.diag([
                 np.exp(-(lambda_[2]-lambda_[0])*self.d),
                 np.exp(-(lambda_[2]-lambda_[1])*self.d),
                 1
@@ -316,7 +314,7 @@ class ElasticLayer(PwLayer):
 
             Phi = self.SV[index_w,:][:,index_w]
             lambda_ = self.lam[index_w]
-            Phi_inv = np.linalg.inv(Phi)
+            Phi_inv = LA.inv(Phi)
 
             Lambda = np.diag([
                 0,
@@ -329,7 +327,7 @@ class ElasticLayer(PwLayer):
             
             xi_prime = Phi_inv[:1,:] @ Om[index_w,:][:,index_X]
             xi_prime = np.concatenate([xi_prime, np.array([[0,1]])])  # TODO
-            xi_prime_lambda = np.linalg.inv(xi_prime).dot(np.diag([
+            xi_prime_lambda = LA.inv(xi_prime).dot(np.diag([
                 np.exp(-(lambda_[1]-lambda_[0])*self.d),
                 1
             ]))

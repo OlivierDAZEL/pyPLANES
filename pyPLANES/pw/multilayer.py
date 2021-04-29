@@ -27,9 +27,7 @@ import numpy.linalg as LA
 import matplotlib.pyplot as plt
 
 from mediapack import Air, Fluid
-
 from pyPLANES.utils.io import load_material
-# from pyPLANES.core.calculus import PwCalculus
 
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *

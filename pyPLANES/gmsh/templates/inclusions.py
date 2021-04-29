@@ -22,10 +22,10 @@
 # copies or substantial portions of the Software.
 #
 
-from pyPLANES.gmsh.write_geo_file import Gmsh as Gmsh
+from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
 from mediapack import from_yaml, Air
 
-def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1", termination="Rigid Wall"):
+def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):
 
     G = Gmsh(name_mesh)
 
@@ -43,13 +43,14 @@ def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_b
     matrice = G.new_surface([ll_0.tag, -c_0.tag])
     inclusion = G.new_surface([c_0.tag])
 
-    G.new_physical(l_2, "condition="+termination)
+    G.new_physical(l_2, "condition=top")
     G.new_physical([l_1, l_3], "condition=Periodicity")
-    G.new_physical(l_0, "condition=Incident_PW")
+    G.new_physical(l_0, "condition=bottom")
     G.new_physical(matrice, "mat="+mat_core)
     G.new_physical(inclusion, "mat="+mat_inclusion)
-    G.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
-    G.new_physical([matrice, inclusion], "model=FEM2D")
+    G.new_physical([l_0, l_1, l_3, l_2], "typ=1D")
+    G.new_physical([matrice, inclusion], "typ=2D")
+    G.new_physical([l_0, l_1, l_3, l_2, matrice, inclusion], "method=FEM")
     G.new_periodicity(l_1, l_3, (L, 0, 0))
 
     option = "-2 -v 0 "

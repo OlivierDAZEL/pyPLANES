@@ -26,7 +26,7 @@ import platform
 import socket
 import datetime
 
-from os import path, mkdir
+from os import path, mkdir, rename
 
 import time, timeit
 import numpy as np
@@ -38,8 +38,6 @@ import matplotlib.pyplot as plt
 
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
-
-
 
 from mediapack import Air
 
@@ -76,6 +74,7 @@ class Calculus():
     """
 
     def __init__(self, **kwargs):
+        self.out_file_extension = False
         self.name_server = platform.node()
         self.verbose = kwargs.get("verbose", False)
         _ = kwargs.get("frequencies", False)
@@ -109,12 +108,15 @@ class Calculus():
         self.file_names = self.outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
+        self.out_file_name = self.file_names + ".txt"
+        self.info_file_name = self.file_names + ".info.txt"
+
+        self.preprocess()
 
     def resolution(self):
         """  Resolution of the problem """        
         if self.verbose:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
-        self.preprocess()
         for f in self.frequencies:
             self.f = f
             omega = 2*pi*f
@@ -159,6 +161,11 @@ class Calculus():
         """  Close out files at the end of the calculus """
         self.out_file.close()
         self.info_file.close()
+        # rename the out files so as to include the name of the method in the name of the text part
+        for _f in [self.info_file_name, self.out_file_name]:
+            new_name = _f.split(".")
+            new_name.insert(1, self.out_file_extension)
+            rename(_f, ".".join(new_name))
 
     def plot_solution(self):
         pass

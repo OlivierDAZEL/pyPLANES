@@ -32,7 +32,7 @@ from mediapack import Air, PEM, EqFluidJCA
 
 from pyPLANES.utils.utils_io import initialisation_out_files_plain
 from pyPLANES.classes.calculus import PwCalculus
-
+from pyPLANES.utils.io import load_material
 
 Air = Air()
 
@@ -46,7 +46,7 @@ class Solver_PW(PwCalculus):
             if _l[0] == "Air":
                 mat = Air
             else:
-                mat = from_yaml(_l[0]+".yaml")
+                mat = load_material(_l[0])
             d = _l[1]
             self.layers.append(Layer(mat,d))
         if termination in ["trans", "transmission","Transmission"]:

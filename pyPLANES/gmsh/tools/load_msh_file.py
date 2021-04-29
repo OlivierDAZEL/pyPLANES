@@ -32,7 +32,7 @@ from pyPLANES.dgm.dgm_elements import DgmElement
 
 
 
-from pyPLANES.generic.entities_generic import GmshEntity, FemEntity
+from pyPLANES.generic.entities_generic import GmshEntity, FemEntity, DgmEntity
 from pyPLANES.fem.fem_entities_surfacic import ImposedDisplacementFem, FluidStructureFem, RigidWallFem, InterfaceFem, PeriodicityFem
 from pyPLANES.fem.fem_entities_volumic import FluidFem, ElasticFem, PemFem
 from pyPLANES.fem.fem_entities_pw import PwFem

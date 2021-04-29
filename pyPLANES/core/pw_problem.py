@@ -38,41 +38,40 @@ from pyPLANES.pw.multilayer import MultiLayer
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
-
 class PwProblem(Calculus, MultiLayer):
     """
         Plane Wave Problem 
     """ 
     def __init__(self, **kwargs):
-        assert "ml" in kwargs
-        ml = kwargs.get("ml")
         Calculus.__init__(self, **kwargs)
-        MultiLayer.__init__(self, ml)
-        self.termination = kwargs.get("termination", "rigid")
-        self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", False)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
+            self.info_file.write("Plane Wave solver // Recursive method\n")
         else: 
             self.method = "Global Method"
-        self.add_excitation_and_termination(self.method, self.termination)
+            self.info_file.write("Plane Wave solver // Global method\n")
         # Out files
         if self.method == "Global Method":
-            self.out_file_name = self.file_names + ".GM.txt"
-            self.info_file_name = self.file_names + ".info.GM.txt"
+            self.out_file_extension = "GM"
         elif self.method == "Recursive Method":
-            self.out_file_name = self.file_names + ".RM.txt"
-            self.info_file_name = self.file_names + ".info.RM.txt"
+            self.out_file_extension = "RM"
+
+
+        assert "ml" in kwargs
+        ml = kwargs.get("ml")
+
+        MultiLayer.__init__(self, ml)
+        self.termination = kwargs.get("termination", "rigid")
+        self.theta_d = kwargs.get("theta_d", 0.0)
+
+
+        self.add_excitation_and_termination(self.method, self.termination)
+
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
 
-    def preprocess(self):
-        Calculus.preprocess(self)
-        if self.method == "Global Method":
-            self.info_file.write("Plane Wave solver // Global method\n")
-        elif self.method == "Recursive Method":
-            self.info_file.write("Plane Wave solver // Recursive method\n")
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)

@@ -62,7 +62,7 @@ class PeriodicLayer(Mesh):
         self.T_i, self.T_j, self.T_v = None, None, None
         self.medium = [None, None]
         self.start_time = time.time()
-        self.info_file = open("findanothername.txt", "w")
+        # self.info_file = open("findanothername.txt", "w")
         self.TM = None
         fem_preprocess(self)
         for _ent in self.pwfem_entities:

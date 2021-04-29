@@ -236,30 +236,30 @@ class Gmsh():
         else:
             os.system("gmsh " + option + self.geo_file)
 
-def one_layer(p):
-    g = Gmsh(p.gmsh_file)
-    p_0 = g.new_point(0,0,p.lcar)
-    p_1 = g.new_point(p.L,0,p.lcar)
-    p_2 = g.new_point(p.L,p.d,p.lcar)
-    p_3 = g.new_point(0,p.d,p.lcar)
-    l_0 = g.new_line(p_0, p_1)
-    l_1 = g.new_line(p_1, p_2)
-    l_2 = g.new_line(p_2, p_3)
-    l_3 = g.new_line(p_3, p_0)
-    ll_0 = g.new_line_loop([l_0, l_1, l_2, l_3])
+# def one_layer(p):
+#     g = Gmsh(p.gmsh_file)
+#     p_0 = g.new_point(0,0,p.lcar)
+#     p_1 = g.new_point(p.L,0,p.lcar)
+#     p_2 = g.new_point(p.L,p.d,p.lcar)
+#     p_3 = g.new_point(0,p.d,p.lcar)
+#     l_0 = g.new_line(p_0, p_1)
+#     l_1 = g.new_line(p_1, p_2)
+#     l_2 = g.new_line(p_2, p_3)
+#     l_3 = g.new_line(p_3, p_0)
+#     ll_0 = g.new_line_loop([l_0, l_1, l_2, l_3])
 
-    matrice = g.new_surface([ll_0.tag])
+#     matrice = g.new_surface([ll_0.tag])
 
-    g.new_physical(l_2,"condition=Transmission")
-    g.new_physical([l_1, l_3], "condition=Periodicity")
-    g.new_physical(l_0, "condition=Incident_PW")
-    g.new_physical(matrice, "mat="+p.pem1)
-    g.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
-    g.new_physical([matrice], "model=FEM2D")
-    g.new_periodicity(l_1,l_3,(p.L, 0, 0))
+#     g.new_physical(l_2,"condition=Transmission")
+#     g.new_physical([l_1, l_3], "condition=Periodicity")
+#     g.new_physical(l_0, "condition=Incident_PW")
+#     g.new_physical(matrice, "mat="+p.pem1)
+#     g.new_physical([l_0, l_1, l_3, l_2], "model=FEM1D")
+#     g.new_physical([matrice], "model=FEM2D")
+#     g.new_periodicity(l_1,l_3,(p.L, 0, 0))
 
-    option = "-2 "
-    g.run_gmsh(option)
+#     option = "-2 "
+#     g.run_gmsh(option)
 
 
 

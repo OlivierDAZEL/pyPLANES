@@ -68,7 +68,7 @@ def fem_preprocess(self):
         print("Checkup of the model")
     checkup_of_the_model(self)
     self.duration_importation = time.time() - self.start_time
-    self.info_file.write("Duration of importation ={} s\n".format(self.duration_importation))
+    # self.info_file.write("Duration of importation ={} s\n".format(self.duration_importation))
     if self.verbose:
         print("Creation of elementary matrices in the elements")
     for _ent in self.fem_entities:
@@ -77,7 +77,7 @@ def fem_preprocess(self):
     for _ent in self.pwfem_entities:
         _ent.determine_typ_and_waves()
     self.duration_assembly = time.time() - self.start_time - self.duration_importation
-    self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   
+    # self.info_file.write("Duration of assembly ={} s\n".format(self.duration_assembly))   
 # def assign_order_to_elements
 
 def assign_reference_element(self):
