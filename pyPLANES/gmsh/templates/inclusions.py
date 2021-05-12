@@ -46,8 +46,11 @@ def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_b
     G.new_physical(l_2, "condition=top")
     G.new_physical([l_1, l_3], "condition=Periodicity")
     G.new_physical(l_0, "condition=bottom")
-    G.new_physical(matrice, "mat="+mat_core)
-    G.new_physical(inclusion, "mat="+mat_inclusion)
+    if mat_core == mat_inclusion:
+        G.new_physical([matrice, inclusion], "mat="+mat_core)
+    else:
+        G.new_physical(matrice, "mat="+mat_core)
+        G.new_physical(inclusion, "mat="+mat_inclusion)
     G.new_physical([l_0, l_1, l_3, l_2], "typ=1D")
     G.new_physical([matrice, inclusion], "typ=2D")
     G.new_physical([l_0, l_1, l_3, l_2, matrice, inclusion], "method=FEM")

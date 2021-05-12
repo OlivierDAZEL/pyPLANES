@@ -48,7 +48,6 @@ def checkup_of_the_model(self):
     check_interfaces(self)
     check_pwfem(self)
 
-
 def check_pwfem(self):
     for _e in self.pwfem_entities:
         if isinstance(_e, PwFem):
@@ -72,12 +71,13 @@ def check_pwfem(self):
                         _e.primal = [5, 1, 4]
                         _e.dual = [0, 3, 2]
                     else:
-                        TBD
                         _e.nb_dof_per_node = 3
                         _e.medium = s.mat
                         _e.typ = "Biot01"
                         _e.primal = [5, 1, 4]
                         _e.dual = [0, 3, 2]
+    
+
     self.medium[0] = self.pwfem_entities[0].medium
     self.medium[1] = self.pwfem_entities[1].medium
 
@@ -122,7 +122,7 @@ def check_pem_formulation(self):
     for _e in self.entities:
         if isinstance(_e, PemFem):
             _e.formulation98 = True
-            # _e.formulation98 = False
+            _e.formulation98 = False
 
 def check_interfaces(self):
     # Check that the number of interfaces go by pairs

@@ -185,12 +185,12 @@ class FluidLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm.')
 
-
 class PemLayer(PwLayer):
 
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
         self.nb_fields_SV = 6
+        self.typ = "Biot98"
 
     def __str__(self):
         out = "\t Poroelastic Layer / " + self.medium.name

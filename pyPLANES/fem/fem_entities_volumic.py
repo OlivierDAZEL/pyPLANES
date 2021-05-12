@@ -102,7 +102,7 @@ class PemFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
-        self.formulation98 = True
+        self.formulation98 = False
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Pem" + FemEntity.__str__(self)

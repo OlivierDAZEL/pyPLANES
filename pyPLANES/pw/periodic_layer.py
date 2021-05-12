@@ -115,7 +115,7 @@ class PeriodicLayer(Mesh):
             for _i in index:
                 self.A_i[_i] = dof_left
                 self.A_v[_i] /= self.delta_periodicity
-            # Summation of the rows for the Matrix
+            # Periodicity of the physical dosfs
             self.A_i.append(dof_right)
             self.A_j.append(dof_left)
             self.A_v.append(self.delta_periodicity)
@@ -146,7 +146,7 @@ class PeriodicLayer(Mesh):
                         dof_S_primal.extend(len(dof_p)*[_w])
                         D_val.extend(list(orient_p@M_elem))
                         D_period[_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
-                    elif _ent.typ == "Biot98":
+                    elif _ent.typ in ["Biot98", "Biot01"]:
                         # u_x
                         dof_ux, orient_ux = dof_ux_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_ux])
@@ -212,6 +212,10 @@ class PeriodicLayer(Mesh):
             self.RR = RR
 
         self.TM = -LA.solve(M_1, M_2)
+        # import matplotlib.pyplot as plt
+        # plt.matshow(np.log(np.abs(self.TM)))
+        # plt.colorbar()
+        # plt.show()
 
     def transfert(self, Om):
         # Creation of the Transfer Matrix 
@@ -238,7 +242,6 @@ class PeriodicLayer(Mesh):
         self.T_i = np.array(self.T_i)-self.nb_dof_master
         self.T_j = np.array(self.T_j)
         self.T_v = np.array(self.T_v, dtype=complex)
-
 
     def plot_solution(self, S_b, S_t):
         X = self.RR[0]@S_b + self.RR[1]@S_t

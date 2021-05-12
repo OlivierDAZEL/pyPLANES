@@ -80,25 +80,25 @@ class PeriodicMultiLayer():
 
             if _medium_type_bottom in  ["fluid", "eqf"]:
                 if _medium_type_top in  ["fluid", "eqf"]:
-                    self.interfaces.append(FluidFluidInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(FluidFluidInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "pem":
-                    self.interfaces.append(FluidPemInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(FluidPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
-                    self.interfaces.append(FluidElasticInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(FluidElasticInterface(_layer, self.layers[i_l+1]))
             elif _medium_type_bottom in  ["pem"]:
                 if _medium_type_top in  ["fluid", "eqf"]:
-                    self.interfaces.append(PemFluidInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(PemFluidInterface(_layer,  self.layers[i_l+1]))
                 elif _medium_type_top == "pem":
-                    self.interfaces.append(PemPemInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(PemPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
-                    self.interfaces.append(PemElasticInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(PemElasticInterface(_layer, self.layers[i_l+1]))
             elif _medium_type_bottom in  ["elastic"]:
                 if _medium_type_top in  ["fluid", "eqf"]:
-                    self.interfaces.append(ElasticFluidInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(ElasticFluidInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "pem":
-                    self.interfaces.append(ElasticPemInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(ElasticPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
-                    self.interfaces.append(ElasticElasticInterface(_layer,self.layers[i_l+1]))
+                    self.interfaces.append(ElasticElasticInterface(_layer, self.layers[i_l+1]))
 
     def __str__(self):
         out = "Interface #0\n"

@@ -89,6 +89,7 @@ def print_reference_elements(self):
     print(self.reference_elements)
 
 def display_sol(self):
+    klmkklmkmlkmlmk
     if any(self.plot[3:]):
         x, y, u_x, u_y, pr = [], [], [], [], []
     for _en in self.entities:

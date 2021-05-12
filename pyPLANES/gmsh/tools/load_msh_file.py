@@ -161,6 +161,7 @@ def entities(self, f):
         if "typ" in physical_tags.keys():
             if physical_tags["typ"] == "2D":
                 if "mat" in physical_tags.keys():
+                    # print(physical_tags["mat"].split()[0])
                     if physical_tags["mat"].split()[0] == "Air":
                         if physical_tags["method"] == "FEM":
                             _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
@@ -170,6 +171,8 @@ def entities(self, f):
                             self.dgm_entities.append(_ent)
                     else:
                         mat = load_material(physical_tags["mat"].split()[0])
+                        # print(physical_tags["mat"].split()[0])
+                        # print(mat)
                         if mat.MEDIUM_TYPE == "eqf":
                             if physical_tags["method"] == "FEM":
                                 _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)

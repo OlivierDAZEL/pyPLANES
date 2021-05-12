@@ -231,6 +231,7 @@ class Gmsh():
 
     def run_gmsh(self, option=""):
         self.f.close()
+        # print(sys.platform)
         if sys.platform == "darwin":
             os.system("/Applications/Gmsh.app/Contents/MacOS/gmsh " + option + self.geo_file)
         else:

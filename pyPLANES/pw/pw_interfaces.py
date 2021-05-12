@@ -23,6 +23,7 @@
 #
 
 import numpy as np
+import numpy.linalg as LA
 from numpy import sqrt
 from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
@@ -83,23 +84,56 @@ class FluidPemInterface(PwInterface):
         return out
 
     def transfert(self, Om_):
-        Omega_moins, Tau_tilde = [], []
         n_w = self.nb_waves
-        for _w in range(n_w):
-            Om = Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
+        mat_pem = np.eye(6)
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                mat_pem[2, 1] = 1.
+                mat_pem[3, 4] = 1.
+        Om = np.kron(np.eye(n_w), mat_pem)@ Om_
 
-            a = -np.array([
-                [Om[0,1],Om[0,2]],
-                [Om[3,1],Om[3,2]]
-            ])
-            Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
-            Tau_tilde.append(np.concatenate([np.eye(1),Tau]))
 
-            Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1).tolist())
+        list_null_fields = [6*_w+i for _w in range(n_w) for i in [0,3]]
+        list_kept_fields = [6*_w+i for _w in range(n_w) for i in [2,4]]
+        list_master = [3*_w for _w in range(n_w)]
+        list_slaves = [3*_w+i for _w in range(n_w) for i in [1,2]]
+
+        # print(list_null_fields)
+        # print(list_slaves)
         
-        Omega_moins = block_diag(*Omega_moins)
-        Tau_tilde = block_diag(*Tau_tilde)
-        return np.block(Omega_moins), np.block(Tau_tilde)
+        Tau = -LA.solve(Om[np.ix_(list_null_fields, list_slaves)], Om[np.ix_(list_null_fields, list_master)])
+        Om__ = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
+
+        TTau = np.zeros((3*n_w, n_w),dtype=complex)
+        for _w in range(n_w):
+            TTau[3*_w, _w] = 1.
+            TTau[3*_w+1, :] = Tau[2*_w,:]
+            TTau[3*_w+2, :] = Tau[2*_w+1,:]
+        # print(np.array([1,0,0,]))
+        # print(Tau)
+        # print(Om__)
+        # print(TTau)
+        # Omega_moins, Tau_tilde = [], []
+
+        # for _w in range(n_w):
+        #     Om = mat_pem@Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
+
+        #     a = -np.array([
+        #         [Om[0,1],Om[0,2]],
+        #         [Om[3,1],Om[3,2]]
+        #     ])
+        #     Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
+        #     Tau_tilde.append(np.concatenate([np.eye(1),Tau]))
+        #     # print("--")
+        #     # print(Tau)
+        #     Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1).tolist())
+        #     print(Omega_moins[0])
+        # Omega_moins = block_diag(*Omega_moins)
+        # Tau_tilde = block_diag(*Tau_tilde)
+        # print("Om")
+        # print(Om__)
+        # return np.block(Omega_moins), np.block(Tau_tilde)
+        return Om__, TTau
 
     def update_M_global(self, M, i_eq):
         delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
@@ -457,8 +491,16 @@ class ElasticPemInterface(PwInterface):
         Dmoins[2,3] = 1
         Dmoins[2,4] = -1
         Dmoins[3,5] = 1
+
+        mat_pem = np.eye(6)
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                mat_pem[2, 1] = 1.
+                mat_pem[3, 4] = 1.
+
+
         for _w in range(n_w):
-            Om = Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
+            Om = mat_pem@Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
             Tau = -Dplus.dot(Om[:,2:4])**-1 * np.dot(Dplus, Om[:,0:2])
             Omega_moins.append(Dmoins.dot(Om[:,0:2] + Om[:,2:4]*Tau))
             Tau_tilde.append(np.vstack([np.eye(2), Tau]))
