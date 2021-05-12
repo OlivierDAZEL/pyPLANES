@@ -92,48 +92,21 @@ class FluidPemInterface(PwInterface):
                 mat_pem[3, 4] = 1.
         Om = np.kron(np.eye(n_w), mat_pem)@ Om_
 
-
         list_null_fields = [6*_w+i for _w in range(n_w) for i in [0,3]]
         list_kept_fields = [6*_w+i for _w in range(n_w) for i in [2,4]]
         list_master = [3*_w for _w in range(n_w)]
         list_slaves = [3*_w+i for _w in range(n_w) for i in [1,2]]
-
-        # print(list_null_fields)
-        # print(list_slaves)
-        
+       
         Tau = -LA.solve(Om[np.ix_(list_null_fields, list_slaves)], Om[np.ix_(list_null_fields, list_master)])
-        Om__ = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
+        Om = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
 
         TTau = np.zeros((3*n_w, n_w),dtype=complex)
         for _w in range(n_w):
             TTau[3*_w, _w] = 1.
             TTau[3*_w+1, :] = Tau[2*_w,:]
             TTau[3*_w+2, :] = Tau[2*_w+1,:]
-        # print(np.array([1,0,0,]))
-        # print(Tau)
-        # print(Om__)
-        # print(TTau)
-        # Omega_moins, Tau_tilde = [], []
 
-        # for _w in range(n_w):
-        #     Om = mat_pem@Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
-
-        #     a = -np.array([
-        #         [Om[0,1],Om[0,2]],
-        #         [Om[3,1],Om[3,2]]
-        #     ])
-        #     Tau = np.dot(np.linalg.inv(a), np.array([[Om[0,0]], [Om[3,0]]]))
-        #     Tau_tilde.append(np.concatenate([np.eye(1),Tau]))
-        #     # print("--")
-        #     # print(Tau)
-        #     Omega_moins.append(np.array([[Om[2,0]], [Om[4,0]]]) + np.dot(np.array([[Om[2,1], Om[2,2]], [Om[4,1], Om[4,2]]]), Tau).reshape(2,1).tolist())
-        #     print(Omega_moins[0])
-        # Omega_moins = block_diag(*Omega_moins)
-        # Tau_tilde = block_diag(*Tau_tilde)
-        # print("Om")
-        # print(Om__)
-        # return np.block(Omega_moins), np.block(Tau_tilde)
-        return Om__, TTau
+        return Om, TTau
 
     def update_M_global(self, M, i_eq):
         delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
@@ -765,6 +738,7 @@ class SemiInfinite(PwInterface):
                 typ = "fluid"
             elif self.layers[0].medium.MEDIUM_TYPE in ["pem"]:
                 typ ="pem"
+                formulation = "Biot98"
             elif self.layers[0].medium.MEDIUM_TYPE in ["elastic"]:
                 typ ="elastic"
         else:
@@ -772,6 +746,7 @@ class SemiInfinite(PwInterface):
                 typ ="fluid"
             elif self.layers[0].medium[1].MEDIUM_TYPE in ["pem"]:
                 typ ="pem"
+                formulation = self.layers[0].pwfem_entities[1].typ
             elif self.layers[0].medium[1].MEDIUM_TYPE in ["elastic"]:
                 typ ="elastic"
         # else:
@@ -785,12 +760,24 @@ class SemiInfinite(PwInterface):
             return out, np.eye(max([nb_bloch_waves,1]))
         elif typ == "pem":
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
-            for _w in range(nb_bloch_waves):
-                # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
-                out[1+_w*6, 1+_w*3] = 1.
-                out[2+_w*6, 0+_w*3] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
-                out[4+_w*6, 0+_w*3] = 1.
-                out[5+_w*6, 2+_w*3] = 1.
+            if formulation == "Biot98":
+                for _w in range(nb_bloch_waves):
+                    # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
+                    out[1+_w*6, 1+_w*3] = 1.
+                    out[2+_w*6, 0+_w*3] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
+                    out[4+_w*6, 0+_w*3] = 1.
+                    out[5+_w*6, 2+_w*3] = 1.
+            elif formulation == "Biot01":
+                for _w in range(nb_bloch_waves):
+                    # pem S={0:{\sigma}^t_{xy}, 1:u_y^s, 2:w_y=u_y^t-u_y^s, 3:{\sigma}^t_{yy}, 4:p, 5:u_x^s}'''
+                    out[1+_w*6, 1+_w*3] = 1.
+                    out[2+_w*6, 0+_w*3] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
+                    out[2+_w*6, 1+_w*3] = -1.
+                    out[3+_w*6, 0+_w*3] = -1.
+                    out[4+_w*6, 0+_w*3] = 1.
+                    out[5+_w*6, 2+_w*3] = 1.
+            else: 
+                raise NameError("Incorrect Biot formulation")
             return out, np.eye(3*max([nb_bloch_waves,1]))
         elif typ  == "elastic":
             out = np.zeros((4*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)

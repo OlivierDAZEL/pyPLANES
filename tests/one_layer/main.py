@@ -19,7 +19,7 @@ lcar = 1e-2
 
 
 termination = "transmission"
-termination = "rigid"
+# termination = "rigid"
 
 ml = [("melamine", d)]
 
@@ -36,7 +36,7 @@ one_layer(name_mesh=mesh_EF, L=L, d=d, lcar=lcar, mat=material)
 # ml = [("melamine", d), (melamine+"_FEM", d)]
 ml = [(material + "_FEM" , d)]
 
-eTMM_method = PeriodicPwProblem(ml=ml, name_project="one_layer", theta_d=theta_d, order=3, nb_bloch_waves=1, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True)
+eTMM_method = PeriodicPwProblem(ml=ml, name_project="one_layer", theta_d=theta_d, order=3, nb_bloch_waves=0, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True)
 eTMM_method.resolution()
 
 if any(plot_solution):
