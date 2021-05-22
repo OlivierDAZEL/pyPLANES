@@ -28,6 +28,7 @@ from numpy import sqrt
 from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.periodic_layer import PeriodicLayer
+from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
 from scipy.linalg import block_diag
 
@@ -105,6 +106,8 @@ class FluidPemInterface(PwInterface):
             TTau[3*_w, _w] = 1.
             TTau[3*_w+1, :] = Tau[2*_w,:]
             TTau[3*_w+2, :] = Tau[2*_w+1,:]
+
+
 
         return Om, TTau
 
@@ -238,17 +241,30 @@ class FluidElasticInterface(PwInterface):
         return i_eq
 
     def transfert(self, Om_):
-        Omega_moins, Tau_tilde = [], []
         n_w = self.nb_waves
-        for _w in range(n_w):
-            Om = Om_[4*_w:4*(_w+1), 2*_w:2*(_w+1)]
-            tau = -Om_[0,0]/Om_[0,1]
-            Omega_moins.append(np.array([[Om[1,1]], [-Om[2,1]]])*tau + np.array([[Om[1,0]], [-Om[2,0]]]))
-            Tau_tilde.append(np.concatenate([np.eye(1,1), np.array([[tau]])]))
 
-        Omega_moins = block_diag(*Omega_moins)
-        Tau_tilde = block_diag(*Tau_tilde)
-        return np.block(Omega_moins), np.block(Tau_tilde)
+        list_null_fields = [4*_w for _w in range(n_w)] # sig_x_z
+        list_kept_fields = [4*_w+i for _w in range(n_w) for i in [1,2]] 
+        list_master = [2*_w for _w in range(n_w)]
+        list_slaves = [2*_w+1 for _w in range(n_w)]
+
+        if LA.det(Om_[np.ix_(list_null_fields, list_slaves)]) !=0: # Non zero incidence 
+            Tau = -LA.solve(Om_[np.ix_(list_null_fields, list_slaves)], Om_[np.ix_(list_null_fields, list_master)])
+        else:
+            raise NameError("Zero incidence in Fluid-Elastic transfer")
+            Tau = -LA.solve(Om_[np.ix_(list_null_fields, list_slaves)], Om_[np.ix_(list_null_fields, list_master)])
+
+        Om = Om_[np.ix_(list_kept_fields, list_master)] + Om_[np.ix_(list_kept_fields, list_slaves)]@Tau
+
+        Mat_sign = (np.diag([(-1)**i for i in range(2*n_w)]))
+        Om = Mat_sign @ Om
+
+        TTau = np.zeros((2*n_w, n_w),dtype=complex)
+        for _w in range(n_w):
+            TTau[2*_w, _w] = 1.
+            TTau[2*_w+1, :] = Tau[_w,:]
+
+        return Om, TTau.reshape((2*n_w, n_w))
 
 class ElasticFluidInterface(PwInterface):
     """
@@ -373,7 +389,23 @@ class PemPemInterface(PwInterface):
         return i_eq
 
     def transfert(self, O):
-        return (O, np.eye(3*self.nb_waves))
+
+        mat_pem_0, mat_pem_1 = np.eye(6), np.eye(6)
+
+        if isinstance(self.layers[0], PeriodicLayer):
+            if self.layers[0].pwfem_entities[1].typ == "Biot01":
+                mat_pem_0[2, 1] = -1.
+                mat_pem_0[3, 4] = -1.
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                mat_pem_1[2, 1] = 1.
+                mat_pem_1[3, 4] = 1.
+
+        mat_pem_0 = np.kron(np.eye(self.nb_waves), mat_pem_0)
+        mat_pem_1 = np.kron(np.eye(self.nb_waves), mat_pem_1)
+
+
+        return ((mat_pem_0@mat_pem_1)@O, np.eye(3*self.nb_waves))
 
 class ElasticPemInterface(PwInterface):
     """
@@ -455,32 +487,36 @@ class ElasticPemInterface(PwInterface):
         return i_eq
 
     def transfert(self, Om_):
-        Omega_moins, Tau_tilde = [], []
         n_w = self.nb_waves
-        Dplus = np.array([0, 1, -1, 0, 0, 0])
-        Dmoins = np.zeros((4,6), dtype=np.complex)
-        Dmoins[0,0] = 1
-        Dmoins[1,1] = 1
-        Dmoins[2,3] = 1
-        Dmoins[2,4] = -1
-        Dmoins[3,5] = 1
 
+        # The PEM matrix is set to 2001 SV which is more simple
         mat_pem = np.eye(6)
-        if isinstance(self.layers[1], PeriodicLayer):
-            if self.layers[1].pwfem_entities[0].typ == "Biot01":
-                mat_pem[2, 1] = 1.
-                mat_pem[3, 4] = 1.
+        if isinstance(self.layers[1], PwLayer):
+            mat_pem[2, 1] = -1.
+            mat_pem[3, 4] = -1.
+        elif isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot98":
+                mat_pem[2, 1] = -1.
+                mat_pem[3, 4] = -1.
 
+        Om = np.kron(np.eye(n_w), mat_pem)@ Om_
 
+        list_null_fields = [6*_w+2 for _w in range(n_w)] # w
+        list_kept_fields = [6*_w+i for _w in range(n_w) for i in [0, 1, 3, 5]]
+        list_master = [3*_w+i for _w in range(n_w) for i in range(2)]
+        list_slaves = [3*_w+2 for _w in range(n_w)]
+
+        Tau = -LA.solve(Om[np.ix_(list_null_fields, list_slaves)], Om[np.ix_(list_null_fields, list_master)])
+        print(Tau)
+        Om = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
+
+        TTau = np.zeros((3*n_w, 2*n_w),dtype=complex)
         for _w in range(n_w):
-            Om = mat_pem@Om_[6*_w:6*(_w+1), 3*_w:3*(_w+1)]
-            Tau = -Dplus.dot(Om[:,2:4])**-1 * np.dot(Dplus, Om[:,0:2])
-            Omega_moins.append(Dmoins.dot(Om[:,0:2] + Om[:,2:4]*Tau))
-            Tau_tilde.append(np.vstack([np.eye(2), Tau]))
+            TTau[3*_w, 2*_w] = 1.
+            TTau[3*_w+1, 2*_w+1] = 1
+            TTau[3*_w+2, :] = Tau[_w,:]
 
-        Omega_moins = block_diag(*Omega_moins)
-        Tau_tilde = block_diag(*Tau_tilde)
-        return np.block(Omega_moins), np.block(Tau_tilde)
+        return Om, TTau
 
 class PemElasticInterface(PwInterface):
     """
@@ -562,9 +598,17 @@ class PemElasticInterface(PwInterface):
     def transfert(self, Om_):
         is_infinite_layer = not any([isinstance(_l, PeriodicLayer) for _l in self.layers])
         Omega_moins, Tau_tilde = [], []
+
+        if isinstance(self.layers[0], PeriodicLayer):
+            if self.layers[0].pwfem_entities[0].typ == "Biot01":
+                typ = "Biot01"
+        else:
+            typ = "Biot98"
         n_w = self.nb_waves
         for _w in range(n_w):
-            if is_infinite_layer:
+            if typ == "Biot98":
+                # elastic {0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
+                # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:w_y, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
                 Om = Om_[4*_w:4*(_w+1), 2*_w:2*(_w+1)]
                 Om_moins = np.zeros((6,3), dtype=np.complex)
                 Om_moins[0,0:2] = Om[0,0:2]
@@ -579,17 +623,16 @@ class PemElasticInterface(PwInterface):
                 T_tilde[0,0] = 1
                 T_tilde[1,1] = 1
                 Tau_tilde.append(T_tilde)
-            else:
+
+            elif typ == "Biot01":
                 # elastic {0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
-                # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
+                # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:w_y=0, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
                 # print(self.layers[0].entities[-1].formulation98)
                 Om = Om_[4*_w:4*(_w+1), 2*_w:2*(_w+1)]
                 Om_moins = np.zeros((6,3), dtype=np.complex)
                 Om_moins[0,0:2] = Om[0,0:2] #\sigma_{xy}
                 Om_moins[1,0:2] = Om[1,0:2] #u_y
-                Om_moins[2,0:2] = Om[1,0:2] #2:u_y^t
                 Om_moins[3,0:2] = Om[2,0:2] #\hat{\sigma}_{yy} = \sigma_{yy}^e + p
-                Om_moins[3,2] = 1
                 Om_moins[4,2] = 1
                 Om_moins[5,0:2] = Om[3,0:2]
                 Omega_moins.append(Om_moins)
@@ -599,8 +642,6 @@ class PemElasticInterface(PwInterface):
                 Tau_tilde.append(T_tilde)
         Omega_moins = block_diag(*Omega_moins)
         Tau_tilde = block_diag(*Tau_tilde)
-
-
 
         return np.block(Omega_moins), np.block(Tau_tilde)
 
@@ -731,7 +772,6 @@ class SemiInfinite(PwInterface):
         self.omega = omega 
 
     def Omega(self, nb_bloch_waves=1):
-        
         typ =None
         if isinstance(self.layers[0], PwLayer):
             if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
@@ -753,12 +793,14 @@ class SemiInfinite(PwInterface):
         #     raise NameError("Layer is neither PwLayer nor PeriodicLayer")
 
         if typ == "fluid":
+            self.len_X = 1
             out = np.zeros((2*nb_bloch_waves, nb_bloch_waves), dtype=complex)
             for _w in range(nb_bloch_waves):
                 out[0+_w*2, 0+_w] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
                 out[1+_w*2, 0+_w] = 1
             return out, np.eye(max([nb_bloch_waves,1]))
         elif typ == "pem":
+            self.len_X = 3
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
             if formulation == "Biot98":
                 for _w in range(nb_bloch_waves):
@@ -780,6 +822,7 @@ class SemiInfinite(PwInterface):
                 raise NameError("Incorrect Biot formulation")
             return out, np.eye(3*max([nb_bloch_waves,1]))
         elif typ  == "elastic":
+            self.len_X = 2
             out = np.zeros((4*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)
             for _w in range(nb_bloch_waves):
                 out[1+_w*4, 0+_w*2] = self.lam[2*_w]/(self.medium.rho*self.omega**2)

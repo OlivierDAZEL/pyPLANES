@@ -44,10 +44,13 @@ class PwProblem(Calculus, MultiLayer):
     """ 
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
+        self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", False)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             self.info_file.write("Plane Wave solver // Recursive method\n")
+            if self.theta_d == 0:
+                self.theta_d = 1e-12 
         else: 
             self.method = "Global Method"
             self.info_file.write("Plane Wave solver // Global method\n")
@@ -63,7 +66,7 @@ class PwProblem(Calculus, MultiLayer):
 
         MultiLayer.__init__(self, ml)
         self.termination = kwargs.get("termination", "rigid")
-        self.theta_d = kwargs.get("theta_d", 0.0)
+
 
 
         self.add_excitation_and_termination(self.method, self.termination)
@@ -85,8 +88,12 @@ class PwProblem(Calculus, MultiLayer):
         if self.method == "Recursive Method":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omega()
+                # print(self.interfaces[-1])
+                # print(self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
+                    # print(_l)
+                    # print(next_interface)
                     _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
@@ -154,7 +161,12 @@ class PwProblem(Calculus, MultiLayer):
         self.out_file.write("\n")
 
     def load_results(self):
-        data = np.loadtxt(self.out_file_name)
+
+        name_file_with_method = self.out_file_name.split(".")
+        name_file_with_method.insert(1, self.out_file_extension)
+        name_file_with_method = ".".join(name_file_with_method)
+
+        data = np.loadtxt(name_file_with_method)
         f  = data[:, 0]
         R  = data[:, 1] + 1j*data[:, 2]
         if self.termination == "transmission":
