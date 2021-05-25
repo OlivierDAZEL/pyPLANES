@@ -94,6 +94,11 @@ class PwLayer():
         Xi : ndarray
             Back_propagation matrix (to be used only for transmission problems)
         """
+
+        # import matplotlib.pyplot as plt 
+        # plt.matshow(np.log10(np.abs(Om)))
+        # plt.title(" Om entree transfer homogeneous")
+
         self.order_lam()
 
         Phi = self.SV
@@ -106,9 +111,25 @@ class PwLayer():
         Lambda = np.diag(np.array(_list))
         alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
         xi_prime = Phi_inv[:_index,:] @ Om
+        # print("xi prime")
+        # print(xi_prime)
+        # print(xi_prime[:,-2:])
+        # print(Phi_inv[:_index,:])
+        # print(LA.det(xi_prime))
+        # mlkmk
+        # print(Phi_inv[:,0])
+        # import matplotlib.pyplot as plt
+        # plt.matshow(np.log10(np.abs(Phi_inv[:_index,:])))
+        # plt.matshow(np.log10(np.abs(Om)))
+        # plt.matshow(np.log10(np.abs(xi_prime)))
+        # plt.show()
+
+
 
         _list = [np.exp(-(lambda_[_index-1]-lambda_[i])*self.d) for i in range(_index)]
         xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
+
+        # jkljkl
 
         Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
         for i in range(_index-1):
@@ -116,23 +137,29 @@ class PwLayer():
         
         Xi = xi_prime_lambda*np.exp(lambda_[_index-1]*self.d)
 
-        return Om, Xi
+        # import matplotlib.pyplot as plt 
+        # plt.matshow(np.log10(np.abs(Om)))
+        # plt.title(" Om sortie transfer homogeneous")
 
+        return Om, Xi
 
     def update_Omega(self, Om):
         pass 
 
     def order_lam(self):
+        # print(self.lam)
+ 
         _index = np.argsort(self.lam.real)[::-1]
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
+        # print(self.lam)
+        # sdf
 
 class FluidLayer(PwLayer):
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
         self.nb_waves_medium = 1
         self.nb_fields_SV = 2
-
 
     def __str__(self):
         out = "\t Fluid Layer / " + self.medium.name
@@ -151,7 +178,6 @@ class FluidLayer(PwLayer):
         T[1, 1] = np.cos(ky*self.d)
         return T
 
-
     def update_Omega(self, om, Om, ky):
         T = np.zeros((2, 2), dtype=complex)
         T[0, 0] = np.cos(ky*self.d)
@@ -159,7 +185,6 @@ class FluidLayer(PwLayer):
         T[0, 1] = -(ky/(om**2*self.medium.rho))*np.sin(ky*self.d)
         T[1, 1] = np.cos(ky*self.d)
         return T@Om 
-
 
     def plot_solution_global(self, plot, X, nb_points=200):
 

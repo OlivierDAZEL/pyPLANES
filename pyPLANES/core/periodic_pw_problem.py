@@ -71,6 +71,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
+
         if self.period:
             if isinstance(self.nb_bloch_waves, int):
                 nb_bloch_waves = self.nb_bloch_waves
@@ -97,7 +98,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
-                # print(_l)
+                print(_l)
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                 # print(_l.Omega_plus)
                 self.back_prop = self.back_prop@_l.Xi
@@ -127,7 +128,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
                 self.T = np.array([Omega_end[0]])
-
             if self.print_result:
                 _text = "R={:+.15f}".format(self.R)
                 if self.termination == "transmission":
@@ -135,7 +135,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 print(_text)
 
         else:
-            # self.nb_waves = 1
+
+
             M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
             M[:,:self.nb_waves] = self.Omega[:2*self.nb_waves,:self.nb_waves]
             # print(self.Omega)
@@ -150,17 +151,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
                 M[2*_w:2*(_w+1),self.nb_waves+_w] = -Omega_0.reshape(2)
 
-
-            # print(np.log(np.abs(M)))
-            # import matplotlib.pyplot as plt 
-            # plt.figure("é&")
-            # plt.matshow(np.log(np.abs(M)))
-            # plt.colorbar()
-            # plt.show()
-
-
             X = LA.solve(M, E_0)
-
 
             R = X[self.nb_waves:]
             print(R)
@@ -171,6 +162,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
                 print(T)
                 self.T = np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0])
+                print(self.T)
+
                 self.abs -= self.T
             if self.print_result:
                 _text = "R={:+.15f}".format(self.R)
@@ -198,8 +191,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.out_file.write("{:.12e}\t".format(self.f))
         self.out_file.write("{:.12e}\t".format(self.abs))
         self.out_file.write("{:.12e}\t".format(self.R))
-        if self.termination == "transmission":
-            self.out_file.write("{:.12e}\t".format(np.abs(self.T)))
+        # print(self.T)
+        # if self.termination == "transmission":
+        #     self.out_file.write("{:.12e}\t".format(np.abs(self.T)))
         self.out_file.write("\n")
 
     def load_results(self):

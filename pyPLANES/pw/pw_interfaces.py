@@ -98,6 +98,7 @@ class FluidPemInterface(PwInterface):
         list_master = [3*_w for _w in range(n_w)]
         list_slaves = [3*_w+i for _w in range(n_w) for i in [1,2]]
        
+
         Tau = -LA.solve(Om[np.ix_(list_null_fields, list_slaves)], Om[np.ix_(list_null_fields, list_master)])
         Om = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
 
@@ -507,7 +508,6 @@ class ElasticPemInterface(PwInterface):
         list_slaves = [3*_w+2 for _w in range(n_w)]
 
         Tau = -LA.solve(Om[np.ix_(list_null_fields, list_slaves)], Om[np.ix_(list_null_fields, list_master)])
-        print(Tau)
         Om = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
 
         TTau = np.zeros((3*n_w, 2*n_w),dtype=complex)
@@ -596,7 +596,9 @@ class PemElasticInterface(PwInterface):
         return i_eq
 
     def transfert(self, Om_):
-        is_infinite_layer = not any([isinstance(_l, PeriodicLayer) for _l in self.layers])
+
+        list_minus = [0, 1, ]
+
         Omega_moins, Tau_tilde = [], []
 
         if isinstance(self.layers[0], PeriodicLayer):
@@ -642,7 +644,7 @@ class PemElasticInterface(PwInterface):
                 Tau_tilde.append(T_tilde)
         Omega_moins = block_diag(*Omega_moins)
         Tau_tilde = block_diag(*Tau_tilde)
-
+        # print("end pemelastic")
         return np.block(Omega_moins), np.block(Tau_tilde)
 
 class FluidRigidBacking(PwInterface):
