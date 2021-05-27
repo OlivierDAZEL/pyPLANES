@@ -60,14 +60,11 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Recursive Method":
             self.out_file_extension = "RM"
 
-
         assert "ml" in kwargs
         ml = kwargs.get("ml")
 
         MultiLayer.__init__(self, ml)
         self.termination = kwargs.get("termination", "rigid")
-
-
 
         self.add_excitation_and_termination(self.method, self.termination)
 

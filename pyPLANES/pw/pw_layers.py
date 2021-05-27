@@ -63,7 +63,7 @@ class PwLayer():
         # pymls layer constructor 
         self.x = [x_0, x_0+self.d]  # 
         self.interfaces = [None, None]  # 
-        self.nb_waves_medium = None
+        self.nb_waves_in_medium = None
         self.nb_fields_SV = None
         self.nb_waves = None
         self.dofs = None
@@ -95,10 +95,6 @@ class PwLayer():
             Back_propagation matrix (to be used only for transmission problems)
         """
 
-        # import matplotlib.pyplot as plt 
-        # plt.matshow(np.log10(np.abs(Om)))
-        # plt.title(" Om entree transfer homogeneous")
-
         self.order_lam()
 
         Phi = self.SV
@@ -106,41 +102,17 @@ class PwLayer():
 
         Phi_inv = LA.inv(Phi)
 
-        _index = self.nb_waves_medium*self.nb_waves
+        _index = self.nb_waves_in_medium*self.nb_waves
         _list = [0.]*(_index-1)+[1.] +[np.exp(-(lambda_[i]-lambda_[_index-1])*self.d) for i in range(_index, 2*_index)]
         Lambda = np.diag(np.array(_list))
         alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
         xi_prime = Phi_inv[:_index,:] @ Om
-        # print("xi prime")
-        # print(xi_prime)
-        # print(xi_prime[:,-2:])
-        # print(Phi_inv[:_index,:])
-        # print(LA.det(xi_prime))
-        # mlkmk
-        # print(Phi_inv[:,0])
-        # import matplotlib.pyplot as plt
-        # plt.matshow(np.log10(np.abs(Phi_inv[:_index,:])))
-        # plt.matshow(np.log10(np.abs(Om)))
-        # plt.matshow(np.log10(np.abs(xi_prime)))
-        # plt.show()
-
-
-
         _list = [np.exp(-(lambda_[_index-1]-lambda_[i])*self.d) for i in range(_index)]
         xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
-
-        # jkljkl
-
         Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
         for i in range(_index-1):
             Om[:,i] += Phi[:, i]
-        
         Xi = xi_prime_lambda*np.exp(lambda_[_index-1]*self.d)
-
-        # import matplotlib.pyplot as plt 
-        # plt.matshow(np.log10(np.abs(Om)))
-        # plt.title(" Om sortie transfer homogeneous")
-
         return Om, Xi
 
     def update_Omega(self, Om):
@@ -158,7 +130,7 @@ class PwLayer():
 class FluidLayer(PwLayer):
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
-        self.nb_waves_medium = 1
+        self.nb_waves_in_medium = 1
         self.nb_fields_SV = 2
 
     def __str__(self):
@@ -206,8 +178,8 @@ class FluidLayer(PwLayer):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         pr, ut = 0*1j*x_f, 0*1j*x_f
         for i_dim in range(2*self.nb_waves):        
-            pr += self.SV[1, i_dim]*np.exp(self.lam[1]*x_f)*X[1]
-            ut += self.SV[0, i_dim]*np.exp(self.lam[0]*x_f)*X[0]
+            pr += self.SV[1, i_dim]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
+            ut += self.SV[0, i_dim]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
         if plot[2]:
             plt.figure("Pressure")
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
@@ -217,7 +189,7 @@ class PemLayer(PwLayer):
 
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
-        self.nb_waves_medium = 3
+        self.nb_waves_in_medium = 3
         self.nb_fields_SV = 6
         self.typ = "Biot98"
 
@@ -280,7 +252,7 @@ class ElasticLayer(PwLayer):
 
     def __init__(self, _mat, d, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
-        self.nb_waves_medium = 2
+        self.nb_waves_in_medium = 2
         self.nb_fields_SV = 4
 
     def __str__(self):
