@@ -98,23 +98,16 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
-                print(_l)
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
-                # print(_l.Omega_plus)
                 self.back_prop = self.back_prop@_l.Xi
-                # print(next_interface)
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
-                # print(self.Omega)
                 self.back_prop = self.back_prop@next_interface.Tau
         else: # Rigid backing
             self.Omega = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
-                # print("pem")
-                # print(_l.Omega_plus)
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
-
 
     def solve(self):
         Calculus.solve(self)
@@ -133,13 +126,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 if self.termination == "transmission":
                     _text += " / T={:+.15f}".format(self.T[0])
                 print(_text)
-
         else:
-
-
             M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
             M[:,:self.nb_waves] = self.Omega[:2*self.nb_waves,:self.nb_waves]
-            # print(self.Omega)
 
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
@@ -154,16 +143,12 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             X = LA.solve(M, E_0)
 
             R = X[self.nb_waves:]
-            print(R)
             self.R = np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0])
             self.abs = 1-self.R
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
                 T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
-                print(T)
                 self.T = np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0])
-                print(self.T)
-
                 self.abs -= self.T
             if self.print_result:
                 _text = "R={:+.15f}".format(self.R)
