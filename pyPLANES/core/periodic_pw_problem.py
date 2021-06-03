@@ -33,6 +33,8 @@ from mediapack import Air, Fluid
 
 # from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
+
+from pyPLANES.core.result import PeriodicPwResult
 from pyPLANES.pw.periodic_multilayer import PeriodicMultiLayer
 
 from pyPLANES.pw.pw_layers import *
@@ -73,10 +75,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
 
         if self.period:
-            if isinstance(self.nb_bloch_waves, int):
+            if self.nb_bloch_waves is not False:
                 nb_bloch_waves = self.nb_bloch_waves
             else: 
-                nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+5)
+                nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+10)
             print("nb_bloch_waves={}".format(nb_bloch_waves))
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
@@ -94,7 +96,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def create_linear_system(self, omega):
         Calculus.create_linear_system(self, omega)
         if self.termination == "transmission":
-            # print(self.interfaces[-1])
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
@@ -111,16 +112,17 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
     def solve(self):
         Calculus.solve(self)
+        self.result = PeriodicPwResult(f=self.f)
         if self.nb_waves == 1:
             self.Omega = self.Omega.reshape(2)
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
-            self.R = (self.Omega[0]+_*self.Omega[1])/det
-            self.abs = 1-np.abs(self.R)**2
+            result.R = (self.Omega[0]+_*self.Omega[1])/det
+            result.abs = 1-np.abs(self.R)**2
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                self.T = np.array([Omega_end[0]])
+                result.T = np.array([Omega_end[0]])
             if self.print_result:
                 _text = "R={:+.15f}".format(self.R)
                 if self.termination == "transmission":
@@ -143,18 +145,15 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             X = LA.solve(M, E_0)
 
             R = X[self.nb_waves:]
-            self.R = np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0])
-            self.abs = 1-self.R
+            self.result.R0 = R[0]
+            self.result.R = np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0])
+            self.result.abs = 1-self.result.R
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
                 T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
-                self.T = np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0])
-                self.abs -= self.T
-            if self.print_result:
-                _text = "R={:+.15f}".format(self.R)
-                if self.termination == "transmission":
-                    _text += " / T={:+.15f}".format(self.T)
-                print(_text)
+                self.result.T0 = T[0]
+                self.result.T = np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0])
+                self.result.abs -= self.result.T
 
     def plot_solution(self):
         x_minus = self.X_0_minus # Information vector at incident interface  x^-
@@ -172,14 +171,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 _l.plot_solution_recursive(self.plot, q)
             x_minus = _l.Xi@x_plus # Transfert through the layer x^-_{+1}
 
-    def write_out_files(self):
-        self.out_file.write("{:.12e}\t".format(self.f))
-        self.out_file.write("{:.12e}\t".format(self.abs))
-        self.out_file.write("{:.12e}\t".format(self.R))
-        # print(self.T)
-        # if self.termination == "transmission":
-        #     self.out_file.write("{:.12e}\t".format(np.abs(self.T)))
-        self.out_file.write("\n")
+
 
     def load_results(self):
         data = np.loadtxt(self.out_file_name)

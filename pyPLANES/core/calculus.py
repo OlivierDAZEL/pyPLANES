@@ -25,6 +25,7 @@
 import platform
 import socket
 import datetime
+import pickle
 
 from os import path, mkdir, rename
 
@@ -40,6 +41,7 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from mediapack import Air
+from pyPLANES.core.result import Result 
 
 Air = Air()
 
@@ -74,9 +76,12 @@ class Calculus():
     """
 
     def __init__(self, **kwargs):
-        self.out_file_extension = False
+        
+        self.txt_file_extension = False
         self.name_server = platform.node()
         self.verbose = kwargs.get("verbose", False)
+        self.list_results =[]
+        self.result = None
         _ = kwargs.get("frequencies", False)
         __ = kwargs.get("f_bounds", False)
         if _ is not False:
@@ -87,9 +92,11 @@ class Calculus():
             self.frequencies = np.array([1e3])
         self.print_result = kwargs.get("print_result", False)    
         self.plot = kwargs.get("plot_solution", [False]*6)   
+        
         self.export_plots = kwargs.get("export_plots", [False]*6)   
         self.export_paraview = kwargs.get("export_paraview", False)  
         self.outfiles_directory = kwargs.get("outfiles_directory", False)
+
         if self.outfiles_directory:
             if not path.exists(self.outfiles_directory):
                     mkdir(self.outfiles_directory) 
@@ -108,10 +115,10 @@ class Calculus():
         self.file_names = self.outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
-        self.out_file_name = self.file_names + ".txt"
+        self.txt_file_name = self.file_names + ".txt"
         self.info_file_name = self.file_names + ".info.txt"
-
-        self.preprocess()
+        self.pkl_file_name = self.file_names + ".pkl"
+        self.open_info_file()
 
     def resolution(self):
         """  Resolution of the problem """        
@@ -119,22 +126,38 @@ class Calculus():
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:
             self.f = f
+            self.result = Result(f=self.f)
             omega = 2*pi*f
             self.update_frequency(omega)
             self.create_linear_system(omega)
             self.solve()
-            self.write_out_files()
+            # self.result.write_as_txt(self.txt_file)
+            if self.print_result:
+                print(self.result)
+            self.list_results.append(self.result)
+
             if any(self.plot):
                 self.plot_solution()
             if any(self.export_plots):
                 if self.export_plots[5]:
                     plt.figure("Pressure map")
                     plt.savefig("Pressure")
-        self.close_out_files()
+        self.close_info_file()
+        self.save_results()
 
-    def preprocess(self):
+    def save_results(self):
+        f = open(self.pkl_file_name, "wb")
+        pickle.dump(self.list_results, f)
+        f.close()
+
+        for _f in [self.pkl_file_name]:
+            new_name = _f.split(".")
+            new_name.insert(1, self.out_file_extension)
+            rename(_f, ".".join(new_name))
+
+    def open_info_file(self):
         """  Initialise out files """    
-        self.out_file = open(self.out_file_name, 'w')
+        # self.txt_file = open(self.txt_file_name, 'w')
         self.info_file = open(self.info_file_name, 'w')
         self.info_file.write("Output File from pyPLANES\n")
         self.info_file.write("Generated on {}\n".format(self.name_server))
@@ -153,19 +176,14 @@ class Calculus():
         if self.verbose:
             print("Resolution of the linear system")
 
-    def write_out_files(self):
-        """  Write out files at current frequency"""    
-        pass
-
-    def close_out_files(self):
+    def close_info_file(self):
         """  Close out files at the end of the calculus """
-        self.out_file.close()
+        # self.txt_file.close()
         self.info_file.close()
-        # rename the out files so as to include the name of the method in the name of the text part
-        for _f in [self.info_file_name, self.out_file_name]:
-            new_name = _f.split(".")
-            new_name.insert(1, self.out_file_extension)
-            rename(_f, ".".join(new_name))
+        # rename the info file so as to include the name of the method in the name of the text part
+        new_name = self.info_file_name.split(".")
+        new_name.insert(1, self.out_file_extension)
+        rename(self.info_file_name, ".".join(new_name))
 
     def plot_solution(self):
         pass

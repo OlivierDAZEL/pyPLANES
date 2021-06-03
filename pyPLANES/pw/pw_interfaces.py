@@ -111,8 +111,7 @@ class PwInterfaceType2(PwInterface):
 
         n_w = self.layers[0].nb_waves
         Om = np.hstack((np.kron(np.ones((n_w, n_w)), self.D)@Om_, np.kron(np.eye(n_w), self.A)))
-        Tau = np.hstack((np.eye(self.n_1*n_w), np.zeros((self.n_1*n_w,self.n_0-self.n_1))))
-
+        Tau = np.hstack((np.eye(self.n_1*n_w), np.zeros((self.n_1*n_w,(self.n_0-self.n_1)*n_w))))
         return Om, Tau
 
 class FluidFluidInterface(PwInterfaceType0):

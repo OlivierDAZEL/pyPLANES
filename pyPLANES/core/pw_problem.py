@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 
 from mediapack import Air, Fluid
 
+from pyPLANES.core.result import PwResult
 # from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
 from pyPLANES.pw.multilayer import MultiLayer
@@ -114,27 +115,22 @@ class PwProblem(Calculus, MultiLayer):
 
     def solve(self):
         Calculus.solve(self)
+        self.result = PwResult(f=self.f)
         if self.method == "Recursive Method":
             self.Omega = self.Omega.reshape(2)
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
-            self.R = (self.Omega[0]+_*self.Omega[1])/det
+            self.result.R0 = (self.Omega[0]+_*self.Omega[1])/det
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                self.T = Omega_end[0]
+                self.result.T0 = Omega_end[0]
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
-            self.R = self.X[0]
+            self.result.R0 = self.X[0]
             if self.termination == "transmission":
-                self.T = self.X[-1]
-            else:
-                self.T = None
-        if self.print_result:
-            _text = "R={:+.15f}".format(self.R)
-            if self.termination == "transmission":
-                _text += " / T={:+.15f}".format(self.T)
-            print(_text)
+                self.result.T0 = self.X[-1]
+
 
     def plot_solution(self):
         if self.method == "Global Method":
@@ -147,15 +143,6 @@ class PwProblem(Calculus, MultiLayer):
                 q = LA.solve(_l.SV, _l.Omega_plus@x)
                 _l.plot_solution_recursive(self.plot, q)
                 x = _l.Xi@x # Transfert through the layer x^-_{+1}
-
-    def write_out_files(self):
-        self.out_file.write("{:.12e}\t".format(self.f))
-        self.out_file.write("{:.12e}\t".format(self.R.real))
-        self.out_file.write("{:.12e}\t".format(self.R.imag))
-        if self.termination == "transmission":
-            self.out_file.write("{:.12e}\t".format(self.T.real))
-            self.out_file.write("{:.12e}\t".format(self.T.imag))
-        self.out_file.write("\n")
 
     def load_results(self):
 
