@@ -142,26 +142,37 @@ def periodic_dofs_identification(self):
     # Determination of the correspondance between edges (we did not divide by two for the average of the position)
     y_left =  [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_left]
     y_right = [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_right]
-    # corr_edges = [y_right.index(_y) for _y in y_left]
 
-    corr_edges = [ next(i for i, _ in enumerate(y_right) if np.isclose(_, _yl, 1e-8)) for _yl in y_left]
 
-    # dof_left, dof_right, orient = [],[],[]
-    dof_left, dof_right = [],[]
+
+    corr_edges = [ next(i for i, _ in enumerate(y_right) if np.isclose(_, _yl, 1e-8)) for _yl in y_left] # corr_edges = [y_right.index(_y) for _y in y_left]
+
+
+    dof_left, dof_right, orient = [],[],[]
     for _il, _vl in enumerate(self.vertices_left):
         dof_left.extend(self.vertices[_vl].dofs)
         _vr = self.vertices_right[_il]
         dof_right.extend(self.vertices[_vr].dofs)
-    #     # orient += [1]*4
+        orient += [1]*4
+
 
     for _il, _ed in enumerate(edges_left):
+        _direction_left = _ed.vertices[1].coord[1]-_ed.vertices[0].coord[1]
+        _direction_right = edges_right[corr_edges[_il]].vertices[1].coord[1]-edges_right[corr_edges[_il]].vertices[0].coord[1]
+        if _direction_left*_direction_right > 0:
+            orient += [1]*(self.order-1)*4
+        else:
+            orient += [(-1)**ii for ii in range(self.order-1)]*4
+
         dof_left += list(itertools.chain(*_ed.dofs))
         dof_right += list(itertools.chain(*edges_right[corr_edges[_il]].dofs))
+
+
     #  Suppression of zeros dofs
     _ =np.sum(np.array([dof_left, dof_right]), axis=0)
     _nz = np.where(_!=0)[0].tolist()
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
-
+    self.orientation_periodic_dofs = [orient[ii] for ii in _nz]
 
 

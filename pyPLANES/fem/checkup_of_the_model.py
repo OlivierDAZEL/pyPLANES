@@ -46,7 +46,16 @@ def checkup_of_the_model(self):
     check_IFS(self)
     check_pem_formulation(self)
     check_interfaces(self)
-    check_pwfem(self)
+    if len(self.pwfem_entities) !=0:
+        check_pwfem(self)
+
+    entities = [isinstance(e, (ImposedDisplacementFem, RobinAirFem)) for e in self.entities]
+    if any(entities):
+        _ent= self.entities[entities.index(True)]
+        self.list_vr = set(itertools.chain(*[_el.vertices for _el in _ent.elements]))
+    else:
+        self.list_vr = False
+
 
 def check_pwfem(self):
     for _e in self.pwfem_entities:
@@ -80,6 +89,15 @@ def check_pwfem(self):
 
     self.medium[0] = self.pwfem_entities[0].medium
     self.medium[1] = self.pwfem_entities[1].medium
+    if self.medium[0] == self.medium[1]:
+        if self.medium[0].MEDIUM_TYPE in ["fluid", "eqf"]:
+            self.nb_waves_in_medium = 1 
+        elif self.medium[0].MEDIUM_TYPE == "pem":
+            self.nb_waves_in_medium = 3
+        elif self.medium[0].MEDIUM_TYPE == "elastic":
+            self.nb_waves_in_medium = 2
+    else: 
+        raise NameError("self.medium[0] != self.medium[1]")
 
 def check_neighbours_1D_entity(self):
     for _e in self.entities:

@@ -31,7 +31,7 @@ import numpy.linalg as LA
 from mediapack import Air, from_yaml
 from pymls import Layer
 
-from pyPLANES.fem.elements_reference import Ka, KaPw, Kt
+from pyPLANES.fem.reference_elements import Ka, KaPw, Kt
 from pyPLANES.fem.utils_fem import normal_to_element
 from pyPLANES.fem.elements_fem import FemEdge, FemFace
 from pyPLANES.core.mesh import NeighbourElement
@@ -99,14 +99,14 @@ def assign_reference_element(self):
 def reference_element(key, order):
     if isinstance(key, int):
         if key == 2:
-            out = Kt(order, 2*order)
+            out = Kt(order)
         elif key == 1:
-            out = Ka(order, 2*order)
+            out = Ka(order)
     else:
         if key[0] == 2:
-            out = Kt(order, 2*order)
+            out = Kt(order)
         elif key[0] == 1:
-            out = KaPw(order, 3*order)
+            out = KaPw(order)
 
     return out
 
@@ -129,6 +129,12 @@ def create_vertices_edges_faces_bubbles_lists(self):
             _el.faces.append(new_face)
             _el.faces_orientation.append(1)
             self.nb_faces +=1
+            # print([v.tag for v in _el.vertices])
+            # if [v.tag for v in _el.vertices] == [4,1,5]:
+            #     _el.edges_orientation = [-1,1,-1]
+            # else:
+            #     _el.edges_orientation = [1,1,1]
+
 
 def update_edges(self, _el, existing_edges, element_vertices):
     element_vertices_tag = [element_vertices[0].tag, element_vertices[1].tag]

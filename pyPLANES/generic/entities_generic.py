@@ -91,6 +91,7 @@ class GmshEntity():
 class FemEntity(GmshEntity):
     def __init__(self, **kwargs):
         GmshEntity.__init__(self, **kwargs)
+        self.condensation = kwargs.get("condensation", True)
         # self.order = kwargs["order"]
         self.elements = []
     def __str__(self):
@@ -101,8 +102,8 @@ class FemEntity(GmshEntity):
         # out  += "related elements={}\n".format(related_elements)
         return out
 
-    def condensation(self, omega):
-        return [], [], [], [], [], []
+    # def condensation(self, omega):
+    #     return [], [], [], [], [], []
 
     def update_frequency(self, omega):
         pass

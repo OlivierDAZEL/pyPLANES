@@ -119,13 +119,10 @@ class PwLayer():
         pass 
 
     def order_lam(self):
-        # print(self.lam)
- 
         _index = np.argsort(self.lam.real)[::-1]
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
-        # print(self.lam)
-        # sdf
+
 
 class FluidLayer(PwLayer):
     def __init__(self, _mat, d, _x = 0):

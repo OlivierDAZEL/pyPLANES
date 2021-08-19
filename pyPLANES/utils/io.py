@@ -146,7 +146,7 @@ def plot_fem_solution(self, kx=0.):
                     # print(ie/len(_en.elements))
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
-                    p_elem *= np.exp(1j*kx[0]*x_elem)
+                    # p_elem *= np.exp(1j*kx[0]*x_elem)
                     if self.plot[2]:
                         plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')

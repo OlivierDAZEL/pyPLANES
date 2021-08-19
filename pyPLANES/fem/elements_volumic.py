@@ -26,20 +26,8 @@ import numpy.linalg as LA
 
 def fluid_elementary_matrices(elem):
 
-    coord_e = elem.get_coordinates()
+    Coord_e = elem.get_coordinates()[0:2,:]
     K_ref = elem.reference_element
-
-    X1X2 = coord_e[:, 1]- coord_e[:, 0]
-    e_x = X1X2/LA.norm(X1X2)
-    X1X3 = coord_e[:, 2]- coord_e[:, 0]
-    e_z = np.cross(X1X2, X1X3)
-    e_z /= LA.norm(e_z)
-    e_y = np.cross(e_z, e_x)
-
-    Coord_e = np.zeros((2,3))
-    Coord_e[0, 1] = X1X2.dot(e_x)
-    Coord_e[0, 2] = X1X3.dot(e_x)
-    Coord_e[1, 2] = X1X3.dot(e_y)
 
     n, m = K_ref.Phi.shape
     vh = np.zeros((n ,n))
@@ -48,8 +36,7 @@ def fluid_elementary_matrices(elem):
         _Phi = K_ref.Phi[:,ipg].reshape((1, n))
         _dPhi  = np.array([K_ref.dPhi[0][:, ipg], K_ref.dPhi[1][:, ipg]])
         J = _dPhi[:, 0:3].dot(Coord_e.T)
-        _weight = K_ref.w[ipg] * LA.det(J)
-
+        _weight = K_ref.w[ipg] * np.abs(LA.det(J))
         Gd = LA.solve(J, _dPhi)
 
         vh += _weight*np.dot(Gd.T, Gd)
@@ -61,22 +48,22 @@ def elas_elementary_matrices(elem):
     coord_e = elem.get_coordinates()
     K_ref = elem.reference_element
     n, m = K_ref.Phi.shape
-    vm = np.zeros((2*n, 2*n))
-    vk0 = np.zeros((2*n, 2*n))
-    vk1 = np.zeros((2*n, 2*n))
+    # vm = np.zeros((2*n, 2*n))
+    # vk0 = np.zeros((2*n, 2*n))
+    # vk1 = np.zeros((2*n, 2*n))
 
 
-    X1X2 = coord_e[:,1]- coord_e[:,0]
-    e_x = X1X2/LA.norm(X1X2)
-    X1X3 = coord_e[:,2]- coord_e[:,0]
-    e_z = np.cross(X1X2, X1X3)
-    e_z /= LA.norm(e_z)
-    e_y = np.cross(e_z, e_x)
+    # X1X2 = coord_e[:,1]- coord_e[:,0]
+    # e_x = X1X2/LA.norm(X1X2)
+    # X1X3 = coord_e[:,2]- coord_e[:,0]
+    # e_z = np.cross(X1X2, X1X3)
+    # e_z /= LA.norm(e_z)
+    # e_y = np.cross(e_z, e_x)
 
-    Coord_e = np.zeros((2,3))
-    Coord_e[0, 1] = X1X2.dot(e_x)
-    Coord_e[0, 2] = X1X3.dot(e_x)
-    Coord_e[1, 2] = X1X3.dot(e_y)
+    # Coord_e = np.zeros((2,3))
+    # Coord_e[0, 1] = X1X2.dot(e_x)
+    # Coord_e[0, 2] = X1X3.dot(e_x)
+    # Coord_e[1, 2] = X1X3.dot(e_y)
 
     Coord_e = coord_e[0:2, :]
 
@@ -114,6 +101,7 @@ def pem98_elementary_matrices(elem):
 
     coord_e = elem.get_coordinates()
     K_ref = elem.reference_element
+
     n, m = K_ref.Phi.shape
     vm = np.zeros((2*n, 2*n))
     vk0 = np.zeros((2*n, 2*n))
@@ -122,17 +110,17 @@ def pem98_elementary_matrices(elem):
     vh = np.zeros((n, n))
     vq = np.zeros((n, n))
 
-    X1X2 = coord_e[:,1]- coord_e[:,0]
-    e_x = X1X2/LA.norm(X1X2)
-    X1X3 = coord_e[:,2]- coord_e[:,0]
-    e_z = np.cross(X1X2, X1X3)
-    e_z /= LA.norm(e_z)
-    e_y = np.cross(e_z, e_x)
+    # X1X2 = coord_e[:,1]- coord_e[:,0]
+    # e_x = X1X2/LA.norm(X1X2)
+    # X1X3 = coord_e[:,2]- coord_e[:,0]
+    # e_z = np.cross(X1X2, X1X3)
+    # e_z /= LA.norm(e_z)
+    # e_y = np.cross(e_z, e_x)
 
-    Coord_e = np.zeros((2,3))
-    Coord_e[0, 1] = X1X2.dot(e_x)
-    Coord_e[0, 2] = X1X3.dot(e_x)
-    Coord_e[1, 2] = X1X3.dot(e_y)
+    # Coord_e = np.zeros((2,3))
+    # Coord_e[0, 1] = X1X2.dot(e_x)
+    # Coord_e[0, 2] = X1X3.dot(e_x)
+    # Coord_e[1, 2] = X1X3.dot(e_y)
 
     Coord_e = coord_e[0:2,:]
 
@@ -182,17 +170,17 @@ def pem01_elementary_matrices(elem):
     vh = np.zeros((n, n))
     vq = np.zeros((n, n))
 
-    X1X2 = coord_e[:,1]- coord_e[:,0]
-    e_x = X1X2/LA.norm(X1X2)
-    X1X3 = coord_e[:,2]- coord_e[:,0]
-    e_z = np.cross(X1X2, X1X3)
-    e_z /= LA.norm(e_z)
-    e_y = np.cross(e_z, e_x)
+    # X1X2 = coord_e[:,1]- coord_e[:,0]
+    # e_x = X1X2/LA.norm(X1X2)
+    # X1X3 = coord_e[:,2]- coord_e[:,0]
+    # e_z = np.cross(X1X2, X1X3)
+    # e_z /= LA.norm(e_z)
+    # e_y = np.cross(e_z, e_x)
 
-    Coord_e = np.zeros((2,3))
-    Coord_e[0, 1] = X1X2.dot(e_x)
-    Coord_e[0, 2] = X1X3.dot(e_x)
-    Coord_e[1, 2] = X1X3.dot(e_y)
+    # Coord_e = np.zeros((2,3))
+    # Coord_e[0, 1] = X1X2.dot(e_x)
+    # Coord_e[0, 2] = X1X3.dot(e_x)
+    # Coord_e[1, 2] = X1X3.dot(e_y)
 
     Coord_e = coord_e[0:2,:]
 

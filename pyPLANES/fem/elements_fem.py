@@ -24,7 +24,6 @@
 import numpy as np
 from pyPLANES.generic.elements_generic import GenericVertex, GenericEdge, GenericElement
 
-
 class FemVertex(GenericVertex):
     '''Vertex Finite-Element'''
     def __init__(self, coord, tag):
@@ -32,7 +31,7 @@ class FemVertex(GenericVertex):
         self.dofs = [0] * 4
         self.sol = np.zeros(4,dtype=complex)
     def __str__(self):
-        out = PlainVertex.__str__(self)
+        out = GenericVertex.__str__(self)
         out += "dofs=" + format(self.dofs)+"\n"
         return out
 
@@ -48,7 +47,7 @@ class FemEdge(GenericEdge):
         self.sol = [np.zeros((order-1))]*4
 
     def __str__(self):
-        out = PlainEdge.__str__(self)
+        out = GenericEdge.__str__(self)
         out += "dofs=" + format(self.dofs)+"\n"
         return out
 

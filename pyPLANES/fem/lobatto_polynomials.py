@@ -26,7 +26,7 @@ import numpy as np
 
 def lobatto(order,x):
     """
-    Lobatto shape functions 
+    Lobatto shape functions (eq (1.51) of Solin)
 
     Parameters
     ----------
@@ -54,23 +54,23 @@ def lobatto(order,x):
     elif order == 2:
         p_lobatto = -1+x**2
         d_lobatto = 2*x
-        p_lobatto *= np.sqrt(3/2)/2
-        d_lobatto *= np.sqrt(3/2)/2
+        p_lobatto *= np.sqrt(3./2.)/2.
+        d_lobatto *= np.sqrt(3./2.)/2.
     elif order == 3:
-        p_lobatto = x*(-1+x**2)
+        p_lobatto = -x+x**3
         d_lobatto = -1+3*x**2
-        p_lobatto *= np.sqrt(5/2)/2
-        d_lobatto *= np.sqrt(5/2)/2
+        p_lobatto *= np.sqrt(5./2.)/2.
+        d_lobatto *= np.sqrt(5./2.)/2.
     elif order == 4:
         p_lobatto = 1+x**2*(-6+5*x**2)
         d_lobatto = x*(-12+20*x**2)
-        p_lobatto *= np.sqrt(7/2)/8
-        d_lobatto *= np.sqrt(7/2)/8
+        p_lobatto *= np.sqrt(7./2.)/8.
+        d_lobatto *= np.sqrt(7./2.)/8.
     elif order == 5:
         p_lobatto = x*(3+x**2*(-10+7*x**2))
         d_lobatto = 3+x**2*(-30+35*x**2)
-        p_lobatto *= (3/8)*np.sqrt(2)
-        d_lobatto *= (3/8)*np.sqrt(2)
+        p_lobatto *= (3/8)/np.sqrt(2)
+        d_lobatto *= (3/8)/np.sqrt(2)
     elif order == 6:
         p_lobatto = (-1)+x**2*(15+x**2*((-35)+21*x**2))
         d_lobatto = x*(30+x**2*((-140)+126*x**2))
@@ -125,7 +125,7 @@ def lobatto(order,x):
 
 def lobatto_kernels(order, x):
     """
-    Lobatto kernels  
+    Lobatto kernels  Equation (1.53) of Solin
 
     Parameters
     ----------
@@ -141,35 +141,31 @@ def lobatto_kernels(order, x):
         value of the Lobatto kernel first derivative at x      
     """
     if order == 0:
-        phi = -np.ones(len(x))
-        dphi = np.zeros(len(x))
-        phi *= np.sqrt(6)
-        dphi *= np.sqrt(6)
+        phi = -np.sqrt(6)*x**0
+        dphi = 0*x
     elif order == 1:
-        phi = (-1)*x
-        dphi = (-1)
-        phi *= np.sqrt(10)
-        dphi *= np.sqrt(10)
+        phi = -np.sqrt(10.)*x
+        dphi = -np.sqrt(10.)*x**0
     elif order == 2:
-        phi = 1+(-5)*x**2
-        dphi = (-10)*x
-        phi *= (1/2)*np.sqrt(7/2)
-        dphi *= (1/2)*np.sqrt(7/2)
+        phi = -1+5*x**2
+        dphi = 10*x
+        phi *= -np.sqrt(7./2.)/2.
+        dphi *= -np.sqrt(7./2.)/2.
     elif order == 3:
-        phi = x*(3+(-7)*x**2)
-        dphi = 3+(-21)*x**2
-        phi = (3/2)*2**(-1/2)*phi
-        dphi = (3/2)*2**(-1/2)*dphi
+        phi = x*(3-7*x**2)
+        dphi = 3-21*x**2
+        phi *= (3/2)/np.sqrt(2)
+        dphi *= (3/2)/np.sqrt(2)
     elif order == 4:
-        phi = (-1)+x**2*(14+(-21)*x**2)
+        phi = -1+x**2*(14-21*x**2)
         dphi = x*(28+(-84)*x**2)
-        phi = (1/4)*(11/2)**(1/2)*phi
-        dphi = (1/4)*(11/2)**(1/2)*dphi
+        phi *= (1/4)*np.sqrt(11./2.)
+        dphi *= (1/4)*np.sqrt(11./2.)
     elif order == 5:
-        phi = x*((-5)+x**2*(30+(-33)*x**2))
+        phi = x*(-5+x**2*(30+-33*x**2))
         dphi = (-5)+x**2*(90+(-165)*x**2)
-        phi = (1/4)*(13/2)**(1/2)*phi
-        dphi = (1/4)*(13/2)**(1/2)*dphi
+        phi *= np.sqrt(13/2)/4
+        dphi *= np.sqrt(13/2)/4
     elif order == 6:
         phi = 5+x**2*((-135)+x**2*(495+(-429)*x**2))
         dphi = x*((-270)+x**2*(1980+(-2574)*x**2))
@@ -211,3 +207,24 @@ def lobatto_kernels(order, x):
         phi = (1/512)*(29/2)**(1/2)*phi
         dphi = (1/512)*(29/2)**(1/2)*dphi
     return phi, dphi
+
+def lobatto_legendre(order, x):
+    from scipy.special import eval_legendre
+    return order*(eval_legendre(order-1,x)-x*eval_legendre(order,x))
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    xi = np.linspace(-1,1,500)
+    for order in range(2,6):
+        plt.figure(order)
+        plt.plot(xi, lobatto(order,xi)[0])
+        plt.plot(xi, lobatto(0,xi)[0]*lobatto(1,xi)[0]*lobatto_kernels(order-2, xi)[0],"r.")
+        # plt.plot(xi, lobatto_legendre(order-1, xi),"m+")
+        # plt.figure(order*100)
+        # plt.plot(xi, lobatto(order,xi)[1])
+        # __  = lobatto(0,xi)[1]*lobatto(1,xi)[0]*lobatto_kernels(order-2, xi)[0]
+        # __ += lobatto(0,xi)[0]*lobatto(1,xi)[1]*lobatto_kernels(order-2, xi)[0]
+        # __ += lobatto(0,xi)[0]*lobatto(1,xi)[0]*lobatto_kernels(order-2, xi)[1]
+        # plt.plot(xi, __,"r.")
+    plt.show()
+

@@ -81,7 +81,6 @@ class PwInterfaceType1(PwInterface):
         super().__init__(layer1,layer2)
 
     def transfert(self, Om):
-
         n_w = self.nb_waves
         list_null_fields = [2*self.n_1*_w+i for _w in range(n_w) for i in self.null_fields]
         list_kept_fields = [2*self.n_1*_w+i for _w in range(n_w) for i in self.kept_fields]

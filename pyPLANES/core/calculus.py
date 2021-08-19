@@ -25,6 +25,7 @@
 import platform
 import socket
 import datetime
+import json
 import pickle
 
 from os import path, mkdir, rename
@@ -41,10 +42,9 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from mediapack import Air
-from pyPLANES.core.result import Result 
+from pyPLANES.core.result import Results 
 
 Air = Air()
-
 
 class Calculus():
     """ pyPLANES Calculus 
@@ -80,8 +80,13 @@ class Calculus():
         self.txt_file_extension = False
         self.name_server = platform.node()
         self.verbose = kwargs.get("verbose", False)
-        self.list_results =[]
-        self.result = None
+        self.save_format = kwargs.get("save_format", "json")        
+        self.save_append = kwargs.get("save_append", False)
+        self.Results = { "Solver" : type(self).__name__, "f" : []}
+        label = kwargs.get("label", False)
+        if label:
+            self.Results["label"] = label
+
         _ = kwargs.get("frequencies", False)
         __ = kwargs.get("f_bounds", False)
         if _ is not False:
@@ -115,9 +120,7 @@ class Calculus():
         self.file_names = self.outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
-        self.txt_file_name = self.file_names + ".txt"
         self.info_file_name = self.file_names + ".info.txt"
-        self.pkl_file_name = self.file_names + ".pkl"
         self.open_info_file()
 
     def resolution(self):
@@ -126,15 +129,10 @@ class Calculus():
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:
             self.f = f
-            self.result = Result(f=self.f)
             omega = 2*pi*f
             self.update_frequency(omega)
             self.create_linear_system(omega)
             self.solve()
-            # self.result.write_as_txt(self.txt_file)
-            if self.print_result:
-                print(self.result)
-            self.list_results.append(self.result)
 
             if any(self.plot):
                 self.plot_solution()
@@ -143,17 +141,26 @@ class Calculus():
                     plt.figure("Pressure map")
                     plt.savefig("Pressure")
         self.close_info_file()
-        self.save_results()
 
-    def save_results(self):
-        f = open(self.pkl_file_name, "wb")
-        pickle.dump(self.list_results, f)
-        f.close()
+        if self.save_format == "json":
+            self.save_json()
+        if self.save_format == "pickle":
+            self.save_pickle()
 
-        for _f in [self.pkl_file_name]:
-            new_name = _f.split(".")
-            new_name.insert(1, self.out_file_extension)
-            rename(_f, ".".join(new_name))
+    def results_to_json(self):
+        pass
+
+    def save_json(self):
+        name_file = self.file_names + ".json"
+        self.results_to_json()
+        if self.save_append:
+            with open(name_file, 'a') as json_file:
+                json.dump(self.Results, json_file)
+                json_file.write("\n")
+        else:
+            with open(name_file, 'w') as json_file:
+                json.dump(self.Results, json_file)
+                json_file.write("\n")
 
     def open_info_file(self):
         """  Initialise out files """    
@@ -175,6 +182,7 @@ class Calculus():
         """ Resolution of the linear system"""
         if self.verbose:
             print("Resolution of the linear system")
+        self.Results["f"].append(self.f)
 
     def close_info_file(self):
         """  Close out files at the end of the calculus """
@@ -182,7 +190,7 @@ class Calculus():
         self.info_file.close()
         # rename the info file so as to include the name of the method in the name of the text part
         new_name = self.info_file_name.split(".")
-        new_name.insert(1, self.out_file_extension)
+        new_name.insert(1, self.out_file_method)
         rename(self.info_file_name, ".".join(new_name))
 
     def plot_solution(self):

@@ -33,7 +33,7 @@ from pyPLANES.dgm.dgm_elements import DgmElement
 
 
 from pyPLANES.generic.entities_generic import GmshEntity, FemEntity, DgmEntity
-from pyPLANES.fem.fem_entities_surfacic import ImposedDisplacementFem, FluidStructureFem, RigidWallFem, InterfaceFem, PeriodicityFem
+from pyPLANES.fem.fem_entities_surfacic import ImposedDisplacementFem, FluidStructureFem, RigidWallFem, InterfaceFem, PeriodicityFem, RobinAirFem, ImposedPwFem
 from pyPLANES.fem.fem_entities_volumic import FluidFem, ElasticFem, PemFem
 from pyPLANES.fem.fem_entities_pw import PwFem
 from pyPLANES.dgm.dgm_entities_surfacic import ImposedDisplacementDgm
@@ -123,6 +123,14 @@ def entities(self, f):
                     if physical_tags["method"] == "FEM":
                         _ent = ImposedDisplacementFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                         self.fem_entities.append(_ent)
+                elif physical_tags["condition"] == "Imposed PW":
+                    if physical_tags["method"] == "FEM":
+                        _ent = ImposedPwFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
+                        self.fem_entities.append(_ent)
+                elif physical_tags["condition"] == "Robin Air":
+                    if physical_tags["method"] == "FEM":
+                        _ent = RobinAirFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
+                        self.fem_entities.append(_ent)
                     elif physical_tags["method"] == "DGM":
                             _ent = ImposedDisplacementDgm(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                             self.dgm_entities.append(_ent)                        
@@ -164,7 +172,7 @@ def entities(self, f):
                     # print(physical_tags["mat"].split()[0])
                     if physical_tags["mat"].split()[0] == "Air":
                         if physical_tags["method"] == "FEM":
-                            _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
+                            _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities, condensation=self.condensation)
                             self.fem_entities.append(_ent)
                         elif physical_tags["method"] == "DGM":
                             _ent = FluidDgm(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
@@ -175,15 +183,15 @@ def entities(self, f):
                         # print(mat)
                         if mat.MEDIUM_TYPE == "eqf":
                             if physical_tags["method"] == "FEM":
-                                _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
+                                _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities, condensation=self.condensation)
                                 self.fem_entities.append(_ent)
                         elif mat.MEDIUM_TYPE == "elastic":
                             if physical_tags["method"] == "FEM":
-                                _ent = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
+                                _ent = ElasticFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities, condensation=self.condensation)
                                 self.fem_entities.append(_ent)
                         elif mat.MEDIUM_TYPE == "pem":
                             if physical_tags["method"] == "FEM":
-                                _ent = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
+                                _ent = PemFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities, condensation=self.condensation)
                                 self.fem_entities.append(_ent)
                         else: 
                             raise NameError(" Provided material is neither eqf, elastic nor pem")

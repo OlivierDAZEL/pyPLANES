@@ -102,7 +102,6 @@ def fluid_waves_TMM(mat, kx):
     lam : numpy vectors of length 2*n_w with the 1j*ky/ For each pair the first one is going in the positive y direction
 
     """
-
     if mat.MEDIUM_TYPE == 'eqf':
         K = mat.K_eq_til
     elif mat.MEDIUM_TYPE == 'fluid':

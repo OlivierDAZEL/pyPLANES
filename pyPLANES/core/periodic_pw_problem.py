@@ -34,7 +34,6 @@ from mediapack import Air, Fluid
 # from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
 
-from pyPLANES.core.result import PeriodicPwResult
 from pyPLANES.pw.periodic_multilayer import PeriodicMultiLayer
 
 from pyPLANES.pw.pw_layers import *
@@ -48,16 +47,22 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def __init__(self, **kwargs):
         assert "ml" in kwargs
         ml = kwargs.get("ml")
+        self.condensation = kwargs.get("condensation", True)
         Calculus.__init__(self, **kwargs)
         self.termination = kwargs.get("termination", "rigid")
         self.theta_d = kwargs.get("theta_d", 0.0)
         if self.theta_d == 0:
             self.theta_d = 1e-15 
         self.order = kwargs.get("order", 2)
+
+        self.Results["R0"], self.Results["T0"] = [], []
+        self.Results["n_dof"] = []
+        self.Results["order"] = self.order
+
         self.nb_bloch_waves = kwargs.get("nb_bloch_waves", False)
         # Out files
-        self.out_file_extension = "eTMM"
-        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot)
+        self.out_file_method = "eTMM"
+        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
         # self.period = 5e-2
         # print(self.period)
         self.add_excitation_and_termination(self.termination)
@@ -73,13 +78,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
         k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
-
         if self.period:
             if self.nb_bloch_waves is not False:
                 nb_bloch_waves = self.nb_bloch_waves
             else: 
                 nb_bloch_waves = int(np.ceil((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+10)
-            print("nb_bloch_waves={}".format(nb_bloch_waves))
+            nb_bloch_waves = 0
+            # print("nb_bloch_waves={}".format(nb_bloch_waves))
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = k_x+_*(2*pi/self.period)
@@ -105,29 +110,26 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 self.back_prop = self.back_prop@next_interface.Tau
         else: # Rigid backing
             self.Omega = self.interfaces[-1].Omega(self.nb_waves)
-            for i, _l in enumerate(self.layers[::-1]):
+            for i, _l in enumerate(self.layers[::-1]):                
                 next_interface = self.interfaces[-i-2]
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
 
     def solve(self):
         Calculus.solve(self)
-        self.result = PeriodicPwResult(f=self.f)
-        if self.nb_waves == 1:
+        
+        if self.nb_waves == 0:
             self.Omega = self.Omega.reshape(2)
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
-            result.R = (self.Omega[0]+_*self.Omega[1])/det
-            result.abs = 1-np.abs(self.R)**2
+            R0 = (self.Omega[0]+_*self.Omega[1])/det
+            self.Results["R0"].append(R0)
+            abs = 1-np.abs(R0)**2
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                result.T = np.array([Omega_end[0]])
-            if self.print_result:
-                _text = "R={:+.15f}".format(self.R)
-                if self.termination == "transmission":
-                    _text += " / T={:+.15f}".format(self.T[0])
-                print(_text)
+                self.Results["T0"].append(Omega_end[0])
+
         else:
             M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
             M[:,:self.nb_waves] = self.Omega[:2*self.nb_waves,:self.nb_waves]
@@ -143,17 +145,27 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 M[2*_w:2*(_w+1),self.nb_waves+_w] = -Omega_0.reshape(2)
 
             X = LA.solve(M, E_0)
-
             R = X[self.nb_waves:]
-            self.result.R0 = R[0]
-            self.result.R = np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0])
-            self.result.abs = 1-self.result.R
+            self.Results["R0"].append(R[0])
+            # print(R[0])
+            # self.Results["R"].append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
+            # abs = 1-self.result.R
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
                 T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
-                self.result.T0 = T[0]
-                self.result.T = np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0])
-                self.result.abs -= self.result.T
+                self.Results["T0"].append(T[0])
+                # self.Results["T"].append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
+            #     abs -= result.T
+            # self.Results["abs"].append(abs)
+
+    def results_to_json(self):
+        self.Results["real(R0)"] = np.real(self.Results["R0"]).tolist()
+        self.Results["imag(R0)"] = np.imag(self.Results["R0"]).tolist()
+        del self.Results["R0"]
+        self.Results["real(T0)"] = np.real(self.Results["T0"]).tolist()
+        self.Results["imag(T0)"] = np.imag(self.Results["T0"]).tolist()
+        del self.Results["T0"]
+
 
     def plot_solution(self):
         x_minus = self.X_0_minus # Information vector at incident interface  x^-
@@ -170,8 +182,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
                 _l.plot_solution_recursive(self.plot, q)
             x_minus = _l.Xi@x_plus # Transfert through the layer x^-_{+1}
-
-
 
     def load_results(self):
         data = np.loadtxt(self.out_file_name)

@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 
 from mediapack import Air, Fluid
 
-from pyPLANES.core.result import PwResult
+
 # from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
 from pyPLANES.pw.multilayer import MultiLayer
@@ -45,6 +45,7 @@ class PwProblem(Calculus, MultiLayer):
     """ 
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
+        self.Results["R0"], self.Results["T0"] = [], [] 
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", False)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
@@ -57,9 +58,9 @@ class PwProblem(Calculus, MultiLayer):
             self.info_file.write("Plane Wave solver // Global method\n")
         # Out files
         if self.method == "Global Method":
-            self.out_file_extension = "GM"
+            self.out_file_method = "GM"
         elif self.method == "Recursive Method":
-            self.out_file_extension = "RM"
+            self.out_file_method = "RM"
 
         assert "ml" in kwargs
         ml = kwargs.get("ml")
@@ -72,7 +73,6 @@ class PwProblem(Calculus, MultiLayer):
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
-
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
@@ -115,22 +115,28 @@ class PwProblem(Calculus, MultiLayer):
 
     def solve(self):
         Calculus.solve(self)
-        self.result = PwResult(f=self.f)
         if self.method == "Recursive Method":
             self.Omega = self.Omega.reshape(2)
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
-            self.result.R0 = (self.Omega[0]+_*self.Omega[1])/det
+            self.Results["R0"].append((self.Omega[0]+_*self.Omega[1])/det)
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                self.result.T0 = Omega_end[0]
+                self.Results["T0"].append(Omega_end[0])
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
-            self.result.R0 = self.X[0]
+            self.Results["R0"].append(self.X[0])
             if self.termination == "transmission":
-                self.result.T0 = self.X[-1]
+                self.Results["T0"].append(self.X[-1])
 
+    def results_to_json(self):
+        self.Results["real(R0)"] = np.real(self.Results["R0"]).tolist()
+        self.Results["imag(R0)"] = np.imag(self.Results["R0"]).tolist()
+        del self.Results["R0"]
+        self.Results["real(T0)"] = np.real(self.Results["T0"]).tolist()
+        self.Results["imag(T0)"] = np.imag(self.Results["T0"]).tolist()
+        del self.Results["T0"]
 
     def plot_solution(self):
         if self.method == "Global Method":

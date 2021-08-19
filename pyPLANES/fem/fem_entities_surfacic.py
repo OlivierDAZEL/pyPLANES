@@ -50,16 +50,95 @@ class ImposedDisplacementFem(FemEntity):
 
     def elementary_matrices(self, _el):
         F = imposed_Neumann(_el)
-        orient_ = orient_element(_el)
-        _el.F = orient_ @ F
+        # orient_ = orient_element(_el)
+        # _el.F = -orient_ @ F # - is for outgoing
+        _el.F =  -F # - is for outgoing / No orientation for 1D element
         _el.dof_p = dof_p_linear_system_master(_el)
 
+    def pressure_on_entity(self,X):
+            F = np.zeros(len(X))
+            for _el in self.elements:
+                F[_el.dof_p] -= _el.F # - is for outgoing 
+            return X.dot(F)
+
+    def impedance_on_entity(self,X, omega):
+        pr = self.pressure_on_entity(X)
+        return pr/(1j*omega)
+
+
     def update_system(self, omega):
-        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
+        A_i, A_j, A_v, F_i, F_v =[], [], [], [], []
         for _el in self.elements:
             F_i.extend(_el.dof_p)
             F_v.extend(_el.F)
-        return A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v
+        return A_i, A_j, A_v, F_i, F_v
+
+class ImposedPwFem(FemEntity):
+    def __init__(self, **kwargs):
+        FemEntity.__init__(self, **kwargs)
+    
+    def __str__(self):
+        out = "Imposed Pw"
+        return out
+
+    def elementary_matrices(self, _el):
+        F = imposed_Neumann(_el)
+        orient_ = orient_element(_el)
+        M = fsi_elementary_matrix(_el)
+        orient_ = orient_element(_el)
+        _el.M = orient_ @ M @ orient_
+        _el.F =  F # - is for outgoing / No orientation for 1D element
+        _el.dof_p = dof_p_linear_system_master(_el)
+
+    def pressure_on_entity(self,X):
+            F = np.zeros(len(X))
+            for _el in self.elements:
+                F[_el.dof_p] += _el.F
+            return X.dot(F)
+
+
+    def update_system(self, omega):
+        k = omega / Air.c
+        A_i, A_j, A_v, F_i, F_v =[], [], [], [], []
+        for _el in self.elements:
+            F_i.extend(_el.dof_p)
+            F_v.extend((1j*k/(Air.rho*omega**2))*_el.F)
+            v = (_el.M).flatten()
+            A_i.extend(list(chain.from_iterable([[_d]*len(_el.dof_p) for _d in _el.dof_p])))
+            A_j.extend(list(_el.dof_p)*len(_el.dof_p))
+            A_v.extend(2*1j*k*v/(Air.rho*omega**2))
+
+        return A_i, A_j, A_v, F_i, F_v
+
+class RobinAirFem(FemEntity):
+    def __init__(self, **kwargs):
+        FemEntity.__init__(self, **kwargs)
+    
+    def __str__(self):
+        out = "Robin Air Displacement"
+        return out
+
+    def elementary_matrices(self, _el):
+        F = imposed_Neumann(_el)
+        orient_ = orient_element(_el)
+        M = fsi_elementary_matrix(_el)
+        orient_ = orient_element(_el)
+        _el.M = orient_ @ M @ orient_
+        _el.F =  F # - is for outgoing / No orientation for 1D element
+        _el.dof_p = dof_p_linear_system_master(_el)
+
+    def update_system(self, omega):
+        k = omega / Air.c
+        A_i, A_j, A_v, F_i, F_v =[], [], [], [], []
+        for _el in self.elements:
+            v = (_el.M).flatten()
+            A_i.extend(list(chain.from_iterable([[_d]*len(_el.dof_p) for _d in _el.dof_p])))
+            A_j.extend(list(_el.dof_p)*len(_el.dof_p))
+            A_v.extend(-1j*k*v/(Air.rho*omega**2))
+            F_i.extend(_el.dof_p)
+            F_v.extend((1j*k/(Air.rho*omega**2))*_el.F*np.exp(1j*k))
+        return A_i, A_j, A_v, F_i, F_v
+
 
 
 class InterfaceFem(FemEntity):
@@ -134,7 +213,6 @@ class InterfaceFem(FemEntity):
 
         return A_i, A_j, A_v, T_i, T_j, T_v
 
-
 class FluidStructureFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
@@ -145,7 +223,6 @@ class FluidStructureFem(FemEntity):
         # Elementary matrices
         M = fsi_elementary_matrix(_el)
         orient_ = orient_element(_el)
-
         _el.M = orient_ @ M @ orient_
 
     def __str__(self):
@@ -155,6 +232,7 @@ class FluidStructureFem(FemEntity):
     def append_linear_system(self, omega):
         A_i, A_j, A_v =[], [], []
         # Translation matrix to compute internal dofs
+
         T_i, T_j, T_v =[], [], []
         for _el in self.elements:
             dof_ux = dof_ux_linear_system_master(_el)
@@ -200,5 +278,9 @@ class PeriodicityFem(FemEntity):
         return out
 
     def update_system(self, omega):
-        return [], [], [], [], [], [], [], []
+        if self.condensation: 
+            return [], [], [], [], [], [], [], []
+        else:
+            return [], [], [], [], [], []
+
 
