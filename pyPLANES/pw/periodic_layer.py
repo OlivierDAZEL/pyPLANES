@@ -100,23 +100,18 @@ class PeriodicLayer(Mesh):
             self.T_i, self.T_j, self.T_v = [], [], []
         # Creation of the D_ii matrix
         for _ent in self.fem_entities:
-            # print(_ent)
-            # print(_ent.condensation)
             self.update_system(*_ent.update_system(omega))
 
         # Application of periodicity
         for i_left, dof_left in enumerate(self.dof_left):
             # Corresponding dof
             dof_right = self.dof_right[i_left]
-            # Summation of the columns for the matrix
-            index = [i for i, value in enumerate(self.A_j) if value == dof_right]
+            index = np.where(np.array(self.A_j) == dof_right)[0]
             for _i in index:
                 self.A_j[_i] = dof_left
                 self.A_v[_i] *= self.delta_periodicity*self.orientation_periodic_dofs[i_left]
             # Summation of the rows for the Matrix
-            index = np.where(self.A_i == dof_right)
-            index = [i for i, value in enumerate(self.A_i) if value == dof_right]
-
+            index = np.where(np.array(self.A_i) == dof_right)[0]
             for _i in index:
                 self.A_i[_i] = dof_left
                 self.A_v[_i] /= self.delta_periodicity*self.orientation_periodic_dofs[i_left]

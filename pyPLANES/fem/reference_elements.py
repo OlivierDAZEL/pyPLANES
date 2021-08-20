@@ -29,7 +29,7 @@ import importlib
 from pyPLANES.fem.lobatto_polynomials import lobatto as l
 from pyPLANES.fem.lobatto_polynomials import lobatto_kernels as kernel
 from pyPLANES.fem.utils_fem import create_legendre_table
-from pyPLANES.fem.quadrature_triangle import quadrature_triangle
+
 
 import matplotlib.tri as mtri
 import matplotlib.pyplot as plt
@@ -175,7 +175,7 @@ class PlotKt:
 def shape_functions_Kt(xi_1, xi_2, order):
     ''' Return Lobatto Shape functions on Kt'''
     nb_SF = 3*order+int(((order-1)*(order-2))/2)
-    # print(nb_SF)
+
     lamda = np.zeros((3,len(xi_1)))
     dlamda = [np.zeros((3, len(xi_1))),np.zeros((3, len(xi_1)))]
     # Equations (2.17) of Solin 
@@ -219,10 +219,6 @@ def shape_functions_Kt(xi_1, xi_2, order):
 
     # Face Shape Functions Eq (2.23) of Solin
     _index = 3*order
-
-    Phi_temp = Phi.copy()
-    dPhi_temp = [np.zeros((nb_SF, len(xi_1))),np.zeros((nb_SF, len(xi_1)))]
-
  
     for n_1 in range(1, order):
         for n_2 in range(1, order-n_1):
