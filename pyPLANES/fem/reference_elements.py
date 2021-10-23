@@ -40,9 +40,10 @@ import quadpy as quadpy
 
 
 class Ka:
-    def __init__(self, order=2):
+    def __init__(self, order, p):
+
         self.order = order
-        self.xi, self.w = leggauss(2*order)
+        self.xi, self.w = leggauss(p)
 
         # Number of Shape Functions
         self.nb_v = 2
@@ -54,19 +55,14 @@ class Ka:
         # Shape Functions
         for _o in range(order+1):
             self.Phi[_o, :], self.dPhi[_o, :] = l(_o, self.xi)
-        #     plt.figure(_o)
-        #     x= np.linspace(-1,1,200)
-        #     plt.plot(x,l(_o, x)[0])
-        # plt.show()
-
 
     def __str__(self):
         out = "K_a of order {}".format(self.order)
         return out
 
 class KaPw(Ka):
-    def __init__(self, order=2):
-        Ka.__init__(self, order)
+    def __init__(self, order, p):
+        Ka.__init__(self, order, 15)
         # legendre table corresponds to values of L_n^(j)(1)
         self.legendre_table = create_legendre_table(self.order)
 
@@ -79,41 +75,26 @@ class KaPw(Ka):
 
         n, m = self.Phi.shape
         out = np.zeros(n, dtype=complex)
+        # print(k)
         ik = 1j*k
-        # print(abs(k))
-        if abs(k) < 0.1 :
+        if np.abs(k) > (-0.1) :
             for i_w, w in enumerate(self.w):
                 out += (np.exp(-ik*self.xi[i_w])*w)* self.Phi[:, i_w].reshape(n)
-                # out += (w)* self.Phi[:, i_w].reshape(n)
-
         else:
             out[0] = (np.exp(ik)/ik)+(1j*np.sin(k))/k**2
             out[1] =-(np.exp(-ik)/ik)-(1j*np.sin(k))/k**2
             for _n in range(2, n):
-                dfssdffdsdsf
                 _ = [self.legendre_table[_n-1, j]*(np.exp(-ik)-np.exp(ik)*(-1)**(_n-1+j))/(ik)**j for j in range(_n) ]
                 out[_n] = (np.sum(_)/(k**2*np.sqrt(2./(2*_n-1))))
-        # print(k)
-        # print("out={}".format(out))
         return out
 
 class Kt:
     def __init__(self, order=2):
         self.order = order
-
-        # scheme = quadpy.t2.schemes["dunavant_{:02d}".format(8)]()
-        # _points = (scheme.points.T).dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
-        # print(_points)
-        # print(scheme.weights*2)
-
-        scheme = quadpy.t2.schemes["dunavant_{:02d}".format(3*order)]()
-        # scheme = quadpy.t2.get_good_scheme(3*order)
-        # print(scheme.points)
-        # scheme.show()
-
+        # Integration scheme
+        scheme = quadpy.t2.schemes["dunavant_{:02d}".format(2*order)]()
         _points = (scheme.points.T).dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
         self.xi_1, self.xi_2, self.w = _points[:, 0], _points[:,1], 2*scheme.weights
-        # self.xi_1, self.xi_2, self.w = quadrature_triangle(2*order)
 
         # Number of Shape Functions
         self.nb_v = 3
@@ -122,19 +103,11 @@ class Kt:
         # Number of master shape functions
         self.nb_m_SF = self.nb_v+ self.nb_e
 
-
         # Number of slave shape functions (to condense)
         self.nb_s_SF = self.nb_f
         self.nb_SF = self.nb_m_SF+self.nb_s_SF
 
-        # print(self.nb_SF)
-        # print((self.order+1)*(self.order+2)/2)
-
         self.Phi, self.dPhi = shape_functions_Kt(self.xi_1, self.xi_2, self.order)
-        # print(self.Phi.shape)
-        # print(self.dPhi[0].shape)
-        # print(self.dPhi[1].shape)
-        # print(LA.matrix_rank(self.Phi[:self.nb_SF,:self.nb_SF]))
 
         # For plots
         tri_Kt = mtri.Triangulation(np.asarray([-1,1,-1]), np.asarray([-1,-1,1]))
@@ -154,9 +127,6 @@ class PlotKt:
         x = np.asarray([-1,1,-1])
         y = np.asarray([-1,-1,1])
         tri = mtri.Triangulation(x, y)
-
-        print(tri.points)
-        sdf
 
         refiner = mtri.UniformTriRefiner(tri)
         fine_tri = refiner.refine_triangulation(subdiv=9)
@@ -219,7 +189,6 @@ def shape_functions_Kt(xi_1, xi_2, order):
 
     # Face Shape Functions Eq (2.23) of Solin
     _index = 3*order
- 
     for n_1 in range(1, order):
         for n_2 in range(1, order-n_1):
             Phi[_index, :] = lamda[0, :]*lamda[1, :]*lamda[2, :]*kernel(n_1-1, lamda[2, :]-lamda[1, :])[0]*kernel(n_2-1, lamda[1, :]-lamda[0, :])[0]
@@ -229,10 +198,6 @@ def shape_functions_Kt(xi_1, xi_2, order):
                 dPhi[_xi][_index, :] += dlamda[_xi][2, :]*lamda[0, :]*lamda[1, :]*kernel(n_1-1, lamda[2, :]-lamda[1, :])[0]*kernel(n_2-1, lamda[1, :]-lamda[0, :])[0]
                 dPhi[_xi][_index, :] += lamda[0, :]*lamda[1, :]*lamda[2, :]*kernel(n_1-1, lamda[2, :]-lamda[1, :])[1]*(dlamda[_xi][2, :]-dlamda[_xi][1, :])*kernel(n_2-1, lamda[1, :]-lamda[0, :])[0]
                 dPhi[_xi][_index, :] += lamda[0, :]*lamda[1, :]*lamda[2, :]*kernel(n_2-1, lamda[1, :]-lamda[0, :])[1]*(dlamda[_xi][1, :]-dlamda[_xi][0, :])*kernel(n_1-1, lamda[2, :]-lamda[1, :])[0]
-            
-
             _index += 1
-
-
 
     return Phi, dPhi

@@ -101,12 +101,12 @@ def reference_element(key, order):
         if key == 2:
             out = Kt(order)
         elif key == 1:
-            out = Ka(order)
+            out = Ka(order, 2*order)
     else:
         if key[0] == 2:
             out = Kt(order)
         elif key[0] == 1:
-            out = KaPw(order)
+            out = KaPw(order, 5*order)
 
     return out
 

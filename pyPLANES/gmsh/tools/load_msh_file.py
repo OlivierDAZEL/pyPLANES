@@ -42,11 +42,12 @@ from pyPLANES.dgm.dgm_entities_volumic import FluidDgm
 
 def load_msh_file(self, **kwargs):
     name_mesh = kwargs["name_mesh"]
+
     self.dim = kwargs.get("dim", 2)
     self.verbose = kwargs.get("verbose", False)
     if self.verbose:
         print("Reading "+ name_mesh + ".msh")
-    f = open(name_mesh + ".msh", "r")
+    f = open("msh/" + name_mesh + ".msh", "r")
     _f = "_"
     while _f:
         _f = f.readline().strip()

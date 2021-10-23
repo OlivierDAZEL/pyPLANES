@@ -22,7 +22,6 @@
 # copies or substantial portions of the Software.
 #
 
-
 import os
 import sys
 import numpy as np
@@ -31,7 +30,9 @@ from copy import deepcopy
 
 class Gmsh():
     def __init__(self, file="noname"):
-        self.geo_file = file + ".geo"
+        if not os.path.exists("msh"):
+            os.mkdir("msh")
+        self.geo_file = "msh/" + file + ".geo"
         self.f= open(self.geo_file, "w")
         self.f.write("// This code was created by pyPLANES\n")
         self.nb_tags = 0

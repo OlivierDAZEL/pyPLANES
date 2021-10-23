@@ -46,6 +46,7 @@ from mediapack import Air
 class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
+        self.Result.Solver = type(self).__name__
         self.condensation = kwargs.get("condensation", True)
         self.order = kwargs.get("order", 2)
         Mesh.__init__(self, **kwargs)
@@ -57,16 +58,16 @@ class FemProblem(Mesh, Calculus):
         self.A_i, self.A_j, self.A_v = None, None, None
         if self.condensation:
             self.T_i, self.T_j, self.T_v = None, None, None
-        
 
-        self.out_file_method = "FEM"
+
+
 
         fem_preprocess(self)
         if self.list_vr is not False:
-            self.Results["R0"] = []
-        self.Results["order"] = self.order
-        self.Results["n_dof"] = []
-        self.Results["D_lambda"] = []
+            self.Result.R0 = []
+        self.Result.order = self.order
+        self.Result.n_dof = []
+        self.Result.D_lambda = []
 
 
     def create_linear_system(self, omega):
@@ -212,7 +213,7 @@ class FemProblem(Mesh, Calculus):
 
             # print(Z)
             # print(Z_0)
-
+            # dsqsdqdsq
             R_0= (Z_0-Air.Z)/(Z_0+Air.Z)
             # print("ref={}".format(R_0))
 
@@ -231,17 +232,17 @@ class FemProblem(Mesh, Calculus):
 
             # self.Results["R0"].append(L2.real)
             # self.Results["R0"].append(np.sqrt(np.abs(L2.real-AA*II)))
-            self.Results["R0"].append(R)
-            self.Results["n_dof"].append(self.nb_dof_master)
-            self.Results["D_lambda"].append(D_lambda)
+            self.Result.R0.append(R)
+            self.Result.n_dof.append(self.nb_dof_master)
+            self.Result.D_lambda.append(D_lambda)
 
         return X
 
 
-    def results_to_json(self):
-        self.Results["real(R0)"] = np.real(self.Results["R0"]).tolist()
-        self.Results["imag(R0)"] = np.imag(self.Results["R0"]).tolist()
-        del self.Results["R0"]
+    # def results_to_json(self):
+    #     self.Results["real(R0)"] = np.real(self.Results["R0"]).tolist()
+    #     self.Results["imag(R0)"] = np.imag(self.Results["R0"]).tolist()
+    #     del self.Results["R0"]
 
 
     def resolution(self):

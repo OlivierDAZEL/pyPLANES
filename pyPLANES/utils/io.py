@@ -38,11 +38,16 @@ import matplotlib.tri as mtri
 from pyPLANES.fem.fem_entities_surfacic import *
 from pyPLANES.fem.fem_entities_volumic import *
 
+from pyPLANES.core.result import Result
+
 # def initialisation_out_files_plain(self):
 #     pass
 
 from pymls import from_yaml, Solver, Layer, backing
 from mediapack import Air, Fluid
+
+
+plot_color = ["r", "b", "m", "k", "g", "y"]
 
 def load_material(mat):
     if mat == "Air":
@@ -53,13 +58,14 @@ def load_material(mat):
     else:
         return None
 
-def result_pymls(**kwargs):
+def run_pymls(**kwargs):
     name_project = kwargs.get("name_project", "unnamed_project")
     ml = kwargs.get("ml", False) 
     termination = kwargs.get("termination", "rigid")
     theta_d = kwargs.get("theta_d", 45) 
     freq = kwargs.get("frequencies", np.array([440])) 
     plot_RT = kwargs.get("plot_RT", False)
+    result = Result()
     solver = Solver()
     for _l in ml:
         mat = load_material(_l[0])
@@ -68,26 +74,16 @@ def result_pymls(**kwargs):
     R = []
     if termination in ["rigid", "Rigid", "Rigid Wall", "Wall"]:
         solver.backing = backing.rigid
-        T = False 
     else: 
-        T = []
         solver.backing = backing.transmission
     for _f in freq:
         _ = solver.solve(_f, theta_d)
-        R.append(_["R"][0])
-        if termination == "transmission":
-            T.append(_["T"][0])
-    if plot_RT:
-        plt.figure(name_project + "/ Reflection coefficient")
-        plt.plot(freq, [_.real for _ in R], 'r',label="Re(R) pymls")
-        plt.plot(freq, [_.imag for _ in R], 'b',label="Im(R) pymls")
-        plt.legend()
-        if T is not False:
-            plt.figure(name_project + "/ Transmission coefficient")
-            plt.plot(freq, [_.real for _ in T], 'r',label="Re(T) pymls")
-            plt.plot(freq, [_.imag for _ in T], 'b',label="Im(T) pymls")
-            plt.legend()
-    return freq, R, T
+        result.f.append(_f)
+        result.R0.append(_["R"][0])
+        if termination == "transmission" :
+            result.T0.append(_["T"][0])
+    result.save("out/" + name_project + "_pymls","w")
+
 
 def close_out_files(self):
     duration = time.time()-self.start_time

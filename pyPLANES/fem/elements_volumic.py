@@ -48,9 +48,9 @@ def elas_elementary_matrices(elem):
     coord_e = elem.get_coordinates()
     K_ref = elem.reference_element
     n, m = K_ref.Phi.shape
-    # vm = np.zeros((2*n, 2*n))
-    # vk0 = np.zeros((2*n, 2*n))
-    # vk1 = np.zeros((2*n, 2*n))
+    vm = np.zeros((2*n, 2*n))
+    vk0 = np.zeros((2*n, 2*n))
+    vk1 = np.zeros((2*n, 2*n))
 
 
     # X1X2 = coord_e[:,1]- coord_e[:,0]

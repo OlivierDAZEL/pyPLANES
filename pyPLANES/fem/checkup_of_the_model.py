@@ -142,6 +142,7 @@ def check_pem_formulation(self):
             _e.formulation98 = True
             _e.formulation98 = False
 
+
 def check_interfaces(self):
     # Check that the number of interfaces go by pairs
     list_interfaces = [_ent for _ent in self.fem_entities if isinstance(_ent, InterfaceFem)]

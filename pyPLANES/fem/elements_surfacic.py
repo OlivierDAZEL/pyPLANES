@@ -44,15 +44,17 @@ def imposed_Neumann(_elem):
 def imposed_pw_elementary_vector(_elem, k):
     ''' Calculus of I = int_{\Omega_e} e^{-jkx} Phi(x) dx
         On the reference element:
-            I = (h/2)e^{-jkx-mid} * \int_{-1}^{1} e^{-jkhxi/2} \Phi(xi) dxi
+            I = (h/2)e^{-jkx_mid} * \int_{-1}^{1} e^{-jkhxi/2} \Phi(xi) dxi
     '''
     # Geometrical datas
+
     coord_e = _elem.get_coordinates()
-    h = LA.norm(coord_e[:, 1]-coord_e[:, 0])
-    x_mid = min(coord_e[0, :]) + h/2.
-    k_prime = k*h/2.
+    h = coord_e[0, 1]-coord_e[0, 0]
+    x_mid = (coord_e[0, 1]+coord_e[0, 0])/2.
+    k_prime = k*np.abs(h)/2
     F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
-    # print(F_analytical)
+    
+
     return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
 
 def fsi_elementary_matrix(_elem):
@@ -84,19 +86,13 @@ def fsi_elementary_matrix_incompatible(_elem):
     K_ref = _elem.reference_element
     order = K_ref.order
 
-    # print("element tag = {}".format(_elem.tag))
 
     node_0 = np.array(_elem.vertices[0].coord)
     node_1 = np.array(_elem.vertices[1].coord)
-    # print("node_0={}".format(node_0))
-    # print("node_1={}".format(node_1))
     Matrices = []
     for neigh in _elem.neighbours:
         Node_0 = neigh._elem.vertices[0].coord
         Node_1 = neigh._elem.vertices[1].coord
-        # print("Node_0={}".format(Node_0))
-        # print("Node_1={}".format(Node_1))
-        # print("neighbour_element_tag ={}".format(neigh._elem.tag))
         # Gauss points of both elements
         xi = (-1+2*neigh.s[0])+ (K_ref.xi+1)*(neigh.s[1]-neigh.s[0])
         Xi = (-1+2*neigh.S[0])+ (K_ref.xi+1)*(neigh.S[1]-neigh.S[0])

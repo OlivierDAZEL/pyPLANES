@@ -25,8 +25,6 @@
 import platform
 import socket
 import datetime
-import json
-import pickle
 
 from os import path, mkdir, rename
 
@@ -42,7 +40,7 @@ from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from mediapack import Air
-from pyPLANES.core.result import Results 
+from pyPLANES.core.result import Result
 
 Air = Air()
 
@@ -76,13 +74,12 @@ class Calculus():
     """
 
     def __init__(self, **kwargs):
-        
-        self.txt_file_extension = False
         self.name_server = platform.node()
+        self.txt_file_extension = False
         self.verbose = kwargs.get("verbose", False)
         self.save_format = kwargs.get("save_format", "json")        
-        self.save_append = kwargs.get("save_append", False)
-        self.Results = { "Solver" : type(self).__name__, "f" : []}
+        self.save_append = kwargs.get("save_append", "w")
+        self.Result = Result() 
         label = kwargs.get("label", False)
         if label:
             self.Results["label"] = label
@@ -120,14 +117,16 @@ class Calculus():
         self.file_names = self.outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
-        self.info_file_name = self.file_names + ".info.txt"
-        self.open_info_file()
+        # self.info_file_name = self.file_names + ".info.txt"
+        # self.open_info_file()
+        self.start_time = time.time()
 
     def resolution(self):
         """  Resolution of the problem """        
         if self.verbose:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
         for f in self.frequencies:
+            self.Result.f.append(f)
             self.f = f
             omega = 2*pi*f
             self.update_frequency(omega)
@@ -140,28 +139,19 @@ class Calculus():
                 if self.export_plots[5]:
                     plt.figure("Pressure map")
                     plt.savefig("Pressure")
-        self.close_info_file()
+        # self.close_info_file()
 
-        if self.save_format == "json":
-            self.save_json()
-        if self.save_format == "pickle":
-            self.save_pickle()
+        self.Result.save(self.file_names,self.save_append)
 
     def results_to_json(self):
         pass
 
     def save_json(self):
         name_file = self.file_names + ".json"
-        self.results_to_json()
-        if self.save_append:
-            with open(name_file, 'a') as json_file:
-                json.dump(self.Results, json_file)
+        with open(name_file, self.save_append) as json_file:
+                json.dump(self.Result, json_file)
                 json_file.write("\n")
-        else:
-            with open(name_file, 'w') as json_file:
-                json.dump(self.Results, json_file)
-                json_file.write("\n")
-
+        
     def open_info_file(self):
         """  Initialise out files """    
         # self.txt_file = open(self.txt_file_name, 'w')
@@ -182,7 +172,6 @@ class Calculus():
         """ Resolution of the linear system"""
         if self.verbose:
             print("Resolution of the linear system")
-        self.Results["f"].append(self.f)
 
     def close_info_file(self):
         """  Close out files at the end of the calculus """

@@ -21,7 +21,6 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-from termcolor import colored
 import numpy as np
 import numpy.linalg as LA
 
@@ -45,17 +44,18 @@ class PwProblem(Calculus, MultiLayer):
     """ 
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
-        self.Results["R0"], self.Results["T0"] = [], [] 
+        self.Result.Solver = type(self).__name__
+        # self.Results["R0"], self.Results["T0"] = [], [] 
         self.theta_d = kwargs.get("theta_d", 0.0)
-        self.method = kwargs.get("method", False)
+        self.method = kwargs.get("method", "Global Method")
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
-            self.info_file.write("Plane Wave solver // Recursive method\n")
+            # self.info_file.write("Plane Wave solver // Recursive method\n")
             if self.theta_d == 0:
                 self.theta_d = 1e-12 
         else: 
             self.method = "Global Method"
-            self.info_file.write("Plane Wave solver // Global method\n")
+            # self.info_file.write("Plane Wave solver // Global method\n")
         # Out files
         if self.method == "Global Method":
             self.out_file_method = "GM"
@@ -86,12 +86,8 @@ class PwProblem(Calculus, MultiLayer):
         if self.method == "Recursive Method":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omega()
-                # print(self.interfaces[-1])
-                # print(self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
-                    # print(_l)
-                    # print(next_interface)
                     _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
@@ -119,24 +115,20 @@ class PwProblem(Calculus, MultiLayer):
             self.Omega = self.Omega.reshape(2)
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
-            self.Results["R0"].append((self.Omega[0]+_*self.Omega[1])/det)
+            self.Result.R0.append((self.Omega[0]+_*self.Omega[1])/det)
+            self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                self.Results["T0"].append(Omega_end[0])
+                self.Result.T0.append(Omega_end[0])
+                self.Result.abs[-1] -= np.abs(self.Result.T0[-1])**2
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
-            self.Results["R0"].append(self.X[0])
+            self.Result.R0.append(self.X[0])
+            self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             if self.termination == "transmission":
-                self.Results["T0"].append(self.X[-1])
-
-    def results_to_json(self):
-        self.Results["real(R0)"] = np.real(self.Results["R0"]).tolist()
-        self.Results["imag(R0)"] = np.imag(self.Results["R0"]).tolist()
-        del self.Results["R0"]
-        self.Results["real(T0)"] = np.real(self.Results["T0"]).tolist()
-        self.Results["imag(T0)"] = np.imag(self.Results["T0"]).tolist()
-        del self.Results["T0"]
+                self.Result.T0.append(self.X[-1])
+                self.Result.abs[-1] -= np.abs(self.Result.T0[-1])**2
 
     def plot_solution(self):
         if self.method == "Global Method":
@@ -164,22 +156,6 @@ class PwProblem(Calculus, MultiLayer):
         else:
             T= False
         return f, R, T
-
-    def compute_error(self, f_ref, R_ref, T_ref, plot_RT=False, eps=1e-8):
-        # self.frequencies = f_ref
-        self.resolution()
-        R, T = self.load_results()[1:] 
-        error_R = LA.norm(R-R_ref)
-        error_T = LA.norm(T-T_ref)
-        _ = np.sqrt(error_R**2+error_T**2)/len(f_ref)
-        if plot_RT:
-            self.plot_results()
-
-        if _< eps:
-            print("Overall error = {}".format(_) + "\t"*6 + "["+ colored("OK", "green")  +"]")
-        else:
-            print("Overall error = {}".format(_) + "\t"*6 + "["+ colored("Fail", "red")  +"]")
-        return error_R, error_T
 
     def plot_results(self):
         if self.method == "Recursive Method":

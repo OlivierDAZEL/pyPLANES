@@ -91,8 +91,6 @@ class FluidFem(FemEntity):
         return A_i, A_j, A_v
 
     def update_system(self, omega):
-
-
         A_i, A_j, A_v, = [], [], []
         if self.condensation == True:
             T_i, T_j, T_v = [], [], []
@@ -137,16 +135,7 @@ class FluidFem(FemEntity):
                 A_i.extend(list(chain.from_iterable([[_d]*(nb_SF) for _d in _el.dof_p])))
                 A_j.extend(list(_el.dof_p)*(nb_SF))
                 A_v.extend(pp.flatten())
-            # print(A_i)
-            # n = int(max([max(A_i), max(A_j)]))+1
-            # print("n={}".format(n))
-            # P = np.zeros((n,n))
-            # for i, v in enumerate(A_v):
-            #     P[int(A_i[int(i)]),int(A_j[int(i)])]+=v
 
-            # import matplotlib.pyplot as plt  
-            # plt.matshow(P)
-            # plt.show()
             
             return A_i, A_j, A_v, [], []
 
@@ -195,8 +184,8 @@ class PemFem(FemEntity):
         if not self.formulation98:
             _el.C2 = _el.C2[:, :][_]
 
-    def update_system(self, omega, condensation):
-        A_i, A_j, A_v, T_i, T_j, T_v, F_i, F_v =[], [], [], [], [], [], [], []
+    def update_system(self, omega):
+        A_i, A_j, A_v, T_i, T_j, T_v, =[], [], [], [], [], []
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
         for _el in self.elements:
@@ -237,7 +226,7 @@ class PemFem(FemEntity):
             A_j.extend(list(dof_up_m)*(3*nb_m_SF))
             A_v.extend(mm.flatten())
 
-        return A_i, A_j, A_v, F_i, F_v, T_i, T_j, T_v
+        return A_i, A_j, A_v, [], [], T_i, T_j, T_v
 
 class ElasticFem(FemEntity):
     def __init__(self, **kwargs):

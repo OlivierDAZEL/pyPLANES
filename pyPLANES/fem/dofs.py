@@ -138,15 +138,24 @@ def periodic_dofs_identification(self):
                     edges_right.append(_el.edges[0])
                 elif len(set(_vertices_tag).intersection(self.vertices_left)) == 2:
                     edges_left.append(_el.edges[0])
-
     # Determination of the correspondance between edges (we did not divide by two for the average of the position)
     y_left =  [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_left]
     y_right = [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_right]
 
+    # print(self.vertices_left)
+    # print(self.vertices_right)
 
 
     corr_edges = [ next(i for i, _ in enumerate(y_right) if np.isclose(_, _yl, 1e-8)) for _yl in y_left] # corr_edges = [y_right.index(_y) for _y in y_left]
 
+    # for _ed in edges_left:
+    #     print(_ed)
+    # for _ed in edges_right:
+    #     print(_ed)
+
+
+    # print(corr_edges)
+    # lkjlkj
 
     dof_left, dof_right, orient = [],[],[]
     for _il, _vl in enumerate(self.vertices_left):
@@ -155,7 +164,6 @@ def periodic_dofs_identification(self):
         dof_right.extend(self.vertices[_vr].dofs)
         orient += [1]*4
 
-
     for _il, _ed in enumerate(edges_left):
         _direction_left = _ed.vertices[1].coord[1]-_ed.vertices[0].coord[1]
         _direction_right = edges_right[corr_edges[_il]].vertices[1].coord[1]-edges_right[corr_edges[_il]].vertices[0].coord[1]
@@ -163,10 +171,8 @@ def periodic_dofs_identification(self):
             orient += [1]*(self.order-1)*4
         else:
             orient += [(-1)**ii for ii in range(self.order-1)]*4
-
         dof_left += list(itertools.chain(*_ed.dofs))
         dof_right += list(itertools.chain(*edges_right[corr_edges[_il]].dofs))
-
 
     #  Suppression of zeros dofs
     _ =np.sum(np.array([dof_left, dof_right]), axis=0)
@@ -174,5 +180,8 @@ def periodic_dofs_identification(self):
     self.dof_left = [dof_left[ii] for ii in _nz]
     self.dof_right = [dof_right[ii] for ii in _nz]
     self.orientation_periodic_dofs = [orient[ii] for ii in _nz]
+
+    # print(self.dof_left)
+    # print(self.dof_right)
 
 

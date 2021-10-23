@@ -106,10 +106,11 @@ class PwInterfaceType2(PwInterface):
         self.D = None
         self.A = None
 
-    def transfert(self, Om_):
 
+    def transfert(self, Om_):
+        # Omega^+ = D Omega^- +A
         n_w = self.layers[0].nb_waves
-        Om = np.hstack((np.kron(np.ones((n_w, n_w)), self.D)@Om_, np.kron(np.eye(n_w), self.A)))
+        Om = np.hstack((np.kron(np.eye(n_w), self.D)@Om_, np.kron(np.eye(n_w), self.A)))
         Tau = np.hstack((np.eye(self.n_1*n_w), np.zeros((self.n_1*n_w,(self.n_0-self.n_1)*n_w))))
         return Om, Tau
 
