@@ -149,13 +149,17 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             # qsd
             X = LA.solve(M, E_0)
             R = X[self.nb_waves:]
+            # print(R[0])
             self.Result.R0.append(R[0])
             self.Result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
             abs = 1-self.Result.R[-1]
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
-                T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
+                # print(self.back_prop)
+                T = -(LA.inv(self.back_prop)@self.X_0_minus)[::self.interfaces[-1].len_X]
+                # print(T)
                 self.Result.T0.append(T[0])
+                print(T[0])                
                 self.Result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
                 abs -= self.Result.T[-1]
             self.Result.abs.append(abs)

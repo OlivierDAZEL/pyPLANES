@@ -41,7 +41,7 @@ from pyPLANES.pw.pw_interfaces import *
 class PwProblem(Calculus, MultiLayer):
     """
         Plane Wave Problem 
-    """ 
+    """
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         self.Result.Solver = type(self).__name__
@@ -67,6 +67,8 @@ class PwProblem(Calculus, MultiLayer):
 
         MultiLayer.__init__(self, ml)
         self.termination = kwargs.get("termination", "rigid")
+
+
 
         self.add_excitation_and_termination(self.method, self.termination)
 
@@ -125,8 +127,11 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.Result.R0.append(self.X[0])
+            print(self.X[0])
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             if self.termination == "transmission":
+                print(np.exp(-1j*self.f*2*np.pi/Air.c))
+                print(self.X[-1])
                 self.Result.T0.append(self.X[-1])
                 self.Result.abs[-1] -= np.abs(self.Result.T0[-1])**2
 

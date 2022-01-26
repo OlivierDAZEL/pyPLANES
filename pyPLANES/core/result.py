@@ -32,7 +32,7 @@ import numpy.linalg as LA
 
 
 class Result():
-    """ pyPLANES Calculus 
+    """ pyPLANES Result
 
     Attributes :
     ------------------------
@@ -58,6 +58,7 @@ class Result():
             elif isinstance(_in, str):
                 d = json.load(open(_in+".json", 'r'))
             keys = [*d]
+            # print(keys)
             if "f" in keys:
                 self.f = d["f"]
             if "Solver" in keys:
@@ -69,7 +70,7 @@ class Result():
                     self.R0 = np.array(d["real(R0)"])+1j*np.array(d["imag(R0)"])
             if "real(T0)" in keys:
                 if "imag(T0)" in keys:
-                    self.R0 = np.array(d["real(T0)"])+1j*np.array(d["imag(T0)"])
+                    self.T0 = np.array(d["real(T0)"])+1j*np.array(d["imag(T0)"])
                 else:
                     raise NameError("No imag(T0) field")
             if "abs" in keys:
@@ -99,7 +100,8 @@ class Result():
 
 
     def __str__(self):
-        return "Result\n f={:+.15f}\t".format(self.f)
+        out = "pyPLANES Result\n \t Solver: {}".format(self.Solver)
+        return out
 
     def plot(self, *args, **kwargs):
         plt.plt(self.f, TL, *args, **kwargs)
