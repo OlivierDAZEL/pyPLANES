@@ -67,9 +67,6 @@ class PwProblem(Calculus, MultiLayer):
 
         MultiLayer.__init__(self, ml)
         self.termination = kwargs.get("termination", "rigid")
-
-
-
         self.add_excitation_and_termination(self.method, self.termination)
 
         # Calculus variable (for pylint)
@@ -94,6 +91,7 @@ class PwProblem(Calculus, MultiLayer):
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
                     self.back_prop = self.back_prop@next_interface.Tau
+
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
@@ -118,6 +116,7 @@ class PwProblem(Calculus, MultiLayer):
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
             self.Result.R0.append((self.Omega[0]+_*self.Omega[1])/det)
+            # print(self.Result.R0)
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
@@ -127,11 +126,9 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.Result.R0.append(self.X[0])
-            print(self.X[0])
+            # print(self.Result.R0)
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             if self.termination == "transmission":
-                print(np.exp(-1j*self.f*2*np.pi/Air.c))
-                print(self.X[-1])
                 self.Result.T0.append(self.X[-1])
                 self.Result.abs[-1] -= np.abs(self.Result.T0[-1])**2
 

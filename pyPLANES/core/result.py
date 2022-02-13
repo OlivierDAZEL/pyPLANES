@@ -77,6 +77,8 @@ class Result():
                 self.abs = np.array(d["abs"])
             if "order" in keys:
                 self.order = d["order"]
+            if "R" in keys:
+                self.R = d["R"]
 
     def save(self,file, append_file):
         d = dict()

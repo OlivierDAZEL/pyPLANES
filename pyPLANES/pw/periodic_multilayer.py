@@ -44,7 +44,6 @@ class PeriodicMultiLayer():
         # Creation of the list of layers
         self.layers = []
         self.interfaces = []
-        self.verbose = kwargs.get("verbose", False)
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.order = kwargs.get("order", 2)
         self.plot = kwargs.get("plot", [False*6])
@@ -69,6 +68,7 @@ class PeriodicMultiLayer():
                 _x += self.layers[-1].d
 
 
+
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):
             if isinstance(_layer, PwLayer):
@@ -79,6 +79,10 @@ class PeriodicMultiLayer():
                 _medium_type_top = self.layers[i_l+1].medium.MEDIUM_TYPE
             else:
                 _medium_type_top = self.layers[i_l+1].medium[1].MEDIUM_TYPE
+
+
+            print(_medium_type_bottom)
+            print(_medium_type_top)
 
             if _medium_type_bottom in  ["fluid", "eqf"]:
                 if _medium_type_top in  ["fluid", "eqf"]:
@@ -101,6 +105,10 @@ class PeriodicMultiLayer():
                     self.interfaces.append(ElasticPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
                     self.interfaces.append(ElasticElasticInterface(_layer, self.layers[i_l+1]))
+        # print("interfaces")
+        # print(self.interfaces)
+        # sdffds
+
 
     def __str__(self):
         out = "Interface #0\n"

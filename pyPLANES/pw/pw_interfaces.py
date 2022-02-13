@@ -337,7 +337,6 @@ class ElasticPemInterface(PwInterfaceType1):
             if self.layers[1].pwfem_entities[0].typ == "Biot98":
                 mat_pem[2, 1] = 1.
                 mat_pem[3, 4] = 1.
-
         Om = np.kron(np.eye(self.nb_waves), mat_pem)@ Om_
 
         return PwInterfaceType1.transfert(self, Om)
@@ -388,7 +387,6 @@ class PemElasticInterface(PwInterfaceType2):
     def __str__(self):
         out = "\t PEM-Elastic interface"
         return out
-
 
 class FluidRigidBacking(PwInterface):
     """
@@ -545,9 +543,11 @@ class SemiInfinite(PwInterface):
                 out[1+_w*2, 0+_w] = 1
             return out, np.eye(max([nb_bloch_waves,1]))
         elif typ == "pem":
+
             self.len_X = 3
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
             if formulation == "Biot98":
+
                 for _w in range(nb_bloch_waves):
                     # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
                     out[1+_w*6, 1+_w*3] = 1.
@@ -555,6 +555,7 @@ class SemiInfinite(PwInterface):
                     out[4+_w*6, 0+_w*3] = 1.
                     out[5+_w*6, 2+_w*3] = 1.
             elif formulation == "Biot01":
+
                 for _w in range(nb_bloch_waves):
                     # pem S={0:{\sigma}^t_{xy}, 1:u_y^s, 2:w_y=u_y^t-u_y^s, 3:{\sigma}^t_{yy}, 4:p, 5:u_x^s}'''
                     out[1+_w*6, 1+_w*3] = 1.

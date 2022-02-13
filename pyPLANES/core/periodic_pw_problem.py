@@ -49,6 +49,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         ml = kwargs.get("ml")
         self.condensation = kwargs.get("condensation", True)
         Calculus.__init__(self, **kwargs)
+
+
         self.termination = kwargs.get("termination", "rigid")
         self.theta_d = kwargs.get("theta_d", 0.0)
         if self.theta_d == 0:
@@ -67,6 +69,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
+        print(self.verbose)
+
 
     def preprocess(self):
         Calculus.preprocess(self)
@@ -96,6 +100,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         PeriodicMultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
+        print(self.verbose)
         Calculus.create_linear_system(self, omega)
         if self.termination == "transmission":
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
@@ -105,12 +110,15 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 self.back_prop = self.back_prop@_l.Xi
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
                 self.back_prop = self.back_prop@next_interface.Tau
+
+
         else: # Rigid backing
             self.Omega = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):                
                 next_interface = self.interfaces[-i-2]
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
+
 
     def solve(self):
         Calculus.solve(self)
@@ -121,7 +129,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             det = -self.Omega[0]+_*self.Omega[1]
             R0 = (self.Omega[0]+_*self.Omega[1])/det
             self.Result.R0.append(R0)
-            # print(R0)
             abs = 1-np.abs(R0)**2
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
@@ -140,26 +147,22 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
             for _w in range(self.nb_waves):
                 # print(self.ky[_w])
-                _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+                _ = 1j*(self.ky[_w]/self.k_air)/(2*pi*self.f*Air.Z)
                 Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
                 M[2*_w:2*(_w+1),self.nb_waves+_w] = -Omega_0.reshape(2)
-            # import matplotlib.pyplot as plt
-            # plt.matshow(np.log(np.abs(M)))
-            # plt.show()
-            # qsd
             X = LA.solve(M, E_0)
+            # print(X)
+            # dsqqds
+
             R = X[self.nb_waves:]
-            # print(R[0])
             self.Result.R0.append(R[0])
             self.Result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
             abs = 1-self.Result.R[-1]
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
-                # print(self.back_prop)
-                T = -(LA.inv(self.back_prop)@self.X_0_minus)[::self.interfaces[-1].len_X]
+                T = -(self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
                 # print(T)
-                self.Result.T0.append(T[0])
-                print(T[0])                
+                self.Result.T0.append(T[0])          
                 self.Result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
                 abs -= self.Result.T[-1]
             self.Result.abs.append(abs)

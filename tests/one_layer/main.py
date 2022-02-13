@@ -23,9 +23,9 @@ lcar = 5e-3
 termination = "transmission"
 # termination = "rigid"
 
-ml = [  ("Wwood", d), ("Wwood", d)]
-ml = [("melamine", d)]*2
-ml = [("Wwood", d), ("melamine", d)]
+ml = [("Wwood", d),  ("melamine", d), ("Wwood", d)]
+# ml = [("melamine", d)]*2
+# ml = [("melamine", d)]
 
 global_method = PwProblem(ml=ml, name_project="one_layer", theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
 global_method.resolution()
@@ -33,17 +33,17 @@ global_method.resolution()
 recursive_method = PwProblem(ml=ml, name_project="one_layer", theta_d=theta_d, frequencies=frequencies, plot_solution=plot_solution,termination=termination, method="JAP", verbose=False, print_result=True)
 recursive_method.resolution()
 
-material = "melamine"
+material = "Wwood"
 mesh_EF = material + "_FEM"
 one_layer(name_mesh=mesh_EF, L=L, d=d, lcar=lcar, mat=material)
 
-# ml = [("melamine", d), (melamine+"_FEM", d)]
-ml = [("Wwood", d), ("melamine_FEM", d)]
+ml = [("Wwood", d), ("melamine", d), (material+"_FEM", d)]
+# ml = [ ("melamine_FEM", d)]
 # ml = [("Wwood", d)]
 
-# eTMM_method = PeriodicPwProblem(ml=ml, name_project="one_layer", theta_d=theta_d, order=3, nb_bloch_waves=1, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True)
-# eTMM_method.resolution()
+eTMM_method = PeriodicPwProblem(ml=ml, name_project="one_layer", theta_d=theta_d, order=3, nb_bloch_waves=0, frequencies=frequencies, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True)
+eTMM_method.resolution()
 
-# if any(plot_solution):
-#     plt.show()
+if any(plot_solution):
+    plt.show()
 
