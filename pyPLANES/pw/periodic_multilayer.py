@@ -81,8 +81,8 @@ class PeriodicMultiLayer():
                 _medium_type_top = self.layers[i_l+1].medium[1].MEDIUM_TYPE
 
 
-            print(_medium_type_bottom)
-            print(_medium_type_top)
+            # print(_medium_type_bottom)
+            # print(_medium_type_top)
 
             if _medium_type_bottom in  ["fluid", "eqf"]:
                 if _medium_type_top in  ["fluid", "eqf"]:
@@ -105,8 +105,6 @@ class PeriodicMultiLayer():
                     self.interfaces.append(ElasticPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
                     self.interfaces.append(ElasticElasticInterface(_layer, self.layers[i_l+1]))
-        # print("interfaces")
-        # print(self.interfaces)
         # sdffds
 
 

@@ -43,6 +43,8 @@ from pyPLANES.utils.io import plot_fem_solution, export_paraview
 from pyPLANES.fem.dofs import periodic_dofs_identification
 from pyPLANES.fem.fem_entities_pw import PwFem
 
+from mediapack import Air
+
 class PeriodicLayer(Mesh):
     def __init__(self, **kwargs):
         self.condensation = kwargs.get("condensation", True)
@@ -70,8 +72,9 @@ class PeriodicLayer(Mesh):
         for _ent in self.pwfem_entities:
             _ent.theta_d = self.theta_d
         # The bottom interface is the first of self.pwfem_entities
-        if self.pwfem_entities[0].ny ==1:
+        if self.pwfem_entities[0].ny == 1:
             self.pwfem_entities.reverse()
+
         periodic_dofs_identification(self)
 
 
@@ -97,14 +100,14 @@ class PeriodicLayer(Mesh):
         for _ent in self.pwfem_entities:
             _ent.dofs = np.arange(_ent.nb_dof_per_node*len(self.kx))
             _ent.nb_dofs = len(_ent.dofs)
-        self.create_TM(omega)
+        self.create_transfert_matrix(omega)
 
-    def create_TM(self, omega):
+    def create_transfert_matrix(self, omega):
         # Initialisation of the lists
         self.A_i, self.A_j, self.A_v = [], [], []
         if self.condensation:
             self.T_i, self.T_j, self.T_v = [], [], []
-        # Creation of the D_ii matrix
+        # Creation of the D_ii matrix which corresponds to the volumic term 
         for _ent in self.fem_entities:
             self.update_system(*_ent.update_system(omega))
         # Application of periodicity
@@ -143,12 +146,12 @@ class PeriodicLayer(Mesh):
         DD_xi = [] # Initialisation of the list of the R will be [D_bi D_ti]
         
         for _ent in self.pwfem_entities:
-
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
             D_period = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
             for _w, kx in enumerate(self.kx):
                 for _elem in _ent.elements:
                     # print(_elem)
+                    # print(_ent.typ)
                     M_elem = imposed_pw_elementary_vector(_elem, kx)
                     if _ent.typ == "fluid":
                         dof_p, orient_p, __ = dof_p_element(_elem)
@@ -195,10 +198,10 @@ class PeriodicLayer(Mesh):
                         dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_uy@M_elem))
                         D_period[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                    else:
+                        raise NameError("_ent.typ has no valid type")
             
             DD.append(D_period)
-
-            # print(dof_FEM)
 
 
             if self.condensation:
@@ -233,13 +236,25 @@ class PeriodicLayer(Mesh):
 
         if any(self.plot):
             self.RR = RR
+        # print(self.RR)
+        # eazeza
 
-        self.TM = -LA.solve(M_1, M_2)
+        self.TM = LA.solve(M_1, M_2)
+
+
         # print(self.TM)
-        # print(self.pwfem_entities[0])
-        # for _d in self.pwfem_entities[0].dual:
-        #     self.TM[_d,:] *=-1 
 
+        # Air = Air()
+        # ky = np.sqrt((omega/Air.c)**2-self.kx**2)
+        # d = 3e-2
+        # T = np.zeros((2, 2), dtype=complex)
+        # T[0, 0] = np.cos(ky*d)
+        # T[1, 0] = (omega**2*Air.rho/ky)*np.sin(-ky*d)
+        # T[0, 1] = -(ky/(omega**2*Air.rho))*np.sin(-ky*d)
+        # T[1, 1] = np.cos(ky*d)
+
+        # print(T)
+        # dqsdqsdsq
 
         # import matplotlib.pyplot as plt
         # plt.matshow(np.log(np.abs(self.TM)))
@@ -275,8 +290,12 @@ class PeriodicLayer(Mesh):
             self.T_v = np.array(self.T_v, dtype=complex)
 
     def plot_solution(self, S_b, S_t):
+        # print("S_b={}".format(S_b)) 
+        # print(S_b[1]/S_b[0])
+        # print("S_t={}".format(S_t))
         X = self.RR[0]@S_b + self.RR[1]@S_t
         X = np.insert(X, 0, 0)
+        # print(X)
         # Concatenation of the slave dofs at the end of the vector
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         if self.condensation:
@@ -286,6 +305,7 @@ class PeriodicLayer(Mesh):
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
                 _vr.sol[i_dim] = X[_vr.dofs[i_dim]]
+            # print(np.abs(_vr.sol[3]) 
         for _ed in self.edges:
             for i_dim in range(4):
                 _ed.sol[i_dim] = X[_ed.dofs[i_dim]]

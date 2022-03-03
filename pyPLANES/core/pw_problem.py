@@ -116,7 +116,8 @@ class PwProblem(Calculus, MultiLayer):
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+_*self.Omega[1]
             self.Result.R0.append((self.Omega[0]+_*self.Omega[1])/det)
-            # print(self.Result.R0)
+            if self.verbose:
+                print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
@@ -126,7 +127,8 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.Result.R0.append(self.X[0])
-            # print(self.Result.R0)
+            if self.verbose:
+                print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             if self.termination == "transmission":
                 self.Result.T0.append(self.X[-1])

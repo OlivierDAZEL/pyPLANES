@@ -86,10 +86,13 @@ class Calculus():
 
         _ = kwargs.get("frequencies", False)
         __ = kwargs.get("f_bounds", False)
+        ___ = kwargs.get("frequency", False)
         if _ is not False:
             self.frequencies = _
         elif __ is not False:
             self.frequencies = self.init_vec_frequencies(__)
+        elif ___ is not False:
+            self.frequencies = np.array([___])
         else:
             self.frequencies = np.array([1e3])
         self.print_result = kwargs.get("print_result", False)    

@@ -64,12 +64,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.out_file_method = "eTMM"
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
         # self.period = 5e-2
-        # print(self.period)
         self.add_excitation_and_termination(self.termination)
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
-        print(self.verbose)
 
 
     def preprocess(self):
@@ -85,7 +83,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 nb_bloch_waves = self.nb_bloch_waves
             else: 
                 nb_bloch_waves = int(np.floor((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+3)
-            # print("nb_bloch_waves={}".format(nb_bloch_waves))
             self.nb_waves = 1+2*nb_bloch_waves
             _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
             self.kx = k_x+_*(2*pi/self.period)
@@ -100,7 +97,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         PeriodicMultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
-        print(self.verbose)
+        # print(self.verbose)
         Calculus.create_linear_system(self, omega)
         if self.termination == "transmission":
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
@@ -118,11 +115,18 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 next_interface = self.interfaces[-i-2]
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
+        
+        # for i,_l in enumerate(self.layers):
+        #     print("lyer #", i)
+        #     print(_l.TM)
+        
+        # print(LA.norm(self.layers[0].RR[0]-self.layers[1].RR[0])/LA.norm(self.layers[0].RR[0]))
+        # print(LA.norm(self.layers[0].RR[1]-self.layers[1].RR[1])/LA.norm(self.layers[0].RR[1]))
+        # eazzaezea
 
 
     def solve(self):
         Calculus.solve(self)
-        
         if self.nb_waves == 0:
             self.Omega = self.Omega.reshape(2)
             _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
@@ -151,10 +155,11 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
                 M[2*_w:2*(_w+1),self.nb_waves+_w] = -Omega_0.reshape(2)
             X = LA.solve(M, E_0)
-            # print(X)
-            # dsqqds
+
 
             R = X[self.nb_waves:]
+            if self.verbose:
+                print("R={}".format(R))
             self.Result.R0.append(R[0])
             self.Result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
             abs = 1-self.Result.R[-1]
@@ -167,14 +172,34 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 abs -= self.Result.T[-1]
             self.Result.abs.append(abs)
 
+            # d = 5e-2
+            # Z_s = -1j*Air.Z/np.tan(self.k_air*3*d)
+            # R_an = 0
+            # for i in range(2):
+            #     p = np.exp(-1j*self.k_air*i*d)+R_an*np.exp(1j*self.k_air*i*d)
+            #     u = (np.exp(-1j*self.k_air*i*d)+R_an*np.exp(1j*self.k_air*i*d))*1j*self.k_air/(Air.rho*(2*np.pi*self.f)**2) 
+            #     # print(p,u)
+            # for i in range(4):
+            # Z_s = -1j*Air.Z/np.tan(self.k_air*3*d)
+            # # R_an = (Z_s-Air.Z)/(Z_s+Air.Z)
+            # print(1j*self.f*2*np.pi*Z_s)
+            # Z_s = -1j*Air.Z/np.tan(self.k_air*2*d)
+            # print(1j*self.f*2*np.pi*Z_s)
+            # Z_s = -1j*Air.Z/np.tan(self.k_air*1*d)
+            # print(1j*self.f*2*np.pi*Z_s)
+
+
+
+
 
     def plot_solution(self):
         x_minus = self.X_0_minus # Information vector at incident interface  x^-
+        # print("x_minus={}".format(x_minus))
         if not isinstance (x_minus, np.ndarray):
             x_minus = np.array([x_minus])
         for i, _l in enumerate(self.layers):
             x_plus = self.interfaces[i].Tau @ x_minus # Transfert through the interface x^+
-            
+            # print(x_plus)
             if isinstance(_l, PeriodicLayer):
                 S_b = _l.Omega_plus @ x_plus
                 S_t = LA.solve(_l.TM, S_b)
@@ -182,4 +207,4 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             else: # Homogeneous layer
                 q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
                 _l.plot_solution_recursive(self.plot, q)
-            x_minus = _l.Xi@x_plus # Transfert through the layer x^-_{+1}
+            x_minus = LA.inv(_l.Xi)@x_plus # Transfert through the layer x^-_{+1}

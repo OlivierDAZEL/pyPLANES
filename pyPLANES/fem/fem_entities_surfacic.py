@@ -139,8 +139,6 @@ class RobinAirFem(FemEntity):
             F_v.extend((1j*k/(Air.rho*omega**2))*_el.F*np.exp(1j*k))
         return A_i, A_j, A_v, F_i, F_v
 
-
-
 class InterfaceFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)

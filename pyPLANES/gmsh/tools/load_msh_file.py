@@ -142,6 +142,8 @@ def entities(self, f):
                 elif physical_tags["condition"].lower() in ["rigid wall", "rigid", "wall"]:
                     if physical_tags["method"] == "FEM":
                         _ent = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
+                        # print(_ent)
+                        # print(_ent.tag)
                     elif physical_tags["method"] == "DGM":
                         _ent = RigidWallFem(dim=1, tag=tag, physical_tags=physical_tags, bounding_points=bounding_points, entities=self.entities)
                         self.dgm_entities.append(_ent)
@@ -202,6 +204,7 @@ def entities(self, f):
         self.entities.append(_ent)
     for __ in range(num_volumes):
         pass
+
     _ = [_ent.tag for _ent in self.entities]
     self.entity_tag = [None]*(max(_)+1)
 
