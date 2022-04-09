@@ -140,8 +140,6 @@ class InterfaceFem(FemEntity):
         A_i, A_j, A_v =[], [], []
         # Translation matrix to compute internal dofs
         T_i, T_j, T_v =[], [], []
-        print(self.neighbour)
-        qdsqsdsdqsqd
         return A_i, A_j, A_v, T_i, T_j, T_v
 
 class FluidStructureFem(FemEntity):
@@ -355,6 +353,7 @@ class ElasticFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
+
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Elastic" + FemEntity.__str__(self)
@@ -362,6 +361,8 @@ class ElasticFem(FemEntity):
 
     def update_frequency(self, omega):
         self.mat.update_frequency(omega)
+        print(mat.c)
+        qsdqds
 
     def elementary_matrices(self, _el):
         orient_u = orient_element(_el, "u")

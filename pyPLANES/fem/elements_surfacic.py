@@ -25,7 +25,7 @@ import numpy as np
 import numpy.linalg as LA
 from pyPLANES.fem.lobatto_polynomials import lobatto as l
 
-def imposed_Neumann(_elem):
+def imposed_neumann(_elem):
 
     coord_e = _elem.get_coordinates()
     K_ref = _elem.reference_element
@@ -47,15 +47,13 @@ def imposed_pw_elementary_vector(_elem, k):
             I = (h/2)e^{-jkx_mid} * \int_{-1}^{1} e^{-jkhxi/2} \Phi(xi) dxi
     '''
     # Geometrical datas
-
     coord_e = _elem.get_coordinates()
     h = coord_e[0, 1]-coord_e[0, 0]
     x_mid = (coord_e[0, 1]+coord_e[0, 0])/2.
-    k_prime = k*np.abs(h)/2
+    k_prime = k*h/2
     F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
     
-
-    return (h/2.)*np.exp(-1j*k*x_mid)*F_analytical
+    return np.abs(h/2.)*np.exp(-1j*k*x_mid)*F_analytical
 
 def fsi_elementary_matrix(_elem):
     coord_e = _elem.get_coordinates()

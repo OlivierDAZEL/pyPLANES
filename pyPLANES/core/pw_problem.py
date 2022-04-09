@@ -113,13 +113,13 @@ class PwProblem(Calculus, MultiLayer):
         Calculus.solve(self)
         if self.method == "Recursive Method":
             self.Omega = self.Omega.reshape(2)
-            _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
-            det = -self.Omega[0]+_*self.Omega[1]
-            self.Result.R0.append((self.Omega[0]+_*self.Omega[1])/det)
+            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+            det = -self.Omega[0]+alpha*self.Omega[1]
+            self.Result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
             if self.verbose:
                 print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
-            self.X_0_minus = 2*_/det
+            self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
                 self.Result.T0.append(Omega_end[0])

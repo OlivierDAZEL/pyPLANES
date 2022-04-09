@@ -69,7 +69,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
 
-
     def preprocess(self):
         Calculus.preprocess(self)
         self.info_file.write("Periodic Plane Wave solver // Recursive method\n")
@@ -84,7 +83,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             else: 
                 nb_bloch_waves = int(np.floor((self.period/(2*pi))*(3*np.real(self.k_air)-k_x))+3)
             self.nb_waves = 1+2*nb_bloch_waves
-            _ = np.array([0] + list(range(-nb_bloch_waves, 0)) + list(range(1, nb_bloch_waves+1)))
+            _ = np.zeros(self.nb_waves)
+            for i in range(nb_bloch_waves):
+                _[1+2*i]= i+1
+                _[2+2*i]= -(i+1)
             self.kx = k_x+_*(2*pi/self.period)
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         else:
@@ -92,8 +94,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.kx = np.array([k_x])
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         # print("ky={}".format(k_y))
-        self.ky = np.real(k_y)+1j*np.imag(k_y) # ky is either real or imaginary to have the good sign
-        # print(self.ky)
+        self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
         PeriodicMultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
@@ -107,22 +108,14 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 self.back_prop = self.back_prop@_l.Xi
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
                 self.back_prop = self.back_prop@next_interface.Tau
-
-
         else: # Rigid backing
             self.Omega = self.interfaces[-1].Omega(self.nb_waves)
-            for i, _l in enumerate(self.layers[::-1]):                
+            for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
                 _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                 self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
         
-        # for i,_l in enumerate(self.layers):
-        #     print("lyer #", i)
-        #     print(_l.TM)
-        
-        # print(LA.norm(self.layers[0].RR[0]-self.layers[1].RR[0])/LA.norm(self.layers[0].RR[0]))
-        # print(LA.norm(self.layers[0].RR[1]-self.layers[1].RR[1])/LA.norm(self.layers[0].RR[1]))
-        # eazzaezea
+
 
 
     def solve(self):
@@ -133,60 +126,61 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             det = -self.Omega[0]+_*self.Omega[1]
             R0 = (self.Omega[0]+_*self.Omega[1])/det
             self.Result.R0.append(R0)
+            if self.verbose:
+                print("R_0={}".format(R0))
             abs = 1-np.abs(R0)**2
             self.X_0_minus = 2*_/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
                 self.Result.T0.append(Omega_end[0])
-
+                if self.verbose:
+                    print("T_0={}".format(Omega_end[0]))
         else:
-            M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
-            
-            M[:,:self.nb_waves] = self.Omega[:2*self.nb_waves,:self.nb_waves]
-
-            _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
-            Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
+            # Excitation (10) and (11) JAP
+            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             E_0 = np.zeros(2*self.nb_waves, dtype=complex)
-            E_0[:2] = np.array([-_, 1]).reshape((2))
+            E_0[:2] = np.array([-alpha, 1]).reshape((2))
 
+            # Matrix inverted eq (11) in JAP
+            M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
+            # [Omega_0^-] of JAP
+            M[:,:self.nb_waves] = self.Omega[:,:self.nb_waves]
+            # [-Omega_0] second part of JAP
             for _w in range(self.nb_waves):
-                # print(self.ky[_w])
-                _ = 1j*(self.ky[_w]/self.k_air)/(2*pi*self.f*Air.Z)
-                Omega_0 = np.array([_, 1], dtype=complex).reshape((2,1))
+                alpha_w = 1j*(self.ky[_w]/self.k_air)/(2*pi*self.f*Air.Z)
+                Omega_0 = np.array([alpha_w, 1], dtype=complex).reshape((2,1))
                 M[2*_w:2*(_w+1),self.nb_waves+_w] = -Omega_0.reshape(2)
+
+            # import matplotlib.pyplot as plt
+            # plt.matshow(np.log(np.abs(M)))
+            # plt.show()
+            # fdsfdsfds
+
+
             X = LA.solve(M, E_0)
-
-
+            # R is second part of the solution vector
             R = X[self.nb_waves:]
             if self.verbose:
                 print("R={}".format(R))
             self.Result.R0.append(R[0])
+
             self.Result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
             abs = 1-self.Result.R[-1]
+
             self.X_0_minus = X[:self.nb_waves]
+            # print(self.X_0_minus)
             if self.termination == "transmission":
-                T = -(self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]
-                # print(T)
-                self.Result.T0.append(T[0])          
+                # print(self.back_prop.shape)
+                # print(self.X_0_minus[::self.interfaces[-1].len_X].shape)
+                T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]  
+                self.Result.T0.append(T[0])
+                if self.verbose:
+                    print("T={}".format(T))
                 self.Result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
                 abs -= self.Result.T[-1]
             self.Result.abs.append(abs)
-
-            # d = 5e-2
-            # Z_s = -1j*Air.Z/np.tan(self.k_air*3*d)
-            # R_an = 0
-            # for i in range(2):
-            #     p = np.exp(-1j*self.k_air*i*d)+R_an*np.exp(1j*self.k_air*i*d)
-            #     u = (np.exp(-1j*self.k_air*i*d)+R_an*np.exp(1j*self.k_air*i*d))*1j*self.k_air/(Air.rho*(2*np.pi*self.f)**2) 
-            #     # print(p,u)
-            # for i in range(4):
-            # Z_s = -1j*Air.Z/np.tan(self.k_air*3*d)
-            # # R_an = (Z_s-Air.Z)/(Z_s+Air.Z)
-            # print(1j*self.f*2*np.pi*Z_s)
-            # Z_s = -1j*Air.Z/np.tan(self.k_air*2*d)
-            # print(1j*self.f*2*np.pi*Z_s)
-            # Z_s = -1j*Air.Z/np.tan(self.k_air*1*d)
-            # print(1j*self.f*2*np.pi*Z_s)
+            if self.verbose:
+                print("abs={}".format(abs))
 
 
 
@@ -194,15 +188,19 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
     def plot_solution(self):
         x_minus = self.X_0_minus # Information vector at incident interface  x^-
-        # print("x_minus={}".format(x_minus))
+        print("x_minus={}".format(x_minus))
         if not isinstance (x_minus, np.ndarray):
             x_minus = np.array([x_minus])
         for i, _l in enumerate(self.layers):
             x_plus = self.interfaces[i].Tau @ x_minus # Transfert through the interface x^+
-            # print(x_plus)
+            print("x_plus={}".format(x_plus))
             if isinstance(_l, PeriodicLayer):
                 S_b = _l.Omega_plus @ x_plus
+                # S_b[0] *= -1
                 S_t = LA.solve(_l.TM, S_b)
+                # S_t[0] *= -1
+                print("S_b={}".format(S_b))
+                print("S_t={}".format(S_t))
                 _l.plot_solution(S_b, S_t)
             else: # Homogeneous layer
                 q = LA.solve(_l.SV, _l.Omega_plus@x_plus)

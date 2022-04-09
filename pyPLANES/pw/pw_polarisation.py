@@ -58,7 +58,7 @@ def PEM_waves_TMM(mat,kx):
 
     return Phi, lam
 
-def elastic_waves_TMM(mat,kx):
+def elastic_waves_TMM(mat, kx):
     ''' S={0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
 
     n_w = len(kx)
@@ -69,15 +69,15 @@ def elastic_waves_TMM(mat,kx):
     ky_s = np.sqrt(mat.delta_s**2-kx**2)
 
     for _w, _kx in enumerate(kx):
-        ky = np.array([ky_p[_w], ky_s[_w]])
 
+        ky = np.array([ky_p[_w], ky_s[_w]])
         alpha_p = -1j*mat.lambda_*mat.delta_p**2 - 2j*mat.mu*ky[0]**2
         alpha_s = 2j*mat.mu*ky[1]*_kx
 
-        Phi[0+4*_w:4+4*_w, 0+4*_w] = np.array([-2.*1j*mat.mu*ky[0]*_kx,  ky[0], alpha_p, _kx])
-        Phi[0+4*_w:4+4*_w, 2+4*_w] = np.array([ 2.*1j*mat.mu*ky[0]*_kx, -ky[0], alpha_p, _kx])
-        Phi[0+4*_w:4+4*_w, 1+4*_w] = np.array([1j*mat.mu*(ky[1]**2-_kx**2), _kx,-alpha_s, -ky[1]])
-        Phi[0+4*_w:4+4*_w, 3+4*_w] = np.array([1j*mat.mu*(ky[1]**2-_kx**2), _kx, alpha_s, ky[1]])
+        Phi[4*_w:4*(_w+1), 0+4*_w] = np.array([-2.*1j*mat.mu*ky[0]*_kx,  ky[0], alpha_p, _kx]).T
+        Phi[4*_w:4*(_w+1), 2+4*_w] = np.array([ 2.*1j*mat.mu*ky[0]*_kx, -ky[0], alpha_p, _kx]).T
+        Phi[4*_w:4*(_w+1), 1+4*_w] = np.array([1j*mat.mu*(ky[1]**2-_kx**2), _kx,-alpha_s, -ky[1]]).T
+        Phi[4*_w:4*(_w+1), 3+4*_w] = np.array([1j*mat.mu*(ky[1]**2-_kx**2), _kx, alpha_s, ky[1]]).T
 
         lam[0+4*_w:2+4*_w] =  -1j*ky
         lam[2+4*_w:4+4*_w] =  1j*ky

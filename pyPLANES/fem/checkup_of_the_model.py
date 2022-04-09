@@ -121,8 +121,19 @@ def check_IFS(self):
                                 _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]
                             elif isinstance(_e.neighbouring_surfaces[0], ElasticFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
                                 _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
+                            elif isinstance(_e.neighbouring_surfaces[0], FluidFem) and isinstance(_e.neighbouring_surfaces[1], PemFem):
+                                if _e.neighbouring_surfaces[1].formulation98 == True:
+                                    raise NameError("IFS Fluid 98 Error")
+                                else:
+                                    _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]   
+                            elif isinstance(_e.neighbouring_surfaces[0], PemFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
+                                if _e.neighbouring_surfaces[0].formulation98 == True:
+                                    raise NameError("IFS Fluid 98 Error")
+                                else:
+                                    _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
                             else:
                                 raise NameError("FluidStructureFem does not relate a fluid and elastic struture")
+
                             for _elem in _e.elements:
                                 vert = [_elem.vertices[0].tag, _elem.vertices[1].tag] # Vertices of the FSI element
                                 # Determination of the neighbouring element in neighbouring_surfaces[0]
@@ -131,15 +142,15 @@ def check_IFS(self):
                                     _el = next(_iter)
                                     vert_2D = [_el.vertices[0].tag, _el.vertices[1].tag, _el.vertices[2].tag]
                                     _ = len(set(vert).intersection(vert_2D)) # Number of common vertices
-                                if _ == 2: # Case of two common vertices
-                                        _elem.normal_fluid = normal_to_element(_elem, _el)
-                                        _elem.normal_struc = -_elem.normal_fluid
-                                        break
+                                    if _ == 2: # Case of two common vertices
+                                            _elem.normal_fluid = normal_to_element(_elem, _el)
+                                            _elem.normal_struc = -_elem.normal_fluid
+                                            break
 
 def check_pem_formulation(self):
     for _e in self.entities:
         if isinstance(_e, PemFem):
-            _e.formulation98 = True
+            # _e.formulation98 = True
             _e.formulation98 = False
 
 

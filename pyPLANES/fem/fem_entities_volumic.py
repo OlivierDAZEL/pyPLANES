@@ -144,7 +144,7 @@ class PemFem(FemEntity):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
         self.condensation = kwargs.get("condensation", True)
-        self.formulation98 = False
+        self.formulation98 = None
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Pem" + FemEntity.__str__(self)
@@ -233,6 +233,7 @@ class ElasticFem(FemEntity):
         FemEntity.__init__(self, **kwargs)
         self.mat = kwargs["mat"]
         self.condensation = kwargs.get("condensation", True)
+
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Elastic" + FemEntity.__str__(self)

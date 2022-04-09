@@ -29,6 +29,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.linalg as LA
+plot_color = ["r", "b", "m", "k", "g", "y"]*5
 
 
 class Result():
@@ -73,12 +74,26 @@ class Result():
                     self.T0 = np.array(d["real(T0)"])+1j*np.array(d["imag(T0)"])
                 else:
                     raise NameError("No imag(T0) field")
+            if "real(k)[0]" in keys:
+                # Determination of the number of waves
+                nb_w = 1
+                while True:
+                    if "real(k)[{}]".format(nb_w) in keys:
+                        nb_w += 1 
+                    else:
+                        break
+                self.k = np.zeros((len(self.f),nb_w),dtype=np.complex)
+                for i_w in range(nb_w):
+                    self.k[:, i_w] = np.array(d["real(k)[{}]".format(i_w)])+1j*np.array(d["imag(k)[{}]".format(i_w)])
+
             if "abs" in keys:
                 self.abs = np.array(d["abs"])
             if "order" in keys:
                 self.order = d["order"]
             if "R" in keys:
                 self.R = d["R"]
+            if "period" in keys:
+                self.period = d["period"]
 
     def save(self,file, append_file):
         d = dict()
@@ -92,30 +107,83 @@ class Result():
                     elif m == "T0":
                         d["real(T0)"] = np.real(self.T0).tolist()
                         d["imag(T0)"] = np.imag(self.T0).tolist()
+                    elif m == "k":
+                        nb_f = len(self.k)
+                        nb_w = len(self.k[0])
+                        # Creation of the lists
+                        for i_w in range(nb_w):
+                            d["real(k)[{}]".format(i_w)]=[]
+                            d["imag(k)[{}]".format(i_w)]=[]
+                        for i_k in range(nb_f):
+                            for i_w in range(nb_w):
+                                d["real(k)[{}]".format(i_w)].append(np.real(self.k[i_k][i_w]))
+                                d["imag(k)[{}]".format(i_w)].append(np.imag(self.k[i_k][i_w]))
                     else: 
                         d[m] = self.__dict__[m]
+
             else: 
                 d[m] = self.__dict__[m]
         with open(file+".json", append_file) as json_file:
             json.dump(d, json_file)
             json_file.write("\n")
 
-
     def __str__(self):
         out = "pyPLANES Result\n \t Solver: {}".format(self.Solver)
+        
         return out
 
     def plot(self, *args, **kwargs):
         plt.plt(self.f, TL, *args, **kwargs)
+
+    def plot_dispersion(self,s):
+        nb_f = self.k.shape[0]
+        kk = np.zeros((nb_f,2),dtype=np.complex)
+        for i in range(nb_f):
+            indices = np.argsort(np.abs(np.imag(self.k[i,:])))[:2]
+            kk[i,:] = self.k[i, indices]
+
+        plt.plot(np.real(kk[:, 0])*self.period/np.pi, self.f,"k"+s,label="re(FEM)")
+        plt.plot(np.imag(kk[:, 0])*self.period/np.pi, self.f,"b"+s,label="imag(FEM)")
+        plt.plot(np.real(kk[:, 1])*self.period/np.pi, self.f,"r"+s,label="re(FEM)")
+        plt.plot(np.imag(kk[:, 1])*self.period/np.pi, self.f,"k"+s,label="imag(FEM)")
+
+
+
+
+
+
+        # plt.plot(np.abs(np.real(kk[:, 0]))*self.period/np.pi, self.f,"r"+s)
+        # plt.plot(np.abs(np.real(kk[:, 0]))*self.period/np.pi, self.f,"r"+s)
+        # list_k=self.k.flatten()*self.period/np.pi
+        # indices = (np.imag(k)>-1) & (np.imag(k)<0)
+        # list_k()
+        # plt.plot(np.abs(np.real(self.k[:, i_w]))*self.period/np.pi, self.f,"r"+s)
+
+
+
+
+
+        # if hasattr(self, 'k'):
+        #     for i_w in range(self.k.shape[1]):
+        #         plt.figure(1)
+        #         plt.plot(np.abs(np.real(self.k[:, i_w]))*self.period/np.pi, self.f,"r"+s)
+        #         # plt.plot(-np.abs(np.real(self.k[:, i_w]))*self.period/np.pi+2, self.f,"r"+s)
+        #         # plt.figure(2)
+        #         plt.plot(-np.abs(np.imag(self.k[:, i_w]))*self.period/np.pi, self.f,"b"+s)
+
+        # else: 
+        #     raise NameError("Result.plot_dispersion: no k atribute in instance")
+
 
 class Test():
     def __init__(self, ref, result, indicator, **kwargs):
         eps = kwargs.get("eps", 1e-12)
         error = LA.norm(result.__dict__[indicator]-ref.__dict__[indicator])/len(result.__dict__[indicator])
         if error< eps:
-            print("Overall error = {}".format(error) + "\t"*6 + "["+ colored("OK", "green")  +"]")
+            print("Overall error = {}".format(error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
         else:
-            print("Overall error = {}".format(error) + "\t"*6 + "["+ colored("Fail", "red")  +"]")
+            print("Overall error = {}".format(error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
+
 
 class Results():
     def __init__(self, file=False, **kwargs):

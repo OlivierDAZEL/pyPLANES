@@ -23,7 +23,37 @@
 #
 
 from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
-from mediapack import from_yaml, Air
+from pyPLANES.utils.io import load_material
+
+def one_inclusion_rigid(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat="pem_benchmark_1"):
+
+    G = Gmsh(name_mesh)
+
+    p_0 = G.new_point(0, 0, lcar)
+    p_1 = G.new_point(L, 0,lcar)
+    p_2 = G.new_point(L, d, lcar)
+    p_3 = G.new_point(0, d, lcar)
+    l_0 = G.new_line(p_0, p_1)
+    l_1 = G.new_line(p_1, p_2)
+    l_2 = G.new_line(p_2, p_3)
+    l_3 = G.new_line(p_3, p_0)
+    ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
+    c_0 = G.new_circle(L/2, d/2, a, lcar/2)
+
+    matrice = G.new_surface([ll_0.tag, -c_0.tag])
+    
+
+    G.new_physical(l_2, "condition=top")
+    G.new_physical([l_1, l_3], "condition=Periodicity")
+    G.new_physical(l_0, "condition=bottom")
+    G.new_physical([matrice], "mat="+mat)
+    G.new_physical([l_0, l_1, l_3, l_2], "typ=1D")
+    G.new_physical([matrice], "typ=2D")
+    G.new_physical([l_0, l_1, l_3, l_2, matrice], "method=FEM")
+    G.new_periodicity(l_1, l_3, (L, 0, 0))
+
+    option = "-2 -v 0 "
+    G.run_gmsh(option)
 
 def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):
 
@@ -59,7 +89,9 @@ def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_b
     option = "-2 -v 0 "
     G.run_gmsh(option)
 
-def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lcar=1e-2, mat_core="pem_benchmark_1", mat_ring="pem_benchmark_1", mat_internal="pem_benchmark_1", termination="Rigid Wall"):
+
+
+def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lcar=1e-2, mat_core="pem_benchmark_1", mat_ring="pem_benchmark_1", mat_internal="pem_benchmark_1"):
 
     G = Gmsh(name_mesh)
 
@@ -79,27 +111,18 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
     ring = G.new_surface([c_0.tag, -c_1.tag])
     internal_inclusion = G.new_surface([c_1.tag])
 
-    G.new_physical(l_2, "condition="+termination)
+    G.new_physical(l_2, "condition=top")
     G.new_physical([l_1, l_3], "condition=Periodicity")
-    G.new_physical(l_0, "condition=Incident_PW")
+    G.new_physical(l_0, "condition=bottom")
     G.new_physical(matrice, "mat="+mat_core)
     G.new_physical(ring, "mat="+mat_ring)
     G.new_physical(internal_inclusion, "mat="+mat_internal)
 
     list_FEM_1D = [l_0.tag, l_1.tag, l_3.tag, l_2.tag]
     list_FSI =[]
-    if mat_core == "Air":
-        material_core = Air
-    else:
-        material_core = from_yaml(mat_core+".yaml")
-    if mat_ring == "Air":
-        material_ring = Air
-    else:
-        material_ring = from_yaml(mat_ring+".yaml")
-    if mat_internal == "Air":
-        material_internal = Air
-    else:
-        material_internal = from_yaml(mat_internal+".yaml")
+    material_core = load_material(mat_core)
+    material_ring = load_material(mat_ring)
+    material_internal = load_material(mat_internal)
 
     if set([material_ring.MODEL, material_core.MODEL]) == set(["elastic", "fluid"]):
         list_FEM_1D.extend(c_0.tag_arcs)
@@ -111,8 +134,12 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
 
     if len(list_FSI)>0:
         G.new_physical_curve(list_FSI, "condition=Fluid_Structure")
-    G.new_physical_curve(list_FEM_1D, "model=FEM1D")
-    G.new_physical([matrice, ring, internal_inclusion], "model=FEM2D")
+    G.new_physical_curve(list_FEM_1D, "typ=1D")
+    G.new_physical([matrice, ring, internal_inclusion], "typ=2D")
+    G.new_physical([matrice, ring, internal_inclusion], "method=FEM")
+    G.new_physical_curve(list_FEM_1D + [matrice.tag, ring.tag, internal_inclusion.tag],  "method=FEM")
+    
+    
     G.new_periodicity(l_1, l_3, (L, 0, 0))
 
     option = "-2 -v 0 "

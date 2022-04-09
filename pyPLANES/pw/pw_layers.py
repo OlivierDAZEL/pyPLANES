@@ -113,6 +113,12 @@ class PwLayer():
         for i in range(_index-1):
             Om[:,i] += Phi[:, i]
         Xi = xi_prime_lambda*np.exp(lambda_[_index-1]*self.d)
+
+        # TM = Phi.dot(np.diag(np.exp(-self.lam*self.d))).dot(Phi_inv)
+        # Om = TM@Om 
+        # Xi = np.eye(5)
+
+
         return Om, Xi
 
     def update_Omega(self, Om):
@@ -120,6 +126,7 @@ class PwLayer():
 
     def order_lam(self):
         _index = np.argsort(self.lam.real)[::-1]
+        # print("_index={}".format(_index))
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
 
@@ -141,19 +148,12 @@ class FluidLayer(PwLayer):
 
     def transfert_matrix(self, om, ky):
         T = np.zeros((2, 2), dtype=complex)
+        alpha = ky/(self.medium.rho*om**2)
         T[0, 0] = np.cos(ky*self.d)
-        T[1, 0] = (om**2*self.medium.rho/ky)*np.sin(ky*self.d)
-        T[0, 1] = -(ky/(om**2*self.medium.rho))*np.sin(ky*self.d)
+        T[1, 0] = np.sin(ky*self.d)/alpha
+        T[0, 1] = -alpha*np.sin(ky*self.d)
         T[1, 1] = np.cos(ky*self.d)
         return T
-
-    def update_Omega(self, om, Om, ky):
-        T = np.zeros((2, 2), dtype=complex)
-        T[0, 0] = np.cos(ky*self.d)
-        T[1, 0] = (om**2*self.medium.rho/ky)*np.sin(ky*self.d)
-        T[0, 1] = -(ky/(om**2*self.medium.rho))*np.sin(ky*self.d)
-        T[1, 1] = np.cos(ky*self.d)
-        return T@Om 
 
     def plot_solution_global(self, plot, X, nb_points=200):
 
@@ -171,7 +171,7 @@ class FluidLayer(PwLayer):
             # plt.plot(self.x[0]+x_f, np.real(ut), 'r')
             # plt.plot(self.x[0]+x_f, np.imag(ut), 'm')
 
-    def plot_solution_recursive(self, plot, X, nb_points=10):
+    def plot_solution_recursive(self, plot, X, nb_points=25):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         pr, ut = 0*1j*x_f, 0*1j*x_f
         for i_dim in range(2*self.nb_waves):        
@@ -226,6 +226,8 @@ class PemLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm')
 
     def plot_solution_recursive(self, plot, X, nb_points=10):
+
+
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
         for i_dim in range(6*self.nb_waves):

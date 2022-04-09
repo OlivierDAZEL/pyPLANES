@@ -66,9 +66,9 @@ class PeriodicLayer(Mesh):
         self.T_i, self.T_j, self.T_v = None, None, None
         self.medium = [None, None]
         self.start_time = time.time()
-        # self.info_file = open("findanothername.txt", "w")
         self.TM = None
         fem_preprocess(self)
+
         for _ent in self.pwfem_entities:
             _ent.theta_d = self.theta_d
         # The bottom interface is the first of self.pwfem_entities
@@ -90,13 +90,7 @@ class PeriodicLayer(Mesh):
         self.kx = kx
         self.nb_waves = len(kx)
         self.delta_periodicity = np.exp(-1j*self.kx[0]*self.period)
-        # print(self.reference_elements)
-        # for _ref in self.reference_elements.values():
-        #     print(type(_ref))
-            # _ref.update_frequency(omega, kx)
 
-
-        # self.nb_dofs = self.nb_dof_FEM
         for _ent in self.pwfem_entities:
             _ent.dofs = np.arange(_ent.nb_dof_per_node*len(self.kx))
             _ent.nb_dofs = len(_ent.dofs)
@@ -105,12 +99,17 @@ class PeriodicLayer(Mesh):
     def create_transfert_matrix(self, omega):
         # Initialisation of the lists
         self.A_i, self.A_j, self.A_v = [], [], []
+        # Number of dof of the D_ii marix
         if self.condensation:
+            n_dof = self.nb_dof_master-1
             self.T_i, self.T_j, self.T_v = [], [], []
-        # Creation of the D_ii matrix which corresponds to the volumic term 
+        else:
+            n_dof = self.nb_dof_FEM-1
+
+        # Creation of the D_ii matrix (volumic term of the weak form) 
         for _ent in self.fem_entities:
             self.update_system(*_ent.update_system(omega))
-        # Application of periodicity
+        # Application of periodicity on Dii
         for i_left, dof_left in enumerate(self.dof_left):
             # Corresponding dof
             dof_right = self.dof_right[i_left]
@@ -134,33 +133,30 @@ class PeriodicLayer(Mesh):
         self.linear_system_2_numpy()
         index_A = np.where(((self.A_i*self.A_j) != 0) )
 
-        if self.condensation:
-            D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_master-1, self.nb_dof_master-1)).tocsr()        
-        else:
-            D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.nb_dof_FEM-1, self.nb_dof_FEM-1)).tocsr()
-
+        D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(n_dof, n_dof)).tocsr()        
 
         self.A_i, self.A_j, self.A_v = [], [], []
         RR = [] # Initialisation of the list of the R will be [R_b R_t]
         DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
         DD_xi = [] # Initialisation of the list of the R will be [D_bi D_ti]
-        
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
-            D_period = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
+            D_xx = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
             for _w, kx in enumerate(self.kx):
                 for _elem in _ent.elements:
-                    # print(_elem)
-                    # print(_ent.typ)
                     M_elem = imposed_pw_elementary_vector(_elem, kx)
                     if _ent.typ == "fluid":
+                        # Columns of D_xi
                         dof_p, orient_p, __ = dof_p_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_p])
+                        # Rows of D_ix
                         dof_S_dual.extend(len(dof_p)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
+                        # Rows of D_xx and D_xi
                         dof_S_primal.extend(len(dof_p)*[_w])
+                        # Values for D_ix and D_xi (will be conjugated below)                      
                         D_val.extend(list((orient_p@M_elem)))
-                        # print(np.diag(orient_p))
-                        D_period[_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        # Values for D_xx
+                        D_xx[_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     elif _ent.typ in ["Biot98", "Biot01"]:
                         # u_x
                         dof_ux, orient_ux = dof_ux_element(_elem)
@@ -168,21 +164,21 @@ class PeriodicLayer(Mesh):
                         dof_S_dual.extend(len(dof_ux)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_ux)*[0+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_ux@M_elem))
-                        D_period[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        D_xx[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                         # u_y
                         dof_uy, orient_uy = dof_uy_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_uy])
                         dof_S_dual.extend(len(dof_uy)*[_ent.dual[1]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_uy@M_elem))
-                        D_period[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        D_xx[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                         #  p 
                         dof_p, orient_p, _ = dof_p_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_p])
                         dof_S_dual.extend(len(dof_p)*[_ent.dual[2]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_p)*[2+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_p@M_elem))
-                        D_period[2+_ent.nb_dof_per_node*_w, _ent.primal[2]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        D_xx[2+_ent.nb_dof_per_node*_w, _ent.primal[2]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     elif _ent.typ == "elastic":
                         # u_x                        
                         dof_ux, orient_ux = dof_ux_element(_elem)
@@ -190,25 +186,22 @@ class PeriodicLayer(Mesh):
                         dof_S_dual.extend(len(dof_ux)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_ux)*[0+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_ux@M_elem))
-                        D_period[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        D_xx[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                         # u_y
                         dof_uy, orient_uy = dof_uy_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_uy])
                         dof_S_dual.extend(len(dof_uy)*[_ent.dual[1]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_uy@M_elem))
-                        D_period[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        D_xx[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     else:
                         raise NameError("_ent.typ has no valid type")
             
-            DD.append(D_period)
+            DD.append(D_xx)
 
+            DD_xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, n_dof)))
 
-            if self.condensation:
-                DD_xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.nb_dof_master-1)))
-            else:
-                DD_xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.nb_dof_FEM-1)))
-
+            # Application of periodicity to the columns of D_xi (D_ti and D_bi)
             for i_left, _dof_left in enumerate(self.dof_left):
                 # Corresponding dof
                 _dof_right = self.dof_right[i_left]-1
@@ -217,52 +210,36 @@ class PeriodicLayer(Mesh):
                     dof_FEM[_i] = _dof_left-1
                     D_val[_i] /= self.delta_periodicity*self.orientation_periodic_dofs[i_left]
 
+            # Creation of the D_ix, minus sign <- transposition +normal 
+            D_ix = coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))
+            # R_t and R_b
+            RR.append(-linsolve.spsolve(D_ii, D_ix.todense()).reshape((n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))) ##
 
-            if self.condensation:
-                D_ix = coo_matrix((D_val, (dof_FEM, dof_S_dual)), shape=(self.nb_dof_master-1, 2*_ent.nb_dof_per_node*self.nb_waves))
-                RR.append(_ent.ny*linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.nb_dof_master-1, 2*_ent.nb_dof_per_node*self.nb_waves)))
-            else:
-                D_ix = coo_matrix((D_val, (dof_FEM, dof_S_dual)), shape=(self.nb_dof_FEM-1, 2*_ent.nb_dof_per_node*self.nb_waves))
-                RR.append(_ent.ny*linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.nb_dof_FEM-1, 2*_ent.nb_dof_per_node*self.nb_waves))) ##
+        if any(self.plot):
+            self.RR = RR
 
         _s = _ent.nb_dof_per_node*self.nb_waves
         M_1 = np.zeros((2*_s, 2*_s), dtype=complex)
         M_2 = np.zeros((2*_s, 2*_s), dtype=complex)
 
-        M_1[:_s,:] = (DD_xi[1]@RR[0])#.todense()
-        M_1[_s:,:] = DD[0]+DD_xi[0]@RR[0] 
-        M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1] 
-        M_2[_s:,:] = (DD_xi[0]@RR[1])#.todense()
+        M_1[:_s,:] = DD_xi[1]@RR[0]# [D_ti][R_b] 
+        M_1[_s:,:] = DD[0]+DD_xi[0]@RR[0]# [D_bb]+[D_bi][R_b]
 
-        if any(self.plot):
-            self.RR = RR
-        # print(self.RR)
-        # eazeza
+        M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1]# [D_tt]+[D_ti][R_t] 
+        M_2[_s:,:] = DD_xi[0]@RR[1]# [D_bi][R_t]
 
-        self.TM = LA.solve(M_1, M_2)
+        self.TM = -LA.solve(M_1, M_2)
 
 
         # print(self.TM)
-
-        # Air = Air()
-        # ky = np.sqrt((omega/Air.c)**2-self.kx**2)
-        # d = 3e-2
-        # T = np.zeros((2, 2), dtype=complex)
-        # T[0, 0] = np.cos(ky*d)
-        # T[1, 0] = (omega**2*Air.rho/ky)*np.sin(-ky*d)
-        # T[0, 1] = -(ky/(omega**2*Air.rho))*np.sin(-ky*d)
-        # T[1, 1] = np.cos(ky*d)
-
-        # print(T)
-        # dqsdqsdsq
-
         # import matplotlib.pyplot as plt
-        # plt.matshow(np.log(np.abs(self.TM)))
+        # plt.matshow(np.log10(np.abs(self.TM)))
         # plt.colorbar()
         # plt.show()
+        # dsq
+        
 
     def transfert(self, Om):
-        # Creation of the Transfer Matrix 
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
         return self.TM@Om, np.eye(Om.shape[1])
@@ -290,12 +267,9 @@ class PeriodicLayer(Mesh):
             self.T_v = np.array(self.T_v, dtype=complex)
 
     def plot_solution(self, S_b, S_t):
-        # print("S_b={}".format(S_b)) 
-        # print(S_b[1]/S_b[0])
-        # print("S_t={}".format(S_t))
-        X = self.RR[0]@S_b + self.RR[1]@S_t
+
+        X = self.RR[0]@S_b +self.RR[1]@S_t
         X = np.insert(X, 0, 0)
-        # print(X)
         # Concatenation of the slave dofs at the end of the vector
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         if self.condensation:
@@ -305,7 +279,6 @@ class PeriodicLayer(Mesh):
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
                 _vr.sol[i_dim] = X[_vr.dofs[i_dim]]
-            # print(np.abs(_vr.sol[3]) 
         for _ed in self.edges:
             for i_dim in range(4):
                 _ed.sol[i_dim] = X[_ed.dofs[i_dim]]

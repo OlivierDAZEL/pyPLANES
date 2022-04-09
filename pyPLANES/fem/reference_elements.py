@@ -57,7 +57,7 @@ class Ka:
         else:
             warnings.warn("7")
             self.order = 7
-            
+        print(p)
         self.xi, self.w = leggauss(p)
 
         # Number of Shape Functions
@@ -207,7 +207,7 @@ class KaPw(Ka):
 if __name__ == "__main__":
     
     ref_elem = KaPw(7,20)
-    vec_k=np.linspace(-20,20,100)
+    vec_k=np.logspace(-20,0,100)
 
     vec_pg = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
     vec_analytic = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
@@ -227,34 +227,34 @@ if __name__ == "__main__":
 
 
 
-    # for order in range(ref_elem.order+1):
-
-    #     plt.figure()     
-    #     plt.plot(vec_k,np.real(mon_analytic[order, :]),"r.",label="OD /real")
-    #     plt.plot(vec_k,np.imag(mon_analytic[order, :]),"b.",label="OD/ imag")
-    #     plt.plot(vec_k,np.real(mon_scipy[order, :]),"r",label="scipy")
-    #     plt.plot(vec_k,np.imag(mon_scipy[order, :]),"b",label="scipy")
-    #     plt.plot(vec_k,np.real(mon_pg[order, :]),"r+",label="pg")
-    #     plt.plot(vec_k,np.imag(mon_pg[order, :]),"b+",label="pg")
-    #     plt.title("M_{}".format(order))
-    #     plt.legend()
-
-
-
     for order in range(ref_elem.order+1):
 
-        plt.figure()
-        plt.plot(vec_k,np.real(vec_analytic[order, :]),"r.",label="OD /real")
-        plt.plot(vec_k,np.imag(vec_analytic[order, :]),"b.",label="OD/ imag")
-        plt.plot(vec_k,np.real(vec_scipy[order, :]),"r",label="scipy")
-        plt.plot(vec_k,np.imag(vec_scipy[order, :]),"b",label="scipy")
-        plt.plot(vec_k,np.real(vec_pg[order, :]),"r+",label="pg")
-        plt.plot(vec_k,np.imag(vec_pg[order, :]),"b+",label="pg")
-        # plt.plot(vec_k,np.real(test),"k",label="t")
-        # plt.plot(vec_k,np.imag(test),"k",label="t")
-
-        plt.title("N_{}".format(order))
+        plt.figure()     
+        plt.plot(vec_k,np.real(mon_analytic[order, :]),"r.",label="OD /real")
+        plt.plot(vec_k,np.imag(mon_analytic[order, :]),"b.",label="OD/ imag")
+        plt.plot(vec_k,np.real(mon_scipy[order, :]),"r",label="scipy")
+        plt.plot(vec_k,np.imag(mon_scipy[order, :]),"b",label="scipy")
+        plt.plot(vec_k,np.real(mon_pg[order, :]),"r+",label="pg")
+        plt.plot(vec_k,np.imag(mon_pg[order, :]),"b+",label="pg")
+        plt.title("M_{}".format(order))
         plt.legend()
+
+
+
+    # for order in range(ref_elem.order+1):
+
+    #     plt.figure()
+    #     plt.plot(vec_k,np.real(vec_analytic[order, :]),"r.",label="OD /real")
+    #     plt.plot(vec_k,np.imag(vec_analytic[order, :]),"b.",label="OD/ imag")
+    #     plt.plot(vec_k,np.real(vec_scipy[order, :]),"r",label="scipy")
+    #     plt.plot(vec_k,np.imag(vec_scipy[order, :]),"b",label="scipy")
+    #     plt.plot(vec_k,np.real(vec_pg[order, :]),"r+",label="pg")
+    #     plt.plot(vec_k,np.imag(vec_pg[order, :]),"b+",label="pg")
+    #     # plt.plot(vec_k,np.real(test),"k",label="t")
+    #     # plt.plot(vec_k,np.imag(test),"k",label="t")
+
+    #     plt.title("N_{}".format(order))
+    #     plt.legend()
 
 
     plt.show()
