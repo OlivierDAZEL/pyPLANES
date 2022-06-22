@@ -24,7 +24,7 @@
 
 import numpy as np
 
-from mediapack import Air
+from mediapack import Air, Fluid
 from pyPLANES.utils.io import load_material
 
 from pyPLANES.fem.elements_fem import FemVertex, FemElement
@@ -90,7 +90,6 @@ def physical_names(self, f):
         tag = int(_[1])
         key = " ".join(_[2:])[1:-1]
         self.physical_names[tag] = key
-
 
 def entities(self, f):
     ''' creation of the list of entities '''
@@ -175,11 +174,12 @@ def entities(self, f):
             if physical_tags["typ"] == "2D":
                 if "mat" in physical_tags.keys():
                     if physical_tags["mat"].split()[0] == "Air":
+                        mat = Fluid(c=Air().c,rho=Air().rho)
                         if physical_tags["method"] == "FEM":
-                            _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities, condensation=self.condensation)
+                            _ent = FluidFem(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities, condensation=self.condensation)
                             self.fem_entities.append(_ent)
                         elif physical_tags["method"] == "DGM":
-                            _ent = FluidDgm(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=Air, entities=self.entities)
+                            _ent = FluidDgm(dim=2, tag=tag, physical_tags=physical_tags, bounding_curves=bounding_curves, mat=mat, entities=self.entities)
                             self.dgm_entities.append(_ent)
                     else:
                         mat = load_material(physical_tags["mat"].split()[0])
@@ -284,14 +284,18 @@ def elements(self, f):
         entity_dim, entity_tag, element_type, num_elements_in_block = readl_int(f)
         for _i in range(num_elements_in_block):
             element_tag, *node_tag = readl_int(f)
-            if element_type == 1:
+            if element_type in [1, 8]:
                 if entity_dim != 1:
-                    raise NameError("in load_msh_file, entity_dim!1 for element_type = 1")
+                    raise NameError("in load_msh_file, entity_dim!=1 for element_type = {}".format(element_type))
                 vertices = [self.vertices[n] for n in node_tag]
-            elif element_type == 2:
+            elif element_type in [2, 9]:
                 if entity_dim != 2:
-                    raise NameError("in import_msh_file, entity_dim!2 for element_type = 2")
+                    raise NameError("in import_msh_file, entity_dim!=2 for element_type =  {}".format(element_type))
                 vertices = [self.vertices[n] for n in node_tag]
+            else:
+                raise NameError("{} is an incompatible type of element".format(element_type))
+
+
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.elements[element_tag] = FemElement(element_type, element_tag, vertices)
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])

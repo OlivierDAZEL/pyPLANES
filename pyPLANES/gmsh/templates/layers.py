@@ -29,13 +29,14 @@ def one_layer( **kwargs):
     L = kwargs.get("L", 1.0)
     d = kwargs.get("d", 1.0)
     lcar = kwargs.get("lcar", 0.5)
+    order_geometry = kwargs.get("order_geometry", 1)
     mat = kwargs.get("mat", "Air")
     method = kwargs.get("method", "FEM")
     BC = kwargs.get("BC", ["bottom", "Periodicity", "top", "Periodicity"])
 
 
 
-    G = Gmsh(name_mesh)
+    G = Gmsh(name_mesh, order_geometry)
 
     p_0 = G.new_point(0, 0, lcar)
     p_1 = G.new_point(L, 0,lcar)

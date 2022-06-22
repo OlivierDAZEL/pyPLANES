@@ -57,7 +57,7 @@ class Ka:
         else:
             warnings.warn("7")
             self.order = 7
-        print(p)
+
         self.xi, self.w = leggauss(p)
 
         # Number of Shape Functions

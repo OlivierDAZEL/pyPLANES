@@ -29,7 +29,7 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.periodic_layer import PeriodicLayer
 from pyPLANES.pw.pw_layers import PwLayer
-from pyPLANES.pw.pw_polarisation import fluid_waves_TMM
+from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, PEM_waves_TMM, elastic_waves_TMM
 from scipy.linalg import block_diag
 
 class PwInterface():
@@ -38,12 +38,17 @@ class PwInterface():
     """
     def __init__(self, layer1=None, layer2=None):
         self.layers = [layer1, layer2]
-    def update_M_global(self, M, i_eq):
-        pass
-    def update_Omega(self, Om):
-        pass 
+        self.n_0, self_n_1 = None, None 
+        self.number_relations = None
+        self.pw_method = None
+        self.C_minus, self.C_plus = None, None
+
     def update_frequency(self, omega, kx):
         self.nb_waves = len(kx)
+        if isinstance(self.layers[0],PwLayer):
+            self.layers[0].medium.update_frequency(omega)
+        if isinstance(self.layers[1],PwLayer):
+            self.layers[1].medium.update_frequency(omega)
 
     def update_M_global(self, M, i_eq):
 
@@ -57,70 +62,53 @@ class PwInterface():
         delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
 
         index_rel = slice(i_eq, i_eq+self.number_relations)
-        M [index_rel, self.layers[0].dofs] = self.D_0@(SV_0@delta_0)
-        M [index_rel, self.layers[1].dofs] = self.D_1@(SV_1@delta_1)
+        M [index_rel, self.layers[0].dofs] = self.C_minus@(SV_0@delta_0)
+        M [index_rel, self.layers[1].dofs] = self.C_plus@(SV_1@delta_1)
 
         i_eq += self.number_relations
         return i_eq
 
-class PwInterfaceType0(PwInterface):
-    """
-    Interface with same number of physical medium on both side
-    """
-    def __init__(self, layer1=None, layer2=None):
-        super().__init__(layer1,layer2)
 
     def transfert(self, Om):
-        return Om, np.eye(self.layers[1].nb_waves_in_medium*self.layers[1].nb_waves)
 
-class PwInterfaceType1(PwInterface): 
-    """
-    Interface with less waves in layer 0 than in layer 1 
-    """
-    def __init__(self, layer1=None, layer2=None):
-        super().__init__(layer1,layer2)
+        if isinstance(self.layers[0], PwLayer):
+            mat = self.layers[0].medium
+        elif isinstance(self.layers[0], PeriodicLayer):
+            mat = self.layers[0].medium[1]
 
-    def transfert(self, Om):
-        n_w = self.nb_waves
-        list_null_fields = [2*self.n_1*_w+i for _w in range(n_w) for i in self.null_fields]
-        list_kept_fields = [2*self.n_1*_w+i for _w in range(n_w) for i in self.kept_fields]
-        list_master = [self.n_1*_w+i for _w in range(n_w) for i in self.list_master]
-        list_slaves = [self.n_1*_w+i for _w in range(n_w) for i in self.list_slaves]
-        # print(self)
-        # print(list_null_fields)
-        # print(list_kept_fields)
-        # print(list_master)
-        # print(list_slaves)
-
-        Tau = -LA.solve(Om[np.ix_(list_null_fields, list_slaves)], Om[np.ix_(list_null_fields, list_master)])
-        # X_s = - inv(Omega^n_s)Omega^n_m X_m
-        Om = Om[np.ix_(list_kept_fields, list_master)] + Om[np.ix_(list_kept_fields, list_slaves)]@Tau
-        # S_k = (Omega_k^m+Omega_k^s Tau)X_m 
-        TTau = np.vstack((np.eye(self.n_0*n_w), Tau))
-
-        return Om, TTau
-
-class PwInterfaceType2(PwInterface):
-    """
-        Interface with more waves in layer 0 than in layer 1
-    """
-    def __init__(self, layer1=None, layer2=None):
-        super().__init__(layer1,layer2)
-        self.n_0 = None
-        self.n_1 = None
-        # S = [self.D @ Om, self.A]@ [X\\ X_new] 
-        self.D = None
-        self.A = None
+        if self.nb_waves == 1:
+            SV = self.pw_method(mat, np.zeros(1))[0] 
+            P_in = SV[:,:self.n_0].reshape((2*self.n_0,self.n_0))
+            P_out = SV[:,self.n_0:].reshape((2*self.n_0,self.n_0))
 
 
-    def transfert(self, Om_):
-        # Omega^+ = D Omega^- +A
-        n_w = self.layers[0].nb_waves
-        Om = np.hstack((np.kron(np.eye(n_w), self.D)@Om_, np.kron(np.eye(n_w), self.A)))
-        Tau = np.hstack((np.eye(self.n_1*n_w), np.zeros((self.n_1*n_w,(self.n_0-self.n_1)*n_w))))
-        return Om, Tau
+            M1 = self.C_plus@Om
+            M2 = self.C_minus@P_in
+            M3 = self.C_minus@P_out
 
-class FluidFluidInterface(PwInterfaceType0):
+            M = -LA.inv(np.hstack((M1,M2)))@M3
+
+            M_X = M[:self.n_1,:]
+            M_S = M[self.n_1:,:]
+            Omega = P_in@M_S +P_out 
+        else: 
+
+            SV = self.pw_method(mat, np.zeros(1))[0] 
+            P_in = SV[:,:self.n_0].reshape((2*self.n_0, self.n_0))
+            P_out = SV[:,self.n_0:].reshape((2*self.n_0, self.n_0))
+
+            M1 = np.kron(np.eye(self.nb_waves), self.C_plus)@Om
+            M2 = np.kron(np.eye(self.nb_waves), self.C_minus@P_in)
+            M3 = np.kron(np.eye(self.nb_waves), self.C_minus@P_out)
+
+            M = -LA.inv(np.hstack((M1,M2)))@M3
+
+            M_X = M[:self.n_1*self.nb_waves,:]
+            M_S = M[self.n_1*self.nb_waves:,:]
+            Omega = np.kron(np.eye(self.nb_waves), P_in)@M_S +np.kron(np.eye(self.nb_waves), P_out) 
+        return Omega, M_X
+
+class FluidFluidInterface(PwInterface):
     """
     Fluid-fluid interface 
     """
@@ -128,14 +116,15 @@ class FluidFluidInterface(PwInterfaceType0):
         super().__init__(layer1,layer2)
         self.n_0 = self.n_1 = 1
         self.number_relations = 2
-        self.D_0 = np.eye(self.number_relations)
-        self.D_1 = -np.eye(self.number_relations)
+        self.C_minus = np.eye(self.number_relations)
+        self.C_plus = -np.eye(self.number_relations)
+        self.pw_method = fluid_waves_TMM
 
     def __str__(self):
         out = "\t Fluid-fluid interface"
         return out
 
-class FluidPemInterface(PwInterfaceType1):
+class FluidPemInterface(PwInterface):
     """
     Fluid-PEM interface 
     """
@@ -144,30 +133,21 @@ class FluidPemInterface(PwInterfaceType1):
 
         self.n_0 = 1
         self.n_1 = 3
-        self.null_fields = [0,3]
-        self.kept_fields = [2,4]
-        self.list_master = [0]
-        self.list_slaves = [1, 2]
         self.number_relations = 4
-        self.D_0 = np.array([[1,0],[0,1], [0,0], [0, 0]])
-        self.D_1 = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
+        self.C_minus = np.array([[1,0],[0,1], [0,0], [0, 0]])
+        self.C_plus = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                self.C_minus = np.array([[1,0],[0,1], [0,1], [0, 0]])
+                self.C_plus = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
+        self.pw_method = fluid_waves_TMM
 
     def __str__(self):
         out = "\t Fluid-PEM interface"
         return out
 
-    def transfert(self, Om_):
 
-        mat_pem = np.eye(6)
-        if isinstance(self.layers[1], PeriodicLayer):
-            if self.layers[1].pwfem_entities[0].typ == "Biot01":
-                mat_pem[2, 1] = 1.
-                mat_pem[3, 4] = 1.
-        Om = np.kron(np.eye(self.nb_waves), mat_pem)@ Om_
-
-        return PwInterfaceType1.transfert(self, Om)
-
-class PemFluidInterface(PwInterfaceType2):
+class PemFluidInterface(PwInterface):
     """
     PEM-Fluid interface 
     """
@@ -175,6 +155,7 @@ class PemFluidInterface(PwInterfaceType2):
         super().__init__(layer1,layer2)
         self.n_0 = 3
         self.n_1 = 1
+        self.pw_method = PEM_waves_TMM
 
         if isinstance(self.layers[0], PeriodicLayer):
             if self.layers[0].pwfem_entities[0].typ == "Biot01":
@@ -184,32 +165,19 @@ class PemFluidInterface(PwInterfaceType2):
         else:
             typ = "Biot98"
 
-        if typ == "Biot98":
-            self.D = np.zeros((6, 2), dtype=complex)
-            self.D[2, 0] = 1
-            self.D[4, 1] = 1
-            self.A = np.zeros((6, 2), dtype=complex)
-            self.A[1, 0] = 1
-            self.A[5, 1] = 1
-        else: 
-            self.D = np.zeros((6, 2), dtype=complex) 
-            self.D[2, 0] = 1
-            self.D[3, 1] = -1
-            self.D[4, 1] = 1
-            self.A = np.zeros((6, 2), dtype=complex)
-            self.A[1, 0] = 1
-            self.A[2, 0] = -1
-            self.A[5, 1] = 1
-
         self.number_relations = 4
-        self.D_0 = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
-        self.D_1 = np.array([[1,0],[0,1], [0,0], [0, 0]])
+        self.C_minus = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
+        self.C_plus = np.array([[1,0],[0,1], [0,0], [0, 0]])
+        if isinstance(self.layers[0], PeriodicLayer):
+            if self.layers[0].pwfem_entities[0].typ == "Biot01":
+                self.C_minus = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
+                self.C_plus = np.array([[1,0],[0,1], [0,1], [0, 0]])
 
     def __str__(self):
         out = "\t PEM-Fluid interface"
         return out
 
-class FluidElasticInterface(PwInterfaceType1):
+class FluidElasticInterface(PwInterface):
     """
     Fluid-Elastic interface 
     """
@@ -217,24 +185,17 @@ class FluidElasticInterface(PwInterfaceType1):
         super().__init__(layer1,layer2)
         self.n_0 = 1
         self.n_1 = 2
-        self.null_fields = [0]
-        self.kept_fields = [1,2]
-        self.list_master = [0]
-        self.list_slaves = [1]
         self.number_relations = 3
-        self.D_0 = np.array([[0,0],[1,0],[0,1]])
-        self.D_1 = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
+        self.C_minus = np.array([[0,0],[1,0],[0,1]])
+        self.C_plus = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
+        self.pw_method = fluid_waves_TMM
 
     def __str__(self):
         out = "\t Fluid-Elastic interface"
         return out
 
-    def transfert(self, Om_):
-        Om, Tau = PwInterfaceType1.transfert(self, Om_)
-        Om[1::2,:] *= -1 
-        return Om, Tau
 
-class ElasticFluidInterface(PwInterfaceType2):
+class ElasticFluidInterface(PwInterface):
     """
     Elastic-Fluid interface 
     """
@@ -242,21 +203,16 @@ class ElasticFluidInterface(PwInterfaceType2):
         super().__init__(layer1,layer2)
         self.n_0 = 2
         self.n_1 = 1
-        self.D = np.zeros((4, 2), dtype=complex)
-        self.D[1, 0] = 1
-        self.D[2, 1] = -1
-        self.A = np.zeros((4, 1), dtype=complex)
-        self.A[3, 0] = 1
         self.number_relations = 3
-        self.D_0 = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
-        self.D_1 = np.array([[0,0],[1,0],[0,1]])
-
+        self.C_minus = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
+        self.C_plus = np.array([[0,0],[1,0],[0,1]])
+        self.pw_method = elastic_waves_TMM
 
     def __str__(self):
         out = "\t Elastic-Fluid interface"
         return out
 
-class ElasticElasticInterface(PwInterfaceType0):
+class ElasticElasticInterface(PwInterface):
     """
     Elastic-Elastic interface 
     """
@@ -265,15 +221,15 @@ class ElasticElasticInterface(PwInterfaceType0):
         self.n_0 = 2
         self.n_1 = 2
         self.number_relations = 4
-        self.D_0 = np.eye(self.number_relations)
-        self.D_1 = -np.eye(self.number_relations)
-
+        self.C_minus = np.eye(self.number_relations)
+        self.C_plus = -np.eye(self.number_relations)
+        self.pw_method = elastic_waves_TMM
 
     def __str__(self):
         out = "\t Elastic-Elastic interface"
         return out
 
-class PemPemInterface(PwInterfaceType0):
+class PemPemInterface(PwInterface):
     """
     PEM-PEM interface 
     """
@@ -282,37 +238,34 @@ class PemPemInterface(PwInterfaceType0):
         self.n_0 = 3
         self.n_1 = 3
         self.number_relations = 6
-        self.D_0 = np.eye(self.number_relations)
-        self.D_1 = -np.eye(self.number_relations)
-
+        self.C_minus = np.eye(self.number_relations)
+        self.C_plus = -np.eye(self.number_relations)
+        self.pw_method = PEM_waves_TMM
 
     def __str__(self):
         out = "\t PEM-PEM interface"
         return out
 
-
-
     def transfert(self, Om):
 
         mat_pem_0, mat_pem_1 = np.eye(6), np.eye(6)
-
-        if isinstance(self.layers[0], PeriodicLayer):
-            if self.layers[0].pwfem_entities[1].typ == "Biot01":
-                mat_pem_0[2, 1] = -1.
-                mat_pem_0[3, 4] = -1.
-        if isinstance(self.layers[1], PeriodicLayer):
-            if self.layers[1].pwfem_entities[0].typ == "Biot01":
-                mat_pem_1[2, 1] = 1.
-                mat_pem_1[3, 4] = 1.
+        # if isinstance(self.layers[0], PeriodicLayer):
+        #     if self.layers[0].pwfem_entities[1].typ == "Biot01":
+        #         mat_pem_0[2, 1] = -1.
+        #         mat_pem_0[3, 4] = -1.
+        # if isinstance(self.layers[1], PeriodicLayer):
+        #     if self.layers[1].pwfem_entities[0].typ == "Biot01":
+        #         mat_pem_1[2, 1] = 1.
+        #         mat_pem_1[3, 4] = 1.
 
         mat_pem_0 = np.kron(np.eye(self.nb_waves), mat_pem_0)
         mat_pem_1 = np.kron(np.eye(self.nb_waves), mat_pem_1)
 
-        Om, Tau = PwInterfaceType0.transfert(self, Om)
+        Om, Tau = PwInterface.transfert(self, Om)
 
         return (mat_pem_0@mat_pem_1)@Om, Tau
 
-class ElasticPemInterface(PwInterfaceType1):
+class ElasticPemInterface(PwInterface):
     """
     Elastic-PEM interface 
     """
@@ -320,19 +273,32 @@ class ElasticPemInterface(PwInterfaceType1):
         super().__init__(layer1,layer2)
         self.n_0 = 2
         self.n_1 = 3
-        self.null_fields = [2]
-        self.kept_fields = [0, 1, 3, 5]
-        self.list_master = [0,1]
-        self.list_slaves = [2]
-
+ 
         self.number_relations = 5
-        self.D_0 = np.zeros((self.number_relations, 2*self.n_0))
-        self.D_1 = np.zeros((self.number_relations, 2*self.n_1))
-        self.D_0[0, 0], self.D_1[0, 0] = 1., -1. 
-        self.D_0[1, 1], self.D_1[1, 1] = 1., -1.
-        self.D_0[2, 1], self.D_1[2, 2] = 1., -1.
-        self.D_0[3, 2], self.D_1[3, 3], self.D_1[3, 4] = 1., -1., 1. 
-        self.D_0[4, 3], self.D_1[4, 5] = 1., -1.
+        self.C_minus = np.zeros((self.number_relations, 2*self.n_0))
+        self.C_plus = np.zeros((self.number_relations, 2*self.n_1))
+        # \sigma_xz 
+        self.C_minus[0, 0], self.C_plus[0, 0] = 1., -1. 
+        # u_z =u_z_s  
+        self.C_minus[1, 1], self.C_plus[1, 1] = 1., -1.
+        # u_z =u_z_t 
+        self.C_minus[2, 1], self.C_plus[2, 2] = 1., -1.
+        # Case of 2001 formulation 0 =w
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                self.C_minus[2, 1] = 0.
+        # sigma_zz = \hat{\sigma_zz} - p
+        self.C_minus[3, 2], self.C_plus[3, 3], self.C_plus[3, 4] = 1., -1., 1. 
+
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                self.C_plus[3, 4] = 0.
+        # u_x = u_x_s 
+        self.C_minus[4, 3], self.C_plus[4, 5] = 1., -1.
+
+
+
+        self.pw_method = elastic_waves_TMM
 
     def __str__(self):
         out = "\t Elastic-PEM interface"
@@ -341,18 +307,18 @@ class ElasticPemInterface(PwInterfaceType1):
     def transfert(self, Om):
         # Mat_pem@Om returns Om in 2001 format 
         mat_pem = np.eye(6)
-        if isinstance(self.layers[1], PwLayer):
-            mat_pem[2, 1] = -1.
-            mat_pem[3, 4] = -1.
-        elif isinstance(self.layers[1], PeriodicLayer):
-            if self.layers[1].pwfem_entities[0].typ == "Biot98":
-                mat_pem[2, 1] = -1.
-                mat_pem[3, 4] = -1.
+        # if isinstance(self.layers[1], PwLayer):
+        #     mat_pem[2, 1] = -1.
+        #     mat_pem[3, 4] = -1.
+        # elif isinstance(self.layers[1], PeriodicLayer):
+        #     if self.layers[1].pwfem_entities[0].typ == "Biot98":
+        #         mat_pem[2, 1] = -1.
+        #         mat_pem[3, 4] = -1.
         Om_ = np.kron(np.eye(self.nb_waves), mat_pem)@ Om
 
-        return PwInterfaceType1.transfert(self, Om_)
+        return PwInterface.transfert(self, Om_)
 
-class PemElasticInterface(PwInterfaceType2):
+class PemElasticInterface(PwInterface):
     """
     PEM-Elastic interface 
     """
@@ -360,39 +326,35 @@ class PemElasticInterface(PwInterfaceType2):
         super().__init__(layer1,layer2)
         self.n_0 = 3
         self.n_1 = 2
+        self.pw_method = PEM_waves_TMM
         if isinstance(self.layers[0], PeriodicLayer):
             if self.layers[0].pwfem_entities[0].typ == "Biot01":
                 typ = "Biot01"
         else:
             typ = "Biot98"
 
-        if typ == "Biot98":
-            self.D = np.zeros((6, 4), dtype=complex)
-            self.D[0, 0] = 1 
-            self.D[1, 1] = 1
-            self.D[2, 1] = 1
-            self.D[3, 2] = 1
-            self.D[5, 3] = 1
-            self.A = np.zeros((6, 1), dtype=complex)
-            self.A[3, 0] = 1
-            self.A[4, 0] = 1
-        else: 
-            self.D = np.zeros((6, 4), dtype=complex)
-            self.D[0, 0] = 1 
-            self.D[1, 1] = 1
-            self.D[3, 2] = 1
-            self.D[5, 3] = 1
-            self.A = np.zeros((6, 1), dtype=complex)
-            self.A[4, 0] = 1
-
         self.number_relations = 5
-        self.D_0 = np.zeros((self.number_relations, 2*self.n_0))
-        self.D_1 = np.zeros((self.number_relations, 2*self.n_1))
-        self.D_1[0, 0], self.D_0[0, 0] = 1., -1. 
-        self.D_1[1, 1], self.D_0[1, 1] = 1., -1.
-        self.D_1[2, 1], self.D_0[2, 2] = 1., -1.
-        self.D_1[3, 2], self.D_0[3, 3], self.D_0[3, 4] = 1., -1., 1. 
-        self.D_1[4, 3], self.D_0[4, 5] = 1., -1.
+
+        self.C_minus = np.zeros((self.number_relations, 2*self.n_0))
+        self.C_plus = np.zeros((self.number_relations, 2*self.n_1))
+        # \sigma_xz 
+        self.C_plus[0, 0], self.C_minus[0, 0] = 1., -1. 
+        # u_z =u_z_s  
+        self.C_plus[1, 1], self.C_minus[1, 1] = 1., -1.
+        # u_z =u_z_t 
+        self.C_plus[2, 1], self.C_minus[2, 2] = 1., -1.
+        # Case of 2001 formulation 0 =w
+        if isinstance(self.layers[0], PeriodicLayer):
+            if self.layers[0].pwfem_entities[0].typ == "Biot01":
+                self.C_plus[2, 1] = 0.
+        # sigma_zz = \hat{\sigma_zz} - p
+        self.C_plus[3, 2], self.C_minus[3, 3], self.C_minus[3, 4] = 1., -1., 1. 
+
+        if isinstance(self.layers[0], PeriodicLayer):
+            if self.layers[0].pwfem_entities[0].typ == "Biot01":
+                self.C_minus[3, 4] = 0.
+        # u_x = u_x_s 
+        self.C_plus[4, 3], self.C_minus[4, 5] = 1., -1.
 
 
     def __str__(self):
@@ -521,6 +483,8 @@ class SemiInfinite(PwInterface):
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
+        # self.lam = -np.real(self.lam)+np.imag(self.lam)
+        # print("self.lam={}".format(self.lam))
         self.k = self.medium.k
         self.kx = kx
         self.omega = omega 
@@ -566,7 +530,6 @@ class SemiInfinite(PwInterface):
                     out[4+_w*6, 0+_w*3] = 1.
                     out[5+_w*6, 2+_w*3] = 1.
             elif formulation == "Biot01":
-
                 for _w in range(nb_bloch_waves):
                     # pem S={0:{\sigma}^t_{xy}, 1:u_y^s, 2:w_y=u_y^t-u_y^s, 3:{\sigma}^t_{yy}, 4:p, 5:u_x^s}'''
                     out[1+_w*6, 1+_w*3] = 1.

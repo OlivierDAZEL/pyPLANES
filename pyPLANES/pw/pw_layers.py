@@ -95,34 +95,37 @@ class PwLayer():
             Back_propagation matrix (to be used only for transmission problems)
         """
 
-        self.order_lam()
-
         Phi = self.SV
-        lambda_ = self.lam
-
         Phi_inv = LA.inv(Phi)
+        lambda_ = self.lam
+        TM = Phi.dot(np.diag(np.exp(-self.lam*self.d))).dot(Phi_inv)
+        Om = TM@Om 
+        Xi = np.eye(Om.shape[1])
 
-        _index = self.nb_waves_in_medium*self.nb_waves
-        _list = [0.]*(_index-1)+[1.] +[np.exp(-(lambda_[i]-lambda_[_index-1])*self.d) for i in range(_index, 2*_index)]
-        Lambda = np.diag(np.array(_list))
-        alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-        xi_prime = Phi_inv[:_index,:] @ Om
-        _list = [np.exp(-(lambda_[_index-1]-lambda_[i])*self.d) for i in range(_index)]
-        xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
-        Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
-        for i in range(_index-1):
-            Om[:,i] += Phi[:, i]
-        Xi = xi_prime_lambda*np.exp(lambda_[_index-1]*self.d)
 
-        # TM = Phi.dot(np.diag(np.exp(-self.lam*self.d))).dot(Phi_inv)
-        # Om = TM@Om 
-        # Xi = np.eye(5)
 
+        # self.order_lam()
+        # Phi = self.SV
+        # lambda_ = self.lam
+        # Phi_inv = LA.inv(Phi)
+        # _index = self.nb_waves_in_medium*self.nb_waves
+        # _list = [0.]*(_index-1)+[1.] +[np.exp(-(lambda_[i]-lambda_[_index-1])*self.d) for i in range(_index, 2*_index)]
+        # Lambda = np.diag(np.array(_list))
+        # alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+        # xi_prime = Phi_inv[:_index,:] @ Om
+        # _list = [np.exp(-(lambda_[_index-1]-lambda_[i])*self.d) for i in range(_index)]
+        # print("lis=".format([-(lambda_[_index-1]-lambda_[i])*self.d for i in range(_index)]))
+        # xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
+        # Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
+        # for i in range(_index-1):
+        #     Om[:,i] += Phi[:, i]
+        # print("np.real(lambda_[_index-1]*self.d)={}".format(np.real(lambda_[_index-1]*self.d)))
+        # Xi = xi_prime_lambda*np.exp(lambda_[_index-1]*self.d)
 
         return Om, Xi
 
     def update_Omega(self, Om):
-        pass 
+        pass
 
     def order_lam(self):
         _index = np.argsort(self.lam.real)[::-1]
@@ -132,7 +135,7 @@ class PwLayer():
 
 
 class FluidLayer(PwLayer):
-    def __init__(self, _mat, d, _x = 0):
+    def __init__(self, _mat, d=0.1, _x = 0):
         PwLayer.__init__(self, _mat, d, _x)
         self.nb_waves_in_medium = 1
         self.nb_fields_SV = 2

@@ -53,6 +53,7 @@ class Result():
             self.abs =[]
             self.Solver = None
             self.Server = platform.node()
+            self.h = []
         else: # Creation of a Result on either a dict or a file 
             if isinstance(_in, dict):
                 d = _in
@@ -62,6 +63,8 @@ class Result():
             # print(keys)
             if "f" in keys:
                 self.f = d["f"]
+            if "h" in keys:
+                self.h = d["h"]
             if "Solver" in keys:
                 self.Solver = d["Solver"]
                 if self.Solver == "FemProblem":
@@ -120,7 +123,6 @@ class Result():
                                 d["imag(k)[{}]".format(i_w)].append(np.imag(self.k[i_k][i_w]))
                     else: 
                         d[m] = self.__dict__[m]
-
             else: 
                 d[m] = self.__dict__[m]
         with open(file+".json", append_file) as json_file:
@@ -137,15 +139,21 @@ class Result():
 
     def plot_dispersion(self,s):
         nb_f = self.k.shape[0]
-        kk = np.zeros((nb_f,2),dtype=np.complex)
+        nb_k = self.k.shape[1]
+        print(nb_k)
+        kk = np.zeros((nb_f,nb_k),dtype=np.complex)
         for i in range(nb_f):
-            indices = np.argsort(np.abs(np.imag(self.k[i,:])))[:2]
+            indices = np.argsort(np.abs(np.imag(self.k[i,:])))[:]
             kk[i,:] = self.k[i, indices]
-
-        plt.plot(np.real(kk[:, 0])*self.period/np.pi, self.f,"k"+s,label="re(FEM)")
-        plt.plot(np.imag(kk[:, 0])*self.period/np.pi, self.f,"b"+s,label="imag(FEM)")
-        plt.plot(np.real(kk[:, 1])*self.period/np.pi, self.f,"r"+s,label="re(FEM)")
-        plt.plot(np.imag(kk[:, 1])*self.period/np.pi, self.f,"k"+s,label="imag(FEM)")
+        plt.figure(1)
+        plt.plot(np.real(kk[:, 0])*self.period/np.pi, np.array(self.f)/1000,"k"+s,label="re(FEM)")
+        plt.figure(2)
+        plt.plot(np.imag(kk[:, 0])*self.period/np.pi, np.array(self.f)/1000,"r"+s,label="imag(FEM)")
+        for ii in range(1, nb_k):
+            plt.figure(1)
+            plt.plot(np.real(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"k"+s)
+            plt.figure(2)
+            plt.plot(np.imag(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"r"+s)
 
 
 
@@ -177,13 +185,16 @@ class Result():
 
 class Test():
     def __init__(self, ref, result, indicator, **kwargs):
-        eps = kwargs.get("eps", 1e-12)
-        error = LA.norm(result.__dict__[indicator]-ref.__dict__[indicator])/len(result.__dict__[indicator])
-        if error< eps:
-            print("Overall error = {}".format(error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
+        self.eps = kwargs.get("eps", 1e-12)
+        self.error = LA.norm(result.__dict__[indicator]-ref.__dict__[indicator])/len(result.__dict__[indicator])
+    
+    def check(self):
+        if self.error< self.eps:
+            print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
+            return True
         else:
-            print("Overall error = {}".format(error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
-
+            print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
+            return False
 
 class Results():
     def __init__(self, file=False, **kwargs):

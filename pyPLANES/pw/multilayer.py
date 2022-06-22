@@ -96,6 +96,7 @@ class MultiLayer():
                 self.interfaces.append(PemBacking(self.layers[-1]))
             elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
+        
         if method == "Recursive Method":
             if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
                 self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
@@ -103,6 +104,9 @@ class MultiLayer():
                 self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
             elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
+            # Addition of a fictious Air-Layer for the interface.
+            self.interfaces[0].layers[0] = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, -1.e-2)
+        
         else:
             Air_mat = Air()
             mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
@@ -133,3 +137,4 @@ class MultiLayer():
             _l.update_frequency(omega, kx)
         for _i in self.interfaces:
             _i.update_frequency(omega, kx)
+        

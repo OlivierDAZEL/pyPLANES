@@ -52,19 +52,6 @@ def elas_elementary_matrices(elem):
     vk0 = np.zeros((2*n, 2*n))
     vk1 = np.zeros((2*n, 2*n))
 
-
-    # X1X2 = coord_e[:,1]- coord_e[:,0]
-    # e_x = X1X2/LA.norm(X1X2)
-    # X1X3 = coord_e[:,2]- coord_e[:,0]
-    # e_z = np.cross(X1X2, X1X3)
-    # e_z /= LA.norm(e_z)
-    # e_y = np.cross(e_z, e_x)
-
-    # Coord_e = np.zeros((2,3))
-    # Coord_e[0, 1] = X1X2.dot(e_x)
-    # Coord_e[0, 2] = X1X3.dot(e_x)
-    # Coord_e[1, 2] = X1X3.dot(e_y)
-
     Coord_e = coord_e[0:2, :]
 
     for ipg in range(m):

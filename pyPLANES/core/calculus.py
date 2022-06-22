@@ -82,7 +82,7 @@ class Calculus():
         self.Result = Result() 
         label = kwargs.get("label", False)
         if label:
-            self.Results["label"] = label
+            self.Result["label"] = label
 
         _ = kwargs.get("frequencies", False)
         __ = kwargs.get("f_bounds", False)
@@ -95,6 +95,11 @@ class Calculus():
             self.frequencies = np.array([___])
         else:
             self.frequencies = np.array([1e3])
+        
+        h = kwargs.get("h", None)
+        if h:
+            self.Result.h = h
+
         self.print_result = kwargs.get("print_result", False)    
         self.plot = kwargs.get("plot_solution", [False]*6)   
         

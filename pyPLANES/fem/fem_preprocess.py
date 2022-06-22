@@ -98,16 +98,15 @@ def assign_reference_element(self):
 
 def reference_element(key, order):
     if isinstance(key, int):
-        if key == 2:
+        if key in [2, 9]:
             out = Kt(order)
-        elif key == 1:
+        elif key in [1, 8]:
             out = Ka(order, 2*order)
     else:
-        if key[0] == 2:
+        if key[0] in [2, 9]:
             out = Kt(order)
-        elif key[0] == 1:
+        elif key[0] in [1, 8]:
             out = KaPw(order, 5*order)
-
     return out
 
 def create_vertices_edges_faces_bubbles_lists(self):

@@ -43,12 +43,13 @@ class Mesh():
         self.reference_elements = dict() # dictionary of reference_elements
         load_msh_file(self, **kwargs)
 
+
     def display_mesh(self):
         for _el in self.elements[1:]:
             if _el.typ == 2:
                 x_vertices =[_v.coord[0] for _v in _el.vertices]
                 y_vertices =[_v.coord[1] for _v in _el.vertices]
-                plt.plot(x_vertices, y_vertices, 'k.-', lw=0.5)
+                plt.plot(x_vertices, y_vertices, 'k-', lw=0.5)
 
 class NeighbourElement():
     def __init__(self, _elem=None, s_0_minus=None, s_1_minus=None, s_0_plus=None, s_1_plus=None):

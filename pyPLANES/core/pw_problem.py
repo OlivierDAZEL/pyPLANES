@@ -25,9 +25,7 @@ import numpy as np
 import numpy.linalg as LA
 
 from numpy import pi
-
 import matplotlib.pyplot as plt
-
 from mediapack import Air, Fluid
 
 
@@ -109,6 +107,7 @@ class PwProblem(Calculus, MultiLayer):
             self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             self.A = np.delete(self.A, 0, axis=1)
 
+
     def solve(self):
         Calculus.solve(self)
         if self.method == "Recursive Method":
@@ -116,8 +115,8 @@ class PwProblem(Calculus, MultiLayer):
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]
             self.Result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
-            if self.verbose:
-                print("R_0={}".format(self.Result.R0))
+            # if self.verbose:
+            #     print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
@@ -127,8 +126,8 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.Result.R0.append(self.X[0])
-            if self.verbose:
-                print("R_0={}".format(self.Result.R0))
+            # if self.verbose:
+            #     print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             if self.termination == "transmission":
                 self.Result.T0.append(self.X[-1])

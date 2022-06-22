@@ -141,7 +141,7 @@ synch2KTH.py
 _info.txt
 html/
 tests/*
-!tests/one_layer/
+!tests/solutions/
 !tests/iags/
 # !tests/benchmark_multilayer/
 ### Output files

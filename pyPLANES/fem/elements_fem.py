@@ -148,17 +148,19 @@ class FemElement(GenericElement):
         self.reference_element = None
         self.dofs = [[], [], [], []]
         # Rules for the dofs indices vector
-        if typ == 1:
+        if typ in [1,8]: # Line Elements
             self.edges = []
             self.edges_orientation = []
             self.nb_edges = 0
-        elif typ == 2:
+        elif typ in [2, 9]: # triangles
             self.edges, self.faces = [], []
             self.edges_orientation, self.faces_orientation = [], []
+        else: 
+            raise NameError("typ {} is not a supported element".format(typ))
 
     def __str__(self):
         out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
-        if self.typ == 1:
+        if self.typ == 1: 
             out += "Vertices = [{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag)
             print(self.edges)
             out += "edge={} /orientation ={}\n".format(self.edges[0].tag, self.edges_orientation)

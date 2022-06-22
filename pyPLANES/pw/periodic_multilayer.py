@@ -50,6 +50,7 @@ class PeriodicMultiLayer():
         self.condensation = kwargs.get("condensation", True)
         self.period = False # If period is false: homogeneous layer
         _x = 0
+
         for _l in ml:
             mat = load_material(_l[0])
             if mat is not None:
@@ -62,6 +63,7 @@ class PeriodicMultiLayer():
                     self.layers.append(ElasticLayer(mat, d, _x))
                 _x += d
             elif os.path.isfile("msh/" + _l[0] + ".msh"):
+
                 self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
                 self.Result.n_dof = self.layers[-1].nb_dof_master
                 self.period = self.layers[-1].period
@@ -80,9 +82,6 @@ class PeriodicMultiLayer():
             else:
                 _medium_type_top = self.layers[i_l+1].medium[1].MEDIUM_TYPE
 
-
-            # print(_medium_type_bottom)
-            # print(_medium_type_top)
 
             if _medium_type_bottom in  ["fluid", "eqf"]:
                 if _medium_type_top in  ["fluid", "eqf"]:
@@ -105,7 +104,7 @@ class PeriodicMultiLayer():
                     self.interfaces.append(ElasticPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
                     self.interfaces.append(ElasticElasticInterface(_layer, self.layers[i_l+1]))
-        # sdffds
+
 
 
     def __str__(self):
@@ -137,12 +136,16 @@ class PeriodicMultiLayer():
             medium_type = self.layers[0].medium[0].MEDIUM_TYPE
         else: 
             medium_type = self.layers[0].medium.MEDIUM_TYPE
+
+        # Addition of a fictious Air-Layer for the interface.
+        incident_layer=FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, -1.e-2)
+
         if medium_type in ["fluid", "eqf"]:
-            self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
+            self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
         elif medium_type == "pem":
-            self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
+            self.interfaces.insert(0,FluidPemInterface(incident_layer, self.layers[0]))
         elif medium_type == "elastic":
-            self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
+            self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
 
     def update_frequency(self, omega, kx):
         for _l in self.layers:

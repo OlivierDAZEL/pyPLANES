@@ -29,12 +29,15 @@ from copy import deepcopy
 
 
 class Gmsh():
-    def __init__(self, file="noname"):
+    def __init__(self, file="noname", order=1):
         if not os.path.exists("msh"):
             os.mkdir("msh")
         self.geo_file = "msh/" + file + ".geo"
         self.f= open(self.geo_file, "w")
         self.f.write("// This code was created by pyPLANES\n")
+        if order ==2: 
+            self.f.write("Mesh.ElementOrder = 2;\n")
+            self.f.write("Mesh.SecondOrderLinear = 0;\n")
         self.nb_tags = 0
         self.list_points = []
         self.list_lines = []

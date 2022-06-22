@@ -49,7 +49,7 @@ class ImposedDisplacementFem(FemEntity):
         return out
 
     def elementary_matrices(self, _el):
-        F = imposed_Neumann(_el)
+        F = imposed_neumann(_el)
         # orient_ = orient_element(_el)
         # _el.F = -orient_ @ F # - is for outgoing
         _el.F =  -F # - is for outgoing / No orientation for 1D element

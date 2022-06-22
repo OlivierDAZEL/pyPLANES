@@ -43,7 +43,6 @@ from pyPLANES.utils.io import plot_fem_solution, export_paraview
 from pyPLANES.fem.dofs import periodic_dofs_identification
 from pyPLANES.fem.fem_entities_pw import PwFem
 
-from mediapack import Air
 
 class PeriodicLayer(Mesh):
     def __init__(self, **kwargs):
@@ -67,8 +66,9 @@ class PeriodicLayer(Mesh):
         self.medium = [None, None]
         self.start_time = time.time()
         self.TM = None
-        fem_preprocess(self)
 
+
+        fem_preprocess(self)
         for _ent in self.pwfem_entities:
             _ent.theta_d = self.theta_d
         # The bottom interface is the first of self.pwfem_entities
