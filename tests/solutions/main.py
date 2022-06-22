@@ -18,21 +18,21 @@ plot_solution = [True, True, True, False, False, False]
 verbose = [True, False][0]
 # Parameters of the simulation
 theta_d = 0.00000
-nb_layers = 2
+nb_layers = 1
 L = 5e-2
 d = 5e-2
 lcar = 5e-2/10
 from mediapack import Air
 
-frequency = Air.c /d/1e2
+frequency = Air.c /d
 
 name_project="solution"
 
-termination = ["rigid", "transmission"][1]
+termination = ["rigid", "transmission"][0]
 
 # ml = [("Wwood", d),  ("melamine", d), ("Wwood", d)]
-ml = [("melamine", d)]*nb_layers
-ml = [("WWood", d), ("melamine",d)]
+# ml = [("melamine", d)]*nb_layers
+# ml = [("WWood", d), ("melamine",d)]
 ml = [("Air", d)]*nb_layers
 
 # ml = [("Air", d), ("melamine",d), ("Air", d)]
@@ -49,32 +49,12 @@ one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 
 ml_fem = [ ("mesh", None)]*nb_layers
 ml_fem = ml.copy()
-ml_fem[1] = ("mesh", None)
+# ml_fem[1] = ("mesh", None)
 
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=3, nb_bloch_waves=0, frequency=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a",print_result=True)
 eTMM_method.resolution()
 
-import numpy.linalg as LA
-omega = 2*np.pi*frequency
-k = omega/Air.c
 
-
-print(np.exp(-1j*k*nb_layers*d))
-print("u_left={}".format(-1j*k/(omega**2*Air.rho)))
-
-# print(LA.inv(recursive_method.layers[0].transfert_matrix(omega, k)))
-
-
-# from mediapack import Air
-
-# omega = 2*np.pi*frequency
-# k = omega/Air.c
-# p = np.exp(-1j*k*d)
-# u = -1j*k*p/(Air.rho*omega**2)
-# print(u, p)
-# p = np.exp(-1j*2*k*d)
-# u = -1j*k*p/(Air.rho*omega**2)
-# print(u, p)
 
 
 
