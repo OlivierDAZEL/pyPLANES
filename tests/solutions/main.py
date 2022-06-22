@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from pyPLANES.gmsh.templates.layers import one_layer
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.core.periodic_pw_problem import PeriodicPwProblem
+from pyPLANES.core.fem_problem import FemProblem
 from pyPLANES.core.result import Results, Result, Test
 
 
@@ -47,12 +48,18 @@ one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 # material = ["Air", "Wwood", "melamine"][2]
 # one_layer(name_mesh="mesh_2", L=L, d=d, lcar=lcar, mat=material)
 
-ml_fem = [ ("mesh", None)]*nb_layers
-ml_fem = ml.copy()
+# ml_fem = [ ("mesh", None)]*nb_layers
+# ml_fem = ml.copy()
 # ml_fem[1] = ("mesh", None)
 
-eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=3, nb_bloch_waves=0, frequency=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a",print_result=True)
-eTMM_method.resolution()
+order = 2
+
+one_layer(name_mesh="Air", L=L, d=d, lcar=lcar, mat="Air", BC = ["Imposed displacement", "rigid", "rigid", "rigid"])
+FEM_method = FemProblem(name_mesh="Air", name_project=name_project, order=order, frequency=frequency, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True, save_append="a")
+FEM_method.resolution()
+
+# eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=3, nb_bloch_waves=0, frequency=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a",print_result=True)
+# eTMM_method.resolution()
 
 
 
