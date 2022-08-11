@@ -144,10 +144,10 @@ def local_dofs(_elem, field="p"):
 
 def normal_to_element(elem_1d, elem_2d):
 
-    coord_e = elem_1d.get_coordinates()
+    coord_e = elem_1d.coord
 
     n_ = coord_e[:, 1]- coord_e[:, 0]
-    n_ = np.array([n_[1], -n_[0], 0])
+    n_ = np.array([n_[1], -n_[0]])
     n_ = n_/LA.norm(n_)
 
     vec_2dto1d = elem_1d.get_center()-elem_2d.get_center()

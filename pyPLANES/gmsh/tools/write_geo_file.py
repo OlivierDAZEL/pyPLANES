@@ -29,7 +29,7 @@ from copy import deepcopy
 
 
 class Gmsh():
-    def __init__(self, file="noname", order=1):
+    def __init__(self, file="noname", order=2):
         if not os.path.exists("msh"):
             os.mkdir("msh")
         self.geo_file = "msh/" + file + ".geo"
