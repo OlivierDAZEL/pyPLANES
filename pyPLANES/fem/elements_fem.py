@@ -164,14 +164,10 @@ class FemElement(GenericElement):
         
         if self.typ == 2: # TR3
             JJ = lagrange_on_Kt(1, xi_1, xi_2)[1]
-
-
         elif self.typ == 9: # TR6
             JJ = lagrange_on_Kt(2, xi_1, xi_2)[1]
-
         else: 
             raise NameError("Unknown type of element in fem/elements_fem/FemElement/get_jacobian_matrix")
-        
         return JJ.dot(self.coord.T)
 
 
