@@ -23,6 +23,8 @@
 #
 import numpy as np
 from pyPLANES.generic.elements_generic import GenericVertex, GenericEdge, GenericElement
+from pyPLANES.fem.lagrange_polynomials import lagrange_on_Kt
+
 
 class FemVertex(GenericVertex):
     '''Vertex Finite-Element'''
@@ -158,26 +160,19 @@ class FemElement(GenericElement):
         else: 
             raise NameError("typ {} is not a supported element".format(typ))
 
-    def get_jacobian_matrix(self, xi=0, eta=0):
+    def get_jacobian_matrix(self, xi_1=0, xi_2=0):
         
         if self.typ == 2: # TR3
-            nb_v = 3 
-            coorde = np.zeros((3, nb_v))
-            for i, _v in enumerate(self.vertices):
-                coorde[0:3, i] = _v.coord[0:3]
-            JJ = np.array([[-1./2,1./2,0.],[-1./2,0.,1./2]])
+            JJ = lagrange_on_Kt(1, xi_1, xi_2)[1]
+
 
         elif self.typ == 9: # TR6
-            nb_v = 3 
-            coorde = np.zeros((3, nb_v))
-            for i, _v in enumerate(self.vertices[:3]):
-                coorde[0:3, i] = _v.coord[0:3]
-            JJ = np.array([[-1./2,1./2,0.],[-1./2,0.,1./2]])
+            JJ = lagrange_on_Kt(2, xi_1, xi_2)[1]
 
         else: 
             raise NameError("Unknown type of element in fem/elements_fem/FemElement/get_jacobian_matrix")
         
-        return JJ.dot(coorde[:2,:].T)
+        return JJ.dot(self.coord.T)
 
 
     def __str__(self):

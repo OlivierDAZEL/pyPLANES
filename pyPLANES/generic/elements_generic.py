@@ -86,23 +86,6 @@ class GenericElement:
             out += "edges =[{},{},{}]\n".format(self.edges[0].tag, self.edges[1].tag, self.edges[2].tag)
         return out
 
-    # def get_coordinates(self):
-    #     ''' Method that gives the geometrical coordinates of the element'''
-    #     if self.typ == 1:
-    #         nb_v = 2 
-    #     elif self.typ == 2:
-    #         nb_v = 3 
-    #     elif self.typ == 8:
-    #         nb_v = 3 
-    #     elif self.typ == 9:
-    #         nb_v = 6
-    #     else: 
-    #         raise NameError("Unknown type ({}) of element in generic/GenericElement/get_coordinates".format(self.typ))
-    #     coorde = np.zeros((3, nb_v))
-    #     for i, _v in enumerate(self.vertices):
-    #         coorde[0:3, i] = _v.coord[0:3]
-    #     return coorde
-
 
 
 
@@ -113,7 +96,6 @@ class GenericElement:
         numpy array
             coordinates of the center of the element
         """
-        coorde = self.get_coordinates()
-        return np.mean(coorde, axis=1)
+        return np.mean(self.coord, axis=1)
 
 

@@ -203,64 +203,6 @@ class KaPw(Ka):
             out += (np.exp(-ik*self.xi[i_w])*w)* self.Phi[:, i_w].reshape(n)
         return out
 
-
-if __name__ == "__main__":
-    
-    ref_elem = KaPw(7,20)
-    vec_k=np.logspace(-20,0,100)
-
-    vec_pg = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
-    vec_analytic = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
-    vec_scipy = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
-    mon_pg = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
-    mon_analytic = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
-    mon_scipy = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
-
-    for i, k in enumerate(vec_k):
-
-        vec_pg[:, i]=ref_elem.int_lobatto_exponential_pg(k)
-        vec_analytic[:, i]=ref_elem.int_lobatto_exponential_analytic(k)
-        vec_scipy[:, i]=ref_elem.int_lobatto_exponential_scipy(k)
-        mon_pg[:, i]=ref_elem.int_monomial_exponential_pg(k)
-        mon_analytic[:, i]=ref_elem.int_monomial_exponential(k)
-        mon_scipy[:, i]=ref_elem.int_monomial_exponential_scipy(k)
-
-
-
-    for order in range(ref_elem.order+1):
-
-        plt.figure()     
-        plt.plot(vec_k,np.real(mon_analytic[order, :]),"r.",label="OD /real")
-        plt.plot(vec_k,np.imag(mon_analytic[order, :]),"b.",label="OD/ imag")
-        plt.plot(vec_k,np.real(mon_scipy[order, :]),"r",label="scipy")
-        plt.plot(vec_k,np.imag(mon_scipy[order, :]),"b",label="scipy")
-        plt.plot(vec_k,np.real(mon_pg[order, :]),"r+",label="pg")
-        plt.plot(vec_k,np.imag(mon_pg[order, :]),"b+",label="pg")
-        plt.title("M_{}".format(order))
-        plt.legend()
-
-
-
-    # for order in range(ref_elem.order+1):
-
-    #     plt.figure()
-    #     plt.plot(vec_k,np.real(vec_analytic[order, :]),"r.",label="OD /real")
-    #     plt.plot(vec_k,np.imag(vec_analytic[order, :]),"b.",label="OD/ imag")
-    #     plt.plot(vec_k,np.real(vec_scipy[order, :]),"r",label="scipy")
-    #     plt.plot(vec_k,np.imag(vec_scipy[order, :]),"b",label="scipy")
-    #     plt.plot(vec_k,np.real(vec_pg[order, :]),"r+",label="pg")
-    #     plt.plot(vec_k,np.imag(vec_pg[order, :]),"b+",label="pg")
-    #     # plt.plot(vec_k,np.real(test),"k",label="t")
-    #     # plt.plot(vec_k,np.imag(test),"k",label="t")
-
-    #     plt.title("N_{}".format(order))
-    #     plt.legend()
-
-
-    plt.show()
-
-
-
 class Kt:
     def __init__(self, order=2):
         self.order = order
@@ -374,3 +316,42 @@ def shape_functions_Kt(xi_1, xi_2, order):
             _index += 1
 
     return Phi, dPhi
+
+
+
+if __name__ == "__main__":
+    
+    ref_elem = KaPw(7,20)
+    vec_k=np.logspace(-20,0,100)
+
+    vec_pg = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
+    vec_analytic = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
+    vec_scipy = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
+    mon_pg = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
+    mon_analytic = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
+    mon_scipy = np.zeros((ref_elem.order+1,len(vec_k)),dtype=np.complex128)
+
+    for i, k in enumerate(vec_k):
+
+        vec_pg[:, i]=ref_elem.int_lobatto_exponential_pg(k)
+        vec_analytic[:, i]=ref_elem.int_lobatto_exponential_analytic(k)
+        vec_scipy[:, i]=ref_elem.int_lobatto_exponential_scipy(k)
+        mon_pg[:, i]=ref_elem.int_monomial_exponential_pg(k)
+        mon_analytic[:, i]=ref_elem.int_monomial_exponential(k)
+        mon_scipy[:, i]=ref_elem.int_monomial_exponential_scipy(k)
+
+
+
+    for order in range(ref_elem.order+1):
+
+        plt.figure()     
+        plt.plot(vec_k,np.real(mon_analytic[order, :]),"r.",label="OD /real")
+        plt.plot(vec_k,np.imag(mon_analytic[order, :]),"b.",label="OD/ imag")
+        plt.plot(vec_k,np.real(mon_scipy[order, :]),"r",label="scipy")
+        plt.plot(vec_k,np.imag(mon_scipy[order, :]),"b",label="scipy")
+        plt.plot(vec_k,np.real(mon_pg[order, :]),"r+",label="pg")
+        plt.plot(vec_k,np.imag(mon_pg[order, :]),"b+",label="pg")
+        plt.title("M_{}".format(order))
+        plt.legend()
+
+    plt.show()

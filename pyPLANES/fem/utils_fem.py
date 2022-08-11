@@ -108,8 +108,6 @@ def orient_element(_elem, f="p"):
         orient = [1, 1, 1]
         # Orientation of the edges
         for _e, k in product(range(3), range(order-1)):
-            print("e={}".format(_e))
-            print(_elem.edges_orientation[_e])
             orient.append(_elem.edges_orientation[_e]**k)
         # Orientation of the (unique) face
         orient += [1] * int((order-1)*(order-2)/2)
