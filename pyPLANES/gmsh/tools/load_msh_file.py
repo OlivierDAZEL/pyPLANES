@@ -70,7 +70,11 @@ def load_msh_file(self, **kwargs):
             _ = f.readline()
             if _.strip() != "$End"+ tag:
                 raise NameError("Error in GMSH file importation at tag:" +tag)
-    
+    # for e in self.fem_entities:
+    #     e.print_elements()
+
+
+
 def dict_physical_tags(self, _list):
     ''' create a dict from gmsh file physical tags.
         Possible keys: model and materials'''
@@ -276,6 +280,7 @@ def nodes(self, f):
             coord = f.readline().split()
             coord = [float(__) for __ in coord]
             self.vertices[list_nodes[_]] = FemVertex(coord, list_nodes[_])
+
 
 def elements(self, f):
     num_entity_blocks, num_elements, min_element_tag, max_element_tag = readl_int(f)

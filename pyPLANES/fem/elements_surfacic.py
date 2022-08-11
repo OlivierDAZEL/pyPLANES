@@ -27,7 +27,6 @@ from pyPLANES.fem.lobatto_polynomials import lobatto as l
 
 def imposed_neumann(_elem):
 
-    coord_e = _elem.get_coordinates()
     K_ref = _elem.reference_element
     
     n, m = K_ref.Phi.shape
@@ -38,7 +37,7 @@ def imposed_neumann(_elem):
         _Phi = K_ref.Phi[:, ipg].reshape(n)
         F += K_ref.w[ipg]*_Phi
 
-    F *= LA.norm(coord_e[:, 1]-coord_e[:, 0])/2.
+    F *= LA.norm(_elem.coord[:, 1]-_elem.coord[:, 0])/2.
     return F
 
 def imposed_pw_elementary_vector(_elem, k):
@@ -47,23 +46,22 @@ def imposed_pw_elementary_vector(_elem, k):
             I = (h/2)e^{-jkx_mid} * \int_{-1}^{1} e^{-jkhxi/2} \Phi(xi) dxi
     '''
     # Geometrical datas
-    coord_e = _elem.get_coordinates()
-    h = coord_e[0, 1]-coord_e[0, 0]
-    x_mid = (coord_e[0, 1]+coord_e[0, 0])/2.
+    h = _elem.coord[0, 1]-_elem.coord[0, 0]
+    x_mid = (_elem.coord[0, 1]+_elem.coord[0, 0])/2.
     k_prime = k*h/2
     F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
     
     return np.abs(h/2.)*np.exp(-1j*k*x_mid)*F_analytical
 
 def fsi_elementary_matrix(_elem):
-    coord_e = _elem.get_coordinates()
+    
     K_ref = _elem.reference_element
     n, m = K_ref.Phi.shape
     M = np.zeros((n, n))
     for ipg in range(m):
         _Phi = K_ref.Phi[:, ipg].reshape(n)
         M += K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
-    M *= LA.norm(coord_e[:, 1]-coord_e[:, 0])/2.
+    M *= LA.norm(_elem.coord[:, 1]-_elem.coord[:, 0])/2.
     return M
 
 def fsi_elementary_matrix_incompatible(_elem):

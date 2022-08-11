@@ -51,8 +51,10 @@ class PeriodicMultiLayer():
         self.period = False # If period is false: homogeneous layer
         _x = 0
 
+
         for _l in ml:
             mat = load_material(_l[0])
+
             if mat is not None:
                 d = _l[1]
                 if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
@@ -63,11 +65,12 @@ class PeriodicMultiLayer():
                     self.layers.append(ElasticLayer(mat, d, _x))
                 _x += d
             elif os.path.isfile("msh/" + _l[0] + ".msh"):
-
                 self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
                 self.Result.n_dof = self.layers[-1].nb_dof_master
                 self.period = self.layers[-1].period
                 _x += self.layers[-1].d
+            else:
+                raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
 
 
 

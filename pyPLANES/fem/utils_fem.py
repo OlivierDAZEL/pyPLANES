@@ -28,52 +28,52 @@ import numpy.linalg as LA
 from scipy.special import legendre
 
 def dof_p_linear_system_master(_elem):
-    if _elem.typ == 1:
+    if _elem.typ in [1, 8]:
         return np.array(_elem.dofs[3][:2] + _elem.dofs[3][2])
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[3][:3] + _elem.dofs[3][3] + _elem.dofs[3][4] +_elem.dofs[3][5])
 
 def dof_p_linear_system_to_condense(_elem):
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[3][6])
 
 def dof_up_linear_system_master(_elem):
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+
         _elem.dofs[3][:3] + _elem.dofs[3][3] + _elem.dofs[3][4] +_elem.dofs[3][5])
 
 def dof_up_linear_system_to_condense(_elem):
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][6]+_elem.dofs[1][6]+_elem.dofs[3][6])
 
 def dof_u_linear_system_master(_elem):
-    if _elem.typ == 1:
+    if _elem.typ in [1, 8]:
         return np.array(_elem.dofs[0][:2] + _elem.dofs[0][3] + _elem.dofs[1][:2] + _elem.dofs[1][3])
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5])
 
 def dof_ux_linear_system_master(_elem):
-    if _elem.typ == 1:
+    if _elem.typ in [1, 8]:
         return np.array(_elem.dofs[0][:2] + _elem.dofs[0][2])
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5])
 
 def dof_uy_linear_system_master(_elem):
-    if _elem.typ == 1:
+    if _elem.typ in [1, 8]:
         return np.array(_elem.dofs[1][:2] + _elem.dofs[1][2])
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5])
 
 def dof_u_linear_system_to_condense(_elem):
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][6]+_elem.dofs[1][6])
 
 def dof_u_linear_system(_elem):
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[0][6]+ _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+ _elem.dofs[1][6])
 
 def dof_up_linear_system(_elem):
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         return np.array(_elem.dofs[0][:3] + _elem.dofs[0][3] + _elem.dofs[0][4] +_elem.dofs[0][5] + _elem.dofs[0][6]+ _elem.dofs[1][:3] + _elem.dofs[1][3] + _elem.dofs[1][4] +_elem.dofs[1][5]+ _elem.dofs[1][6]+
         _elem.dofs[3][:3] + _elem.dofs[3][3] + _elem.dofs[3][4] +_elem.dofs[3][5]+ _elem.dofs[3][6])
 
@@ -103,15 +103,17 @@ def dof_uy_element(_elem):
 
 def orient_element(_elem, f="p"):
     order = _elem.reference_element.order
-    if _elem.typ == 2:
+    if _elem.typ in [2,9]: # Triangles
         # Orientation of the vertices
         orient = [1, 1, 1]
         # Orientation of the edges
         for _e, k in product(range(3), range(order-1)):
+            print("e={}".format(_e))
+            print(_elem.edges_orientation[_e])
             orient.append(_elem.edges_orientation[_e]**k)
         # Orientation of the (unique) face
         orient += [1] * int((order-1)*(order-2)/2)
-    elif _elem.typ == 1:
+    elif _elem.typ in [1,8]: # Line Elements:
         orient = [1, 1]
         for _e, k in product(range(1), range(order-1)):
             orient.append(_elem.edges_orientation[_e]**k)
@@ -121,7 +123,7 @@ def orient_element(_elem, f="p"):
 
 def local_dofs(_elem, field="p"):
     order = _elem.reference_element.order
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         # Local dofs
         nb_m = 3*order
         nb_c = int(((order-1)*(order-2))/2)
@@ -138,7 +140,7 @@ def local_dofs(_elem, field="p"):
             elem_dof["dof_c_y"] = slice(nb_d+nb_m, 2*nb_d)
 
 
-    elif _elem.typ == 1:
+    elif _elem.typ in [1, 8]:
         elem_dof = None
     return elem_dof
 
@@ -159,7 +161,7 @@ def normal_to_element(elem_1d, elem_2d):
 
 def dof_element(_elem, i_field):
     order = _elem.reference_element.order
-    if _elem.typ == 2:
+    if _elem.typ in [2, 9]:
         # Only the master dofs (vertices and edges)
         # Pressure dofs of the vertices
         dof = [_elem.vertices[i].dofs[i_field] for i in range(3)]
@@ -175,7 +177,7 @@ def dof_element(_elem, i_field):
             orient.append(_elem.edges_orientation[_e]**k)
         # Orientation of the (unique) face
         orient += [1] * int((order-1)*(order-2)/2)
-    elif _elem.typ == 1:
+    elif _elem.typ in [1, 8]:
         # dof = dofs of the 2 vertices + of the edge
         dof = _elem.dofs[i_field][0:2]+_elem.dofs[i_field][2]
         orient = [1]*2 # Orientation of the vertices

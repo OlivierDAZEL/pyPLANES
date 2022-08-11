@@ -65,6 +65,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
      
+
         self.add_excitation_and_termination(self.termination)
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None

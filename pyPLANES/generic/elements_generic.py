@@ -67,8 +67,14 @@ class GenericElement:
     def __init__(self, typ, tag, vertices):
         self.typ = typ
         self.tag = tag
-        self.vertices = vertices
-        # Rules for the dofs indices vector
+
+        self.coord = np.zeros((2, len(vertices)))
+        for i, _v in enumerate(vertices):
+            self.coord[:, i] = _v.coord[0:2]
+        if self.typ in [1, 8]: # Line
+            self.vertices = vertices[:2]
+        elif self.typ in [2, 9]: # TR
+            self.vertices = vertices[:3]
 
     def __str__(self):
         out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
@@ -80,20 +86,25 @@ class GenericElement:
             out += "edges =[{},{},{}]\n".format(self.edges[0].tag, self.edges[1].tag, self.edges[2].tag)
         return out
 
-    def get_coordinates(self):
-        ''' Method that gives the geometrical coordinates of the element'''
-        if self.typ == 1:
-            nb_v = 2 
-        elif self.typ == 2:
-            nb_v = 3 
-        if self.typ == 8:
-            nb_v = 3 
-        elif self.typ == 9:
-            nb_v = 6
-        coorde = np.zeros((3, nb_v))
-        for i, _v in enumerate(self.vertices):
-            coorde[0:3, i] = _v.coord[0:3]
-        return coorde
+    # def get_coordinates(self):
+    #     ''' Method that gives the geometrical coordinates of the element'''
+    #     if self.typ == 1:
+    #         nb_v = 2 
+    #     elif self.typ == 2:
+    #         nb_v = 3 
+    #     elif self.typ == 8:
+    #         nb_v = 3 
+    #     elif self.typ == 9:
+    #         nb_v = 6
+    #     else: 
+    #         raise NameError("Unknown type ({}) of element in generic/GenericElement/get_coordinates".format(self.typ))
+    #     coorde = np.zeros((3, nb_v))
+    #     for i, _v in enumerate(self.vertices):
+    #         coorde[0:3, i] = _v.coord[0:3]
+    #     return coorde
+
+
+
 
     def get_center(self):
         """ 

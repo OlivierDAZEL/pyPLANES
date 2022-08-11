@@ -1,3 +1,4 @@
-{"real(R0)": [0.9999999999999999], "imag(R0)": [4.898587196589413e-16], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [6839.46165857081]}
-{"real(R0)": [1.0], "imag(R0)": [4.898587196589415e-16], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "abs": [0.0], "f": [6839.46165857081]}
-{"D_lambda": [22.108440016582687], "real(R0)": [0.9999099394000646], "imag(R0)": [0.013420621779895347], "Server": "ODs-MacBook-Pro.local", "Solver": "FemProblem", "f": [6839.46165857081], "n_dof": [534], "order": 2}
+{"real(R0)": [-0.8090169943749476], "imag(R0)": [-0.5877852522924727], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [1367.892331714162]}
+{"D_lambda": [25.822070014844876], "real(R0)": [-0.9994721592898255], "imag(R0)": [-0.03248696360901974], "Server": "ODs-MacBook-Pro.local", "Solver": "FemProblem", "f": [1367.892331714162], "n_dof": [38], "order": 2}
+{"D_lambda": [25.822070014844876], "real(R0)": [-0.9994721592898255], "imag(R0)": [-0.03248696360901974], "Server": "ODs-MacBook-Pro.local", "Solver": "FemProblem", "f": [1367.892331714162], "n_dof": [38], "order": 2}
+{"D_lambda": [25.822070014844876], "real(R0)": [-0.9994721592898255], "imag(R0)": [-0.03248696360901974], "Server": "ODs-MacBook-Pro.local", "Solver": "FemProblem", "f": [1367.892331714162], "n_dof": [38], "order": 2}

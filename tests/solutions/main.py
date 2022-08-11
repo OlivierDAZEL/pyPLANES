@@ -22,10 +22,10 @@ theta_d = 0.00000
 nb_layers = 1
 L = 5e-2
 d = 5e-2
-lcar = 5e-2/10
+lcar = 5e-2/2
 from mediapack import Air
 
-frequency = Air.c /d
+frequency = Air.c /d/5
 
 name_project="solution"
 
@@ -37,14 +37,14 @@ termination = ["rigid", "transmission"][0]
 ml = [("Air", d)]*nb_layers
 
 # ml = [("Air", d), ("melamine",d), ("Air", d)]
-global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequency=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
-global_method.resolution()
+# global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequency=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
+# global_method.resolution()
 
-recursive_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequency=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,save_append="a", print_result=True)
-recursive_method.resolution()
+# recursive_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequency=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,save_append="a", print_result=True)
+# recursive_method.resolution()
 
-material = ["Air", "Wwood", "melamine"][0]
-one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
+# material = ["Air", "Wwood", "melamine"][0]
+# one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 # material = ["Air", "Wwood", "melamine"][2]
 # one_layer(name_mesh="mesh_2", L=L, d=d, lcar=lcar, mat=material)
 
@@ -55,6 +55,7 @@ one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 order = 2
 
 one_layer(name_mesh="Air", L=L, d=d, lcar=lcar, mat="Air", BC = ["Imposed displacement", "rigid", "rigid", "rigid"])
+
 FEM_method = FemProblem(name_mesh="Air", name_project=name_project, order=order, frequency=frequency, plot_solution=plot_solution,termination=termination, verbose=False, print_result=True, save_append="a")
 FEM_method.resolution()
 

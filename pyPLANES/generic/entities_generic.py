@@ -102,6 +102,16 @@ class FemEntity(GmshEntity):
         # out  += "related elements={}\n".format(related_elements)
         return out
 
+    def print_elements(self):
+        print("Printing elements of {}".format(type(self)))
+        for i,elem in enumerate(self.elements):
+            print("\t Element #{}".format(i))
+            for v in elem.vertices:
+                print(v)
+
+
+
+
     # def condensation(self, omega):
     #     return [], [], [], [], [], []
 

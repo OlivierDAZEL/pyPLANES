@@ -118,11 +118,11 @@ def renumber_dof(_list,start=0):
 
 def affect_dofs_to_elements(self):
     for _el in self.elements[1:]:
-        if _el.typ ==1:
+        if _el.typ in [1, 8]:
             for i_dim in range(4):
                 _el.dofs[i_dim] += [_v.dofs[i_dim] for _v in _el.vertices]
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]
-        if _el.typ ==2:
+        if _el.typ in [2, 9]:
             for i_dim in range(4):
                 _el.dofs[i_dim] += [_v.dofs[i_dim] for _v in _el.vertices]
                 _el.dofs[i_dim] += [_e.dofs[i_dim] for _e in _el.edges]

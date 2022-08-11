@@ -113,10 +113,10 @@ def create_vertices_edges_faces_bubbles_lists(self):
     ''' Create the list of edges, faces and bubbles of the Model '''
     existing_edges = [] # List of element vertices for redundancy check
     for __, _el in enumerate(self.elements[1:]):
-        if _el.typ == 1:
+        if _el.typ in [1, 8]:
             element_vertices = [_el.vertices[0], _el.vertices[1]]
             update_edges(self, _el, existing_edges, element_vertices)
-        if _el.typ == 2:
+        elif _el.typ in [2, 9]:
             # Edges
             for ii in range(3):
                 element_vertices = [_el.vertices[ii], _el.vertices[(ii+1)%3]]

@@ -25,7 +25,7 @@
 from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
 from pyPLANES.utils.io import load_material
 
-def one_inclusion_rigid(name_mesh="one_inclusion_rigid", L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat="pem_benchmark_1"):
+def one_inclusion_rigid(name_mesh="one_inclusion_rigid", L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat="Air"):
 
     order_geometry = 2
     G = Gmsh(name_mesh, order_geometry)
