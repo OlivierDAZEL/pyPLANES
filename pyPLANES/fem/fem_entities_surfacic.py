@@ -219,9 +219,11 @@ class FluidStructureFem(FemEntity):
 
     def elementary_matrices(self, _el):
         # Elementary matrices
-        M = fsi_elementary_matrix(_el)
+        M_x, M_y = fsi_elementary_matrix(_el)
         orient_ = orient_element(_el)
-        _el.M = orient_ @ M @ orient_
+        _el.M_x = orient_ @ M_x @ orient_
+        _el.M_y = orient_ @ M_y @ orient_
+
 
     def __str__(self):
         out = "FluidStructure" + FemEntity.__str__(self)
@@ -237,23 +239,25 @@ class FluidStructureFem(FemEntity):
             dof_uy = dof_uy_linear_system_master(_el)
             dof_p = dof_p_linear_system_master(_el)
 
-            v = (_el.M).flatten()
+            v_x = (_el.M_x).flatten()
+            v_y = (_el.M_y).flatten()
+
             if _el.normal_fluid[0] != 0:
                 A_i.extend(list(chain.from_iterable([[_d]*len(dof_ux) for _d in dof_p])))
                 A_j.extend(list(dof_ux)*len(dof_p))
-                A_v.extend(-_el.normal_fluid[0]*v)
+                A_v.extend(-v_x)
             if _el.normal_fluid[1] != 0:
                 A_i.extend(list(chain.from_iterable([[_d]*len(dof_uy) for _d in dof_p])))
                 A_j.extend(list(dof_uy)*len(dof_p))
-                A_v.extend(-_el.normal_fluid[1]*v)
+                A_v.extend(-v_y)
             if _el.normal_struc[0] != 0:
                 A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_ux])))
                 A_j.extend(list(dof_p)*len(dof_ux))
-                A_v.extend(_el.normal_struc[0]*v)
+                A_v.extend(-v_x)
             if _el.normal_struc[1] != 0:
                 A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_uy])))
                 A_j.extend(list(dof_p)*len(dof_uy))
-                A_v.extend(_el.normal_struc[1]*v)
+                A_v.extend(-v_y)
 
         return A_i, A_j, A_v, [], [], T_i, T_j, T_v
 

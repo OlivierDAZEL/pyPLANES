@@ -72,6 +72,7 @@ class FemProblem(Mesh, Calculus):
 
     def create_linear_system(self, omega):
         # Initialisation of the lists
+        Calculus.create_linear_system(self, omega)
         self.F = csr_matrix((self.nb_dof_master, 1), dtype=complex)
         self.A_i, self.A_j, self.A_v = [], [], []
         if self.condensation:
@@ -248,7 +249,7 @@ class FemProblem(Mesh, Calculus):
     def resolution(self):
         Calculus.resolution(self)
         
-        if self.name_server == "il-calc1":
+        if self.name_server == "helmholtz":
             mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
             os.system(mail)
 

@@ -2,6 +2,10 @@ import sys
 sys.path.insert(0, "../..")
 import pickle
 
+from pyPLANES.fem.reference_elements import PlotKt
+PlotKt(4)
+
+dsqdsqsq
 
 
 import numpy as np

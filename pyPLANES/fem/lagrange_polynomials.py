@@ -24,9 +24,20 @@
 
 import numpy as np
 
+
+def lagrange_on_Ka(order, xi):
+    if order == 1:
+        d = np.vstack(((1-xi)/2, (1+xi)/2))
+        p = np.vstack((-1/2, 1/2))
+    elif order ==2:
+        d = np.vstack((xi*(xi-1)/2, xi*(1+xi)/2, 1-xi**2))
+        p = np.vstack(((2*xi-1)/2, (2*xi+1)/2, -2*xi))
+    return d, p 
+
+
 def lagrange_on_Kt(order,xi_1,xi_2):
     """
-    Lagrange shape functions 
+    Lagrange shape functions on Ka
 
     Parameters
     ----------

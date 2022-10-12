@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 
 from mediapack import Air, Fluid
 
-# from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
 
 from pyPLANES.pw.periodic_multilayer import PeriodicMultiLayer

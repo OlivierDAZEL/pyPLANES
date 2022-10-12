@@ -55,8 +55,7 @@ class Ka:
         if order<8:
             self.order = order
         else:
-            warnings.warn("7")
-            self.order = 7
+            raise NameError("pyPLANES limited at order 7 (for the moment until integration schemes are validated for orders >7)")
 
         self.xi, self.w = leggauss(p)
 

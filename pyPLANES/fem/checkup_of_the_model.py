@@ -143,6 +143,7 @@ def check_IFS(self):
                                     vert_2D = [_el.vertices[0].tag, _el.vertices[1].tag, _el.vertices[2].tag]
                                     _ = len(set(vert).intersection(vert_2D)) # Number of common vertices
                                     if _ == 2: # Case of two common vertices
+                                            _elem.elem2d = _el
                                             _elem.normal_fluid = normal_to_element(_elem, _el)
                                             _elem.normal_struc = -_elem.normal_fluid
                                             break

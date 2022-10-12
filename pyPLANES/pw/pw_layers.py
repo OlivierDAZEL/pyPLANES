@@ -104,23 +104,6 @@ class PwLayer():
 
 
 
-        # self.order_lam()
-        # Phi = self.SV
-        # lambda_ = self.lam
-        # Phi_inv = LA.inv(Phi)
-        # _index = self.nb_waves_in_medium*self.nb_waves
-        # _list = [0.]*(_index-1)+[1.] +[np.exp(-(lambda_[i]-lambda_[_index-1])*self.d) for i in range(_index, 2*_index)]
-        # Lambda = np.diag(np.array(_list))
-        # alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-        # xi_prime = Phi_inv[:_index,:] @ Om
-        # _list = [np.exp(-(lambda_[_index-1]-lambda_[i])*self.d) for i in range(_index)]
-        # print("lis=".format([-(lambda_[_index-1]-lambda_[i])*self.d for i in range(_index)]))
-        # xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
-        # Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
-        # for i in range(_index-1):
-        #     Om[:,i] += Phi[:, i]
-        # print("np.real(lambda_[_index-1]*self.d)={}".format(np.real(lambda_[_index-1]*self.d)))
-        # Xi = xi_prime_lambda*np.exp(lambda_[_index-1]*self.d)
 
         return Om, Xi
 

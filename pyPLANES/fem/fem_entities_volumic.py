@@ -115,7 +115,7 @@ class FluidFem(FemEntity):
                 mc = pp[l_p_m, l_p_c]
                 cc = pp[l_p_c, l_p_c]
 
-                t = -LA.inv(cc)@cm
+                t = -LA.solve(cc, cm)
                 mm += mc@t
 
                 T_i.extend(list(chain.from_iterable([[_d]*(nb_m_SF) for _d in _el.dof_p_c])))
@@ -212,7 +212,7 @@ class PemFem(FemEntity):
             mc = np.block([[uu[l_u_m, l_u_c], up[l_u_m, l_p_c]], [pu[l_p_m, l_u_c], pp[l_p_m, l_p_c]]])
             cc = np.block([[uu[l_u_c, l_u_c], up[l_u_c, l_p_c]], [pu[l_p_c, l_u_c], pp[l_p_c, l_p_c]]])
 
-            t = -LA.inv(cc)@cm
+            t = -LA.solve(cc, cm)
             mm += mc@t
 
             dof_up_m = dof_up_linear_system_master(_el)
@@ -278,7 +278,7 @@ class ElasticFem(FemEntity):
             mc = uu[l_u_m, l_u_c]
             cc = uu[l_u_c, l_u_c]
 
-            t = -LA.inv(cc)@cm
+            t = -LA.solve(cc,cm)
             mm += mc@t
 
             dof_u_m = dof_u_linear_system_master(_el)

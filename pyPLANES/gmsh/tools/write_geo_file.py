@@ -36,8 +36,11 @@ class Gmsh():
         self.f= open(self.geo_file, "w")
         self.f.write("// This code was created by pyPLANES\n")
         if order ==2: 
+            # self.f.write("Mesh.ElementOrder = 2;\n")
+            # self.f.write("Mesh.SecondOrderLinear = 0;\n")
+            self.f.write("Mesh.Algorithm = 6;\n")
+            self.f.write("Mesh.Smoothing = 30;\n")
             self.f.write("Mesh.ElementOrder = 2;\n")
-            self.f.write("Mesh.SecondOrderLinear = 0;\n")
         self.nb_tags = 0
         self.list_points = []
         self.list_lines = []
@@ -182,9 +185,11 @@ class Gmsh():
         s = self.Surface(self.f, self.nb_tags, ll)
         return s
 
-    def new_circle(self, x_0, y_0, r, lc):
+    def new_circle(self, x_0, y_0, r, lc, lccenter=-1):
+        if lccenter == -1:
+            lccenter = lc
         self.nb_tags += 1
-        center = self.Point(self.f, self.nb_tags, x_0, y_0, lc)
+        center = self.Point(self.f, self.nb_tags, x_0, y_0, lccenter)
         self.nb_tags +=1
         east = self.Point(self.f, self.nb_tags, x_0+r, y_0, lc)
         self.nb_tags +=1

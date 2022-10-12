@@ -151,7 +151,7 @@ def normal_to_element(elem_1d, elem_2d):
     n_ = n_/LA.norm(n_)
 
     vec_2dto1d = elem_1d.get_center()-elem_2d.get_center()
-    if np.dot(n_, vec_2dto1d):
+    if np.dot(n_, vec_2dto1d)<0:
         n_ *= -1
 
     return n_

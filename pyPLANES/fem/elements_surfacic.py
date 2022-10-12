@@ -58,11 +58,37 @@ def fsi_elementary_matrix(_elem):
     K_ref = _elem.reference_element
     n, m = K_ref.Phi.shape
     M = np.zeros((n, n))
-    for ipg in range(m):
-        _Phi = K_ref.Phi[:, ipg].reshape(n)
-        M += K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
-    M *= LA.norm(_elem.coord[:, 1]-_elem.coord[:, 0])/2.
-    return M
+    if _elem.typ == 1:
+        J = LA.norm(_elem.coord[:, 1]-_elem.coord[:, 0])/2.
+        for ipg in range(m):
+            _Phi = K_ref.Phi[:, ipg].reshape(n)
+            M += J*K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
+    elif _elem.typ == 8:
+        for ipg in range(m):
+            _Phi = K_ref.Phi[:, ipg].reshape(n)
+            J = _elem.get_jacobian_matrix(K_ref.xi[ipg])
+            M += J*K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
+            n_ = _elem.get_normal(K_ref.xi[ipg], _elem.elem2d)
+            
+            # print(_elem.elem2d)
+            # n_ = _elem.normal_fluid
+            M_x = M*n_[0]
+            M_y = M*n_[1]
+            # print("--")
+            # print(n_)
+            # print(_elem.normal_fluid)
+            
+            # import matplotlib.pyplot as plt 
+            # plt.figure()
+            # c = _elem.elem2d.coord
+            # plt.plot(c[0,:], c[1,:], "ro")
+            # plt.plot(_elem.coord[0,:], _elem.coord[1,:], "b.")
+
+            # plt.axis("equal")
+            # plt.show()
+           
+            # dsqdqsqs
+    return M_x, M_y
 
 def fsi_elementary_matrix_incompatible(_elem):
     """

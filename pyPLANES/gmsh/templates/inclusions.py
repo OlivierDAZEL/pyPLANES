@@ -91,7 +91,7 @@ def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_b
     option = "-2 -v 0 "
     G.run_gmsh(option)
 
-def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lcar=1e-2, mat_core="pem_benchmark_1", mat_ring="pem_benchmark_1", mat_internal="pem_benchmark_1"):
+def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lcar=1e-2, lcar_ring=1e-2, mat_core="pem_benchmark_1", mat_ring="pem_benchmark_1", mat_internal="pem_benchmark_1"):
 
     G = Gmsh(name_mesh)
 
@@ -104,8 +104,9 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
     l_2 = G.new_line(p_2, p_3)
     l_3 = G.new_line(p_3, p_0)
     ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
-    c_0 = G.new_circle(L/2, d/2, a, lcar/2)
-    c_1 = G.new_circle(L/2, d/2, r_i, lcar/2)
+
+    c_0 = G.new_circle(L/2, d/2, a, lcar_ring, lcar)
+    c_1 = G.new_circle(L/2, d/2, r_i, lcar_ring, lcar)
 
     matrice = G.new_surface([ll_0.tag, -c_0.tag])
     ring = G.new_surface([c_0.tag, -c_1.tag])
