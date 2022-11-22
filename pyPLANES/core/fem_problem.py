@@ -59,9 +59,6 @@ class FemProblem(Mesh, Calculus):
         if self.condensation:
             self.T_i, self.T_j, self.T_v = None, None, None
 
-
-
-
         fem_preprocess(self)
         if self.list_vr is not False:
             self.Result.R0 = []

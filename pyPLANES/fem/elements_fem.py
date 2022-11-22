@@ -229,7 +229,7 @@ class FemElement(GenericElement):
         if not isinstance(field, list):
             field = [field]
         f_elem = np.zeros((self.reference_element.nb_SF, len(field)), dtype=complex)
-        coorde = self.get_coordinates()
+        coorde = self.coord
         if self.typ == 2:
             for i_f, _field in enumerate(field):
                 f_elem[0, i_f] = self.vertices[0].sol[_field]
@@ -242,7 +242,7 @@ class FemElement(GenericElement):
             x = np.dot(coorde[0, :].T, self.reference_element.phi_plot[:3, :])
             y = np.dot(coorde[1, :].T, self.reference_element.phi_plot[:3, :])
             f = np.dot(self.reference_element.phi_plot.T, f_elem)
-        return x, y, f
+            return x, y, f
 
     def elementary_matrices(self):
         pass

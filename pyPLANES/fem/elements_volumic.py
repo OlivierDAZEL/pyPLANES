@@ -25,6 +25,7 @@ import numpy as np
 import numpy.linalg as LA
 
 def fluid_elementary_matrices(elem):
+
     K_ref = elem.reference_element
     n, m = K_ref.Phi.shape
     vh = np.zeros((n ,n))

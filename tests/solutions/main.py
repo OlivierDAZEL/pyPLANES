@@ -2,10 +2,10 @@ import sys
 sys.path.insert(0, "../..")
 import pickle
 
-from pyPLANES.fem.reference_elements import PlotKt
-PlotKt(4)
+# from pyPLANES.fem.reference_elements import PlotKt
+# PlotKt(4)
 
-dsqdsqsq
+# dsqdsqsq
 
 
 import numpy as np
@@ -19,7 +19,7 @@ from pyPLANES.core.result import Results, Result, Test
 
 
 plot_solution = [True, True, True, False, False, False]
-# plot_solution = [False]*6
+plot_solution = [False]*6
 verbose = [True, False][0]
 # Parameters of the simulation
 theta_d = 0.00000
@@ -65,12 +65,6 @@ FEM_method.resolution()
 
 # eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=3, nb_bloch_waves=0, frequency=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a",print_result=True)
 # eTMM_method.resolution()
-
-
-
-
-
-
 
 if any(plot_solution):
     plt.show()
