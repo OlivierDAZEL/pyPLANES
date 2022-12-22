@@ -30,7 +30,6 @@ def one_inclusion_rigid(name_mesh="one_inclusion_rigid", L=2e-2, d=2e-2, a=0.008
     order_geometry = 2
     G = Gmsh(name_mesh, order_geometry)
 
-
     p_0 = G.new_point(0, 0, lcar)
     p_1 = G.new_point(L, 0,lcar)
     p_2 = G.new_point(L, d, lcar)

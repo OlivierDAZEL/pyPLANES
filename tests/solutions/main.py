@@ -19,7 +19,7 @@ from pyPLANES.core.result import Results, Result, Test
 
 
 plot_solution = [True, True, True, False, False, False]
-plot_solution = [False]*6
+# plot_solution = [False]*6
 verbose = [True, False][0]
 # Parameters of the simulation
 theta_d = 0.00000

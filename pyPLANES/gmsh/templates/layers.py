@@ -34,8 +34,6 @@ def one_layer( **kwargs):
     method = kwargs.get("method", "FEM")
     BC = kwargs.get("BC", ["bottom", "Periodicity", "top", "Periodicity"])
 
-
-
     G = Gmsh(name_mesh, order_geometry)
 
     p_0 = G.new_point(0, 0, lcar)
