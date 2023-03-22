@@ -42,6 +42,7 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import axes3d
 from numpy.polynomial.legendre import leggauss
 import quadpy as quadpy
+from pyPLANES.fem.quadlaum import quadlaum
 
 
 class Ka:
@@ -58,7 +59,7 @@ class Ka:
             raise NameError("pyPLANES limited at order 7 (for the moment until integration schemes are validated for orders >7)")
 
         self.xi, self.w = leggauss(p)
-
+        self.xi, self.w = quadlaum(p)
         # Number of Shape Functions
         self.nb_v = 2
         self.nb_e = order-1

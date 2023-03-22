@@ -115,8 +115,8 @@ class PwProblem(Calculus, MultiLayer):
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]
             self.Result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
-            # if self.verbose:
-            #     print("R_0={}".format(self.Result.R0))
+            if self.verbose:
+                print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":

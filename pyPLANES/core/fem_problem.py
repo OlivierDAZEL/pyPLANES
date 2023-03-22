@@ -101,7 +101,6 @@ class FemProblem(Mesh, Calculus):
         self.A_v.extend(_A_v)
         self.F_i.extend(_F_i)
         self.F_v.extend(_F_v)
-
         if _T_i is not None:
             self.T_i.extend(_T_i)
             self.T_j.extend(_T_j)
@@ -206,33 +205,33 @@ class FemProblem(Mesh, Calculus):
             R= (Z-Air.Z)/(Z+Air.Z)
             # print(R)
             k = ome/Air.c
-            Z_0=-1j*Air.Z/np.tan(k)
+            # Z_0=-1j*Air.Z/np.tan(k)
 
 
             # print(Z)
             # print(Z_0)
             # dsqsdqdsq
-            R_0= (Z_0-Air.Z)/(Z_0+Air.Z)
+            # R_0= (Z_0-Air.Z)/(Z_0+Air.Z)
             # print("ref={}".format(R_0))
 
             L2 = X.T@(Q@X)
 
-            A=1/np.sin(k)
+            # A=1/np.sin(k)
 
             # print(pr)
             # print(Air.rho*Air.c**2*k*A*np.cos(k))
-            AA = (Air.rho*Air.c**2*k*A)**2 
-            II = (1.+np.sin(2*k)/(2*k))/2
+            # AA = (Air.rho*Air.c**2*k*A)**2 
+            # II = (1.+np.sin(2*k)/(2*k))/2
 
 
-            D_lambda = np.sqrt(self.nb_dof_FEM)-1
-            D_lambda *= 2*np.pi/(k*d)
+            # D_lambda = np.sqrt(self.nb_dof_FEM)-1
+            # D_lambda *= 2*np.pi/(k*d)
 
             # self.Results["R0"].append(L2.real)
             # self.Results["R0"].append(np.sqrt(np.abs(L2.real-AA*II)))
             self.Result.R0.append(R)
             self.Result.n_dof.append(self.nb_dof_master)
-            self.Result.D_lambda.append(D_lambda)
+            # self.Result.D_lambda.append(D_lambda)
 
         return X
 

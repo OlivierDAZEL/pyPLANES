@@ -58,7 +58,8 @@ def one_inclusion_rigid(name_mesh="one_inclusion_rigid", L=2e-2, d=2e-2, a=0.008
 
 def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):
 
-    G = Gmsh(name_mesh)
+    order_geometry = 2
+    G = Gmsh(name_mesh, order_geometry)
 
     p_0 = G.new_point(0, 0, lcar)
     p_1 = G.new_point(L, 0,lcar)
@@ -92,7 +93,8 @@ def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat_core="pem_b
 
 def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lcar=1e-2, lcar_ring=1e-2, mat_core="pem_benchmark_1", mat_ring="pem_benchmark_1", mat_internal="pem_benchmark_1"):
 
-    G = Gmsh(name_mesh)
+    order_geometry = 2
+    G = Gmsh(name_mesh, order_geometry)
 
     p_0 = G.new_point(0, 0, lcar)
     p_1 = G.new_point(L, 0,lcar)

@@ -81,7 +81,6 @@ class PwInterface():
             P_in = SV[:,:self.n_0].reshape((2*self.n_0,self.n_0))
             P_out = SV[:,self.n_0:].reshape((2*self.n_0,self.n_0))
 
-
             M1 = self.C_plus@Om
             M2 = self.C_minus@P_in
             M3 = self.C_minus@P_out
@@ -193,7 +192,6 @@ class FluidElasticInterface(PwInterface):
     def __str__(self):
         out = "\t Fluid-Elastic interface"
         return out
-
 
 class ElasticFluidInterface(PwInterface):
     """
@@ -483,8 +481,6 @@ class SemiInfinite(PwInterface):
     def update_frequency(self, omega, kx):
         self.medium.update_frequency(omega)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
-        # self.lam = -np.real(self.lam)+np.imag(self.lam)
-        # print("self.lam={}".format(self.lam))
         self.k = self.medium.k
         self.kx = kx
         self.omega = omega 
@@ -518,11 +514,9 @@ class SemiInfinite(PwInterface):
                 out[1+_w*2, 0+_w] = 1
             return out, np.eye(max([nb_bloch_waves,1]))
         elif typ == "pem":
-
             self.len_X = 3
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
             if formulation == "Biot98":
-
                 for _w in range(nb_bloch_waves):
                     # pem S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
                     out[1+_w*6, 1+_w*3] = 1.
@@ -548,7 +542,6 @@ class SemiInfinite(PwInterface):
                 out[1+_w*4, 0+_w*2] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
                 out[2+_w*4, 0+_w*2] = -1. # \sigma_{yy} is -p
                 out[3+_w*4, 1+_w*2] = 1.
-
             return out, np.eye(2*max([nb_bloch_waves,1]))
 
     def update_M_global(self, M, i_eq):

@@ -91,7 +91,7 @@ def fluid_waves_TMM(mat, kx):
     Parameters
     ----------
     mat : mediapack medium 
-    kx : numpy array of the transsversal wave numbers. Its length corresponds to the number n_w of Bloch waves for the periodic medium (equal to 1 in the case of an infinite extend layers)
+    kx : numpy array of the transversal wave numbers. Its length corresponds to the number n_w of Bloch waves for the periodic medium (equal to 1 in the case of an infinite extend layers)
 
     Returns
     -------

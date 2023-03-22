@@ -41,6 +41,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from mediapack import Air
 from pyPLANES.core.result import Result
+from alive_progress import alive_bar
 
 Air = Air()
 
@@ -83,19 +84,9 @@ class Calculus():
         label = kwargs.get("label", False)
         if label:
             self.Result["label"] = label
-
-        _ = kwargs.get("frequencies", False)
-        __ = kwargs.get("f_bounds", False)
-        ___ = kwargs.get("frequency", False)
-        if _ is not False:
-            self.frequencies = _
-        elif __ is not False:
-            self.frequencies = self.init_vec_frequencies(__)
-        elif ___ is not False:
-            self.frequencies = np.array([___])
-        else:
-            self.frequencies = np.array([1e3])
-        
+            
+        self.init_vec_frequencies(kwargs.get("frequencies", False))
+       
         h = kwargs.get("h", None)
         if h:
             self.Result.h = h
@@ -130,24 +121,20 @@ class Calculus():
         self.start_time = time.time()
 
     def resolution(self):
-        """  Resolution of the problem """        
-        if self.verbose:
+        """  Resolution of the problem """
+        if self.verbose == False:
+            with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
+                for f in self.frequencies:
+                    bar()
+                    self.f = f 
+                    self.solve()
+                    self.plot_solutions()
+        else:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
-        for f in self.frequencies:
-            self.Result.f.append(f)
-            self.f = f
-            omega = 2*pi*f
-            self.update_frequency(omega)
-            self.create_linear_system(omega)
-            self.solve()
-
-            if any(self.plot):
-                self.plot_solution()
-            if any(self.export_plots):
-                if self.export_plots[5]:
-                    plt.figure("Pressure map")
-                    plt.savefig("Pressure")
-        # self.close_info_file()
+            for f in self.frequencies:
+                self.f = f 
+                self.solve()
+                self.plot_solutions()
 
         self.Result.save(self.file_names,self.save_append)
 
@@ -181,6 +168,19 @@ class Calculus():
         if self.verbose:
             print("Resolution of the linear system")
 
+        self.Result.f.append(self.f)
+        omega = 2*pi*self.f
+        self.update_frequency(omega)
+        self.create_linear_system(omega)
+
+    def plot_solutions(self):
+        if any(self.plot):
+            self.plot_solution()
+        if any(self.export_plots):
+            if self.export_plots[5]:
+                plt.figure("Pressure map")
+                plt.savefig("Pressure")
+
     def close_info_file(self):
         """  Close out files at the end of the calculus """
         # self.txt_file.close()
@@ -193,27 +193,41 @@ class Calculus():
     def plot_solution(self):
         pass
 
-    def init_vec_frequencies(self, f_bounds):
+    def init_vec_frequencies(self, frequency):
         """
         Create the frequency vector that will be used in the calculations
 
         Parameters
         ----------
-        f_bounds : array_like 
-            a list of 3 numbers corresponding to the
-            f_bounds[0] is the first frequency
-            f_bounds[1] is the last frequency
-            f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
+        # f_bounds : array_like 
+        #     a list of 3 numbers corresponding to the
+        #     f_bounds[0] is the first frequency
+        #     f_bounds[1] is the last frequency
+        #     f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
 
         Returns
         -------
-        ndarray of the frequencies
+        # ndarray of the frequencies
         """
-        if f_bounds[2] > 0:
-                frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
-        elif f_bounds[2]<0:
-            frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
-        # else % Case of complex frequency
+
+        if isinstance(frequency, np.ndarray):
+            self.frequencies = frequency
+        elif np.isscalar(frequency):
+             self.frequencies = np.array([frequency])
+        elif len(frequency) == 3: 
+            if f_bounds[2] > 0:
+                self.frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
+            elif f_bounds[2]<0:
+                self.frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
+        elif frequency == None:
+            self.frequencies = np.array([1e3])
+        
+
+        # if f_bounds[2] > 0:
+        #         frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
+        # elif f_bounds[2]<0:
+        #     frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
+        # # else % Case of complex frequency
         #     temp_1=linspace(frequency.min,frequency.max,frequency.nb(1));
         #     temp_2=linspace(frequency.min_imag,frequency.max_imag,frequency.nb(2));
         #     frequency.vec=[];
@@ -221,7 +235,7 @@ class Calculus():
         #         frequency.vec=[frequency.vec temp_1+1j*temp_2(ii)];
         #     end
         #     frequency.nb=frequency.nb(1)*frequency.nb(2);
-        return frequencies
+        return frequency
 
     def update_frequency(self, omega):
         pass

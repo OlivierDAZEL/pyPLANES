@@ -54,7 +54,6 @@ class PeriodicMultiLayer():
 
         for _l in ml:
             mat = load_material(_l[0])
-
             if mat is not None:
                 d = _l[1]
                 if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
