@@ -195,15 +195,17 @@ class Calculus():
 
     def init_vec_frequencies(self, frequency):
         """
-        Create the frequency vector that will be used in the calculations
+        Assignate to  self.frequency the frequency vector that will be used in the calculations
 
         Parameters
         ----------
-        # f_bounds : array_like 
-        #     a list of 3 numbers corresponding to the
-        #     f_bounds[0] is the first frequency
-        #     f_bounds[1] is the last frequency
-        #     f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
+        # frequency : can be of different types 
+        #       if frequency is a ndarray, self.frequency is frequency
+        #       if frequency is a scalar self.frequency is a ndarray with this single frequency
+        #       if frequency is a list of 3 numbers corresponding to the
+        #           f_bounds[0] is the first frequency
+        #           f_bounds[1] is the last frequency
+        #           f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
 
         Returns
         -------
@@ -215,10 +217,10 @@ class Calculus():
         elif np.isscalar(frequency):
              self.frequencies = np.array([frequency])
         elif len(frequency) == 3: 
-            if f_bounds[2] > 0:
-                self.frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
-            elif f_bounds[2]<0:
-                self.frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
+            if frequency[2] > 0:
+                self.frequencies = np.linspace(frequency[0], frequency[1], frequency[2])
+            elif frequency[2]<0:
+                self.frequencies = np.logspace(np.log10(frequency[0]),np.log10(frequency[1]),abs(frequency[2]))
         elif frequency == None:
             self.frequencies = np.array([1e3])
         

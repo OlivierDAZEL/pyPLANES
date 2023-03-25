@@ -69,13 +69,12 @@ class PwInterface():
         return i_eq
 
 
-    def transfert(self, Om):
+    def update_Omega(self, Om):
 
         if isinstance(self.layers[0], PwLayer):
             mat = self.layers[0].medium
         elif isinstance(self.layers[0], PeriodicLayer):
             mat = self.layers[0].medium[1]
-
         if self.nb_waves == 1:
             SV = self.pw_method(mat, np.zeros(1))[0] 
             P_in = SV[:,:self.n_0].reshape((2*self.n_0,self.n_0))
@@ -91,7 +90,6 @@ class PwInterface():
             M_S = M[self.n_1:,:]
             Omega = P_in@M_S +P_out 
         else: 
-
             SV = self.pw_method(mat, np.zeros(1))[0] 
             P_in = SV[:,:self.n_0].reshape((2*self.n_0, self.n_0))
             P_out = SV[:,self.n_0:].reshape((2*self.n_0, self.n_0))

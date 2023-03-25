@@ -125,22 +125,32 @@ class Result():
                         d[m] = self.__dict__[m]
             else: 
                 d[m] = self.__dict__[m]
+        if len(self.f) == 1:
+            list_keys = list(d.keys())
+            for k in list_keys:
+                if isinstance(d[k], list):
+                    d[k] = float(d[k][0])
+
+        
         with open(file+".json", append_file) as json_file:
             json.dump(d, json_file)
             json_file.write("\n")
 
     def __str__(self):
         out = "pyPLANES Result\n \t Solver: {}".format(self.Solver)
-        
         return out
 
-    def plot(self, *args, **kwargs):
-        plt.plt(self.f, TL, *args, **kwargs)
+    def plot(self, indicator, *args, **kwargs):
+        plt.plot(self.f, indicator, *args, **kwargs)
+
+    def loglog(self, indicator, *args, **kwargs):
+        plt.loglog(self.f, indicator, *args, **kwargs)
+
+
 
     def plot_dispersion(self,s):
         nb_f = self.k.shape[0]
         nb_k = self.k.shape[1]
-        print(nb_k)
         kk = np.zeros((nb_f,nb_k),dtype=np.complex)
         for i in range(nb_f):
             indices = np.argsort(np.abs(np.imag(self.k[i,:])))[:]
@@ -154,9 +164,6 @@ class Result():
             plt.plot(np.real(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"k"+s)
             plt.figure(2)
             plt.plot(np.imag(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"r"+s)
-
-
-
 
 
 
@@ -258,11 +265,6 @@ class Results():
     #     plt.legend()
     #     plt.savefig("cc.pdf")
     #     plt.show()
-
-
-
-
-
 
 class ConvergenceCurve():
     def __init__(self, ref, results, indicator, param):

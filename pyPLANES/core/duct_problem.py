@@ -35,7 +35,7 @@ from pyPLANES.pw.multilayer import MultiLayer
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
-class PwProblem(Calculus, MultiLayer):
+class DuctProblem(Calculus, MultiLayer):
     """
         Plane Wave Problem 
     """
@@ -45,22 +45,24 @@ class PwProblem(Calculus, MultiLayer):
         # self.Results["R0"], self.Results["T0"] = [], [] 
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
-        # print(self.method)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
+            # self.info_file.write("Plane Wave solver // Recursive method\n")
             if self.theta_d == 0:
-                self.theta_d = 1e-12
-        elif self.method.lower() in ["tmm", "transfer matrix method"]:
-            self.method = "TMM"
-            if self.theta_d == 0:
-                self.theta_d = 1e-12
+                self.theta_d = 1e-12 
         else: 
             self.method = "Global Method"
-        self.method_TM = kwargs.get("method_TM", "diag")
+            # self.info_file.write("Plane Wave solver // Global method\n")
+        # Out files
+        if self.method == "Global Method":
+            self.out_file_method = "GM"
+        elif self.method == "Recursive Method":
+            self.out_file_method = "RM"
+
         assert "ml" in kwargs
         ml = kwargs.get("ml")
 
-        MultiLayer.__init__(self, ml, self.method_TM)
+        MultiLayer.__init__(self, ml)
         self.termination = kwargs.get("termination", "rigid")
         self.add_excitation_and_termination(self.method, self.termination)
 
@@ -77,22 +79,22 @@ class PwProblem(Calculus, MultiLayer):
 
     def create_linear_system(self, omega):
         Calculus.create_linear_system(self, omega)
-        if self.method in ["Recursive Method", "TMM"]:
+        if self.method == "Recursive Method":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
-                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, self.kx, omega, self.method)
+                    _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
                     self.back_prop = self.back_prop@_l.Xi
-                    self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+                    self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
                     self.back_prop = self.back_prop@next_interface.Tau
 
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
-                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, self.kx, omega, self.method)
-                    self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+                    _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
+                    self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
 
         elif self.method == "Global Method":
             self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
@@ -107,7 +109,7 @@ class PwProblem(Calculus, MultiLayer):
 
     def solve(self):
         Calculus.solve(self)
-        if self.method in ["Recursive Method", "TMM"]:
+        if self.method == "Recursive Method":
             self.Omega = self.Omega.reshape(2)
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]

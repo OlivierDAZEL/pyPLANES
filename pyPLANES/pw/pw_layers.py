@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 from numpy import pi, sqrt
 
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, elastic_waves_TMM, PEM_waves_TMM
-from scipy.linalg import block_diag
+from scipy.linalg import expm 
 from pyPLANES.utils.utils_spectral import chebyshev, chebyshev_nodes
 
 class PwLayer():
@@ -49,7 +49,7 @@ class PwLayer():
     interfaces : list with the interfaces of the layer
     
     """
-    def __init__(self, mat, d, x_0=0):
+    def __init__(self, mat, d, **kwargs):
         """
         Parameters
         ----------
@@ -61,6 +61,9 @@ class PwLayer():
         """
         self.medium = mat 
         self.d = d
+        
+        x_0 = kwargs.get("x_0", 0.0)
+        self.method_TM = kwargs.get("method_TM", False)
         # pymls layer constructor 
         self.x = [x_0, x_0+self.d]  # 
         self.interfaces = [None, None]  # 
@@ -71,7 +74,7 @@ class PwLayer():
         self.lam = None
         self.SV = None
         self.SVp = None
-
+        
     def __str__(self):
         pass
 
@@ -82,7 +85,10 @@ class PwLayer():
         pass
 
 
-    def transfert_matrix_cheb(self, N, om, kx):
+    def transfert_matrix_analytic(self, omega, kx, direction=1):
+        pass
+
+    def transfert_matrix_cheb(self, N, om, kx, direction=1):
         alpha = self.state_matrix(om, kx)
 
         n = 2*self.nb_waves_in_medium   # Length of the State vector
@@ -92,7 +98,7 @@ class PwLayer():
         xi = chebyshev_nodes(M)
         x = (xi+1)*self.d/2
         S = chebyshev(xi, N, 1)   # Calculate the polynomials and their derivatives
-        # print(S.shape)
+
         Tn = S[:, :, 0]
         dTndx = S[:, :, 1]*(2/self.d)
         
@@ -102,7 +108,7 @@ class PwLayer():
         
         R = dTndx-np.kron(np.eye(M),alpha) @Tn
 
-        # First point
+        # First boundary
         S = chebyshev(np.array([-1]), N, 0)
         T0= S[:, :, 0]
 
@@ -110,18 +116,39 @@ class PwLayer():
         MM = np.vstack([T0, R])
         A = LA.inv(MM)
         A = A[:,:n]
-
+        # Last boundary
         S = chebyshev(np.array([1]), N, 0)
         TL= S[:, :, 0]
         TL= np.kron(TL,np.eye(n))
         
         TM = TL@A
+        if direction == -1:
+            TM=LA.inv(TM)
+        
         return TM
 
 
-    def transfert(self, Om):
+
+    def transfert_matrix(self, omega, kx, direction=1):
+        if self.method_TM == "expm":
+            return expm(self.state_matrix(omega, kx)*direction*self.d)
+        elif self.method_TM == "diag": 
+            Phi = self.SV
+            Phi_inv = LA.inv(Phi)
+            print(Phi.dot(np.diag(np.exp(self.lam*self.d))).dot(Phi_inv))
+            return Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv)
+        elif self.method_TM == "analytic":
+            return self.transfert_matrix_analytic(omega, kx, direction)
+        elif self.method_TM == "cheb":
+            print(self.transfert_matrix_cheb(10, omega, kx))
+            return self.transfert_matrix_cheb(5, omega, kx, direction)
+
+
+
+
+    def update_Omega(self, Om, omega, kx, method):
         """
-        Update the information matrix Omega, Implemented in derived classes
+        Update the information matrix Omega
 
         Parameters
         ----------
@@ -136,32 +163,44 @@ class PwLayer():
         Xi : ndarray
             Back_propagation matrix (to be used only for transmission problems)
         """
+        if method == "TMM":
+            TM = self.transfert_matrix(omega, kx, -1)
+            Om = TM@Om 
+            Xi = np.eye(Om.shape[1])
+            return Om, Xi
+        elif method == "Recursive Method":
+            self.order_lam()
+            Phi = self.SV
+            lambda_ = self.lam
 
-        Phi = self.SV
-        Phi_inv = LA.inv(Phi)
-        lambda_ = self.lam
-        TM = Phi.dot(np.diag(np.exp(-self.lam*self.d))).dot(Phi_inv)
-        Om = TM@Om 
-        Xi = np.eye(Om.shape[1])
+            Phi_inv = LA.inv(Phi)
+            m = self.nb_waves_in_medium*self.nb_waves
+            _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
+            Lambda = np.diag(np.array(_list))
+            alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+            
+            xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
+            _list = [np.exp(-(lambda_[m-1]-lambda_[i])*self.d) for i in range(m-1)] + [1]
+            xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
+            Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
 
-        return Om, Xi
-
-    def update_Omega(self, Om):
-        pass
+            for i in range(m-1):
+                Om[:,i] += Phi[:, i]
+            Xi = xi_prime_lambda*np.exp(lambda_[m-1]*self.d)
+            return Om, Xi
 
     def order_lam(self):
-        _index = np.argsort(self.lam.real)[::-1]
+        _index = np.argsort(self.lam.real)#[::-1]
         # print("_index={}".format(_index))
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
 
 class FluidLayer(PwLayer):
     
-    
     # S={0:u_y , 1:p}
     
-    def __init__(self, _mat, d=0.1, _x = 0):
-        PwLayer.__init__(self, _mat, d, _x)
+    def __init__(self, mat, d, **kwargs):
+        PwLayer.__init__(self, mat, d, **kwargs)
         self.nb_waves_in_medium = 1
         self.nb_fields_SV = 2
 
@@ -188,15 +227,15 @@ class FluidLayer(PwLayer):
         alpha[1, 0] = rho*omega**2
         return alpha
         
-    def transfert_matrix(self, om, kx):
-        T = np.zeros((2, 2), dtype=complex)
-        ky = np.sqrt((om/self.medium.c)**2-kx**2)
-        alpha = ky/(self.medium.rho*om**2)
-        T[0, 0] = np.cos(ky*self.d)
-        T[1, 0] = np.sin(ky*self.d)/alpha
-        T[0, 1] = -alpha*np.sin(ky*self.d)
-        T[1, 1] = np.cos(ky*self.d)
-        return T
+    # def transfert_matrix(self, om, kx):
+    #     T = np.zeros((2, 2), dtype=complex)
+    #     ky = np.sqrt((om/self.medium.c)**2-kx**2)
+    #     alpha = ky/(self.medium.rho*om**2)
+    #     T[0, 0] = np.cos(ky*self.d)
+    #     T[1, 0] = np.sin(ky*self.d)/alpha
+    #     T[0, 1] = -alpha*np.sin(ky*self.d)
+    #     T[1, 1] = np.cos(ky*self.d)
+    #     return T
 
     def plot_solution_global(self, plot, X, nb_points=200):
 
@@ -227,8 +266,8 @@ class FluidLayer(PwLayer):
 
 class PemLayer(PwLayer):
 
-    def __init__(self, _mat, d, _x = 0):
-        PwLayer.__init__(self, _mat, d, _x)
+    def __init__(self, mat, d, **kwargs):
+        PwLayer.__init__(self, mat, d, **kwargs)
         self.nb_waves_in_medium = 3
         self.nb_fields_SV = 6
         self.typ = "Biot98"
@@ -252,6 +291,9 @@ class PemLayer(PwLayer):
         [1j*k_x, -m.rho_s_til*omega**2, -m.rho_eq_til*m.gamma_til*omega**2, 0, 0, 0],
         [0, m.rho_eq_til*m.gamma_til*omega**2, m.rho_eq_til*omega**2, 0, 0, 0],
         [1/m.N, 1j*k_x, 0, 0, 0, 0]])
+        # print(1j*k_x*m.A_hat/m.P_hat)
+        # print(m.gamma_til)
+        # print(alpha)
         return alpha
     
     def plot_solution_global(self, plot, X, nb_points=200):
@@ -305,7 +347,7 @@ class PemLayer(PwLayer):
 class ElasticLayer(PwLayer):
 
     def __init__(self, _mat, d, _x = 0):
-        PwLayer.__init__(self, _mat, d, _x)
+        PwLayer.__init__(self, _mat, d, x_0=_x)
         self.nb_waves_in_medium = 2
         self.nb_fields_SV = 4
 

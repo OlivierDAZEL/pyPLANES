@@ -117,4 +117,3 @@ def fluid_waves_TMM(mat, kx):
     lam[::2] = -1j*ky
     lam[1::2] = 1j*ky
     return Phi, lam
-
