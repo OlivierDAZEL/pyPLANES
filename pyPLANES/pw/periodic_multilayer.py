@@ -71,8 +71,6 @@ class PeriodicMultiLayer():
             else:
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
 
-
-
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):
             if isinstance(_layer, PwLayer):
