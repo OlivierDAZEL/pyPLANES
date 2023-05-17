@@ -32,6 +32,7 @@ from mediapack import Air, Fluid
 from pyPLANES.core.calculus import Calculus
 from pyPLANES.pw.multilayer import MultiLayer
 
+
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
@@ -57,10 +58,16 @@ class PwProblem(Calculus, MultiLayer):
         else: 
             self.method = "Global Method"
         self.method_TM = kwargs.get("method_TM", "diag")
+        if self.method_TM in ["cheb_1"]:
+            self.order_chebychev = kwargs.get("order_chebychev", 20)
+        
         assert "ml" in kwargs
         ml = kwargs.get("ml")
 
         MultiLayer.__init__(self, ml, self.method_TM)
+        if self.method_TM in ["cheb_1"]:
+            for l in self.layers:
+                l.order_chebychev = self.order_chebychev 
         self.termination = kwargs.get("termination", "rigid")
         self.add_excitation_and_termination(self.method, self.termination)
 
@@ -82,7 +89,7 @@ class PwProblem(Calculus, MultiLayer):
                 self.Omega, self.back_prop = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
-                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, self.kx, omega, self.method)
+                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
                     self.back_prop = self.back_prop@next_interface.Tau
@@ -91,7 +98,7 @@ class PwProblem(Calculus, MultiLayer):
                 self.Omega = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
-                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, self.kx, omega, self.method)
+                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
                     self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
 
         elif self.method == "Global Method":
@@ -123,8 +130,8 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.Result.R0.append(self.X[0])
-            # if self.verbose:
-            #     print("R_0={}".format(self.Result.R0))
+            if self.verbose:
+                print("R_0={}".format(self.Result.R0))
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             if self.termination == "transmission":
                 self.Result.T0.append(self.X[-1])

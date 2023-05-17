@@ -95,7 +95,7 @@ def pem98_elementary_matrices(elem):
     for ipg in range(m):
         _Phi = K_ref.Phi[:,ipg].reshape((1, n))
         _dPhi  = np.array([K_ref.dPhi[0][:, ipg], K_ref.dPhi[1][:, ipg]])
-        elem.get_jacobian_matrix(K_ref.xi_1[ipg],K_ref.xi_2[ipg])
+        J = elem.get_jacobian_matrix(K_ref.xi_1[ipg],K_ref.xi_2[ipg])
         _weight = K_ref.w[ipg] * LA.det(J)
 
         Gd = LA.solve(J, _dPhi)

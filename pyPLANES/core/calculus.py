@@ -123,12 +123,17 @@ class Calculus():
     def resolution(self):
         """  Resolution of the problem """
         if self.verbose == False:
-            with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
-                for f in self.frequencies:
-                    bar()
-                    self.f = f 
-                    self.solve()
-                    self.plot_solutions()
+            if len(self.frequencies) == 1:
+                self.f = self.frequencies[0]
+                self.solve()
+                self.plot_solutions()
+            else:
+                with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
+                    for f in self.frequencies:
+                        bar()
+                        self.f = f 
+                        self.solve()
+                        self.plot_solutions()
         else:
             print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
             for f in self.frequencies:
@@ -215,14 +220,14 @@ class Calculus():
         if isinstance(frequency, np.ndarray):
             self.frequencies = frequency
         elif np.isscalar(frequency):
-             self.frequencies = np.array([frequency])
+             self.frequencies = np.array([frequency], dtype=np.float)
         elif len(frequency) == 3: 
             if frequency[2] > 0:
-                self.frequencies = np.linspace(frequency[0], frequency[1], frequency[2])
+                self.frequencies = np.linspace(frequency[0], frequency[1], frequency[2], dtype=np.float)
             elif frequency[2]<0:
-                self.frequencies = np.logspace(np.log10(frequency[0]),np.log10(frequency[1]),abs(frequency[2]))
+                self.frequencies = np.logspace(np.log10(frequency[0]),np.log10(frequency[1]),abs(frequency[2]), dtype=np.float)
         elif frequency == None:
-            self.frequencies = np.array([1e3])
+            self.frequencies = np.array([1e3], dtype=np.float)
         
 
         # if f_bounds[2] > 0:

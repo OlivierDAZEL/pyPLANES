@@ -125,11 +125,7 @@ class Result():
                         d[m] = self.__dict__[m]
             else: 
                 d[m] = self.__dict__[m]
-        if len(self.f) == 1:
-            list_keys = list(d.keys())
-            for k in list_keys:
-                if isinstance(d[k], list):
-                    d[k] = float(d[k][0])
+
 
         
         with open(file+".json", append_file) as json_file:

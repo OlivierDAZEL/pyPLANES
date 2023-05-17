@@ -48,12 +48,26 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         ml = kwargs.get("ml")
         self.condensation = kwargs.get("condensation", True)
         Calculus.__init__(self, **kwargs)
-
-
-        self.termination = kwargs.get("termination", "rigid")
         self.theta_d = kwargs.get("theta_d", 0.0)
-        if self.theta_d == 0:
-            self.theta_d = 1e-15 
+        self.method = kwargs.get("method", "jap")
+        # print(self.method)
+        if self.method.lower() in ["recursive", "jap", "recursive method"]:
+            self.method = "Recursive Method"
+            if self.theta_d == 0:
+                self.theta_d = 1e-12
+        elif self.method.lower() in ["tmm", "transfer matrix method"]:
+            self.method = "TMM"
+            if self.theta_d == 0:
+                self.theta_d = 1e-12
+        else: 
+            raise NameError("Invalid method in PeriodicPwProblem")
+        
+        self.method_TM = kwargs.get("method_TM", False)
+        
+        if self.method_TM in ["cheb_1", "cheb_2"]:
+            self.order_chebychev = kwargs.get("order_chebychev", 20)
+        self.termination = kwargs.get("termination", "rigid")
+
         self.order = kwargs.get("order", 2)
         self.nb_bloch_waves = kwargs.get("nb_bloch_waves", False)
         self.Result.order = self.order
@@ -106,10 +120,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
-                _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
+                _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
                 # print("_l.Xi=\n{}".format(_l.Xi))
                 self.back_prop = self.back_prop@_l.Xi
-                self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
+                self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
                 # print("tau=\n{}.".format(next_interface.Tau))
                 self.back_prop = self.back_prop@next_interface.Tau
             # print("backprop=\n{}".format(self.back_prop))
@@ -117,10 +131,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.Omega = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
-                _l.Omega_plus, _l.Xi = _l.transfert(self.Omega)
-                self.Omega, next_interface.Tau = next_interface.transfert(_l.Omega_plus)
-        
-
+                # print(_l)
+                _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
+                self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
 
 
     def solve(self):
@@ -159,6 +172,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             X = LA.solve(M, E_0)
             # R is second part of the solution vector
             R = X[self.nb_waves:]
+            # print("R={}".format(R))
             if self.verbose:
                 print("R={}".format(R))
             self.Result.R0.append(R[0])
@@ -179,8 +193,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 self.Result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
                 abs -= self.Result.T[-1]
             self.Result.abs.append(abs)
-            if self.verbose:
-                print("abs={}".format(abs))
+            # if self.verbose:
+            #     print("abs={}".format(abs))
 
 
 
@@ -188,7 +202,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
     def plot_solution(self):
         x_minus = self.X_0_minus # Information vector at incident interface  x^-
-        print("x_minus={}".format(x_minus))
+        # print("x_minus={}".format(x_minus))
         if not isinstance (x_minus, np.ndarray):
             x_minus = np.array([x_minus])
         for i, _l in enumerate(self.layers):

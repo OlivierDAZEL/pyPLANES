@@ -45,7 +45,7 @@ from pyPLANES.core.result import Result
 
 from pymls import from_yaml, Solver, Layer, backing
 from mediapack import Air, Fluid
-
+import importlib
 
 plot_color = ["r", "b", "m", "k", "g", "y"]
 
@@ -53,10 +53,15 @@ def load_material(mat):
     if mat == "Air":
         Air_mat = Air()
         return Fluid(c=Air_mat.c,rho=Air_mat.rho)
-    elif os.path.isfile("materials/" + mat + ".yaml") :
+    elif os.path.isfile("materials/" + mat + ".yaml") : # mediapack case
         return from_yaml("materials/" + mat + ".yaml")
-    else:
+    elif os.path.isfile("materials/" + mat + ".py") : # python dedicated file
+        module = importlib.import_module("materials." + mat ) # Import the py 
+        return module.mat()
+    elif os.path.isfile("msh/" + mat + ".msh"): # Case of a metaporous
         return None
+    else:
+        raise NameError("Invalid Material {}".format(mat))
 
 def run_pymls(**kwargs):
     name_project = kwargs.get("name_project", "unnamed_project")
@@ -142,7 +147,7 @@ def plot_fem_solution(self, kx=0.):
                     # print(ie/len(_en.elements))
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
-                    # p_elem *= np.exp(1j*kx[0]*x_elem)
+                    p_elem *= np.exp(1j*kx[0]*x_elem)
                     if self.plot[2]:
                         plt.figure("Pressure")
                         plt.plot(y_elem, np.abs(p_elem), 'r+')
@@ -158,6 +163,8 @@ def plot_fem_solution(self, kx=0.):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:
                     x_elem, y_elem, f_elem = _elem.display_sol([0, 1, 3])
+                    if type(kx)== float:
+                        kx = [kx]
                     ux_elem = f_elem[:, 0]*np.exp(1j*kx[0]*x_elem)
                     uy_elem = f_elem[:, 1]*np.exp(1j*kx[0]*x_elem)
                     p_elem = f_elem[:, 2]*np.exp(1j*kx[0]*x_elem)

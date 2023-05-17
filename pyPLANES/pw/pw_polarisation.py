@@ -105,14 +105,24 @@ def fluid_waves_TMM(mat, kx):
         K = mat.K
     else:
         raise ValueError('Provided material is not a fluid')
-    n_w = len(kx)
+
     ky = np.sqrt(mat.k**2-kx**2+0j)
     # kx = np.real(kx)-1j*np.imag(kx)
-    Phi = np.zeros((2*n_w, 2*n_w), dtype=complex)
-    lam = np.zeros(2*n_w, dtype=complex)
-    for _w, _ky in enumerate(ky):
-        Phi[0+2*_w, 0+2*_w:2+2*_w] = np.array([-1j*_ky/(K*mat.k**2), 1j*_ky/(K*mat.k**2)])
-        Phi[1+2*_w, 0+2*_w:2+2*_w] = np.array([1, 1])
+    
+    
+    if isinstance(kx, np.ndarray):
+        n_w = len(kx)
+        Phi = np.zeros((2*n_w, 2*n_w), dtype=complex)
+        lam = np.zeros(2*n_w, dtype=complex)
+        for _w, _ky in enumerate(ky):
+            Phi[0+2*_w, 0+2*_w:2+2*_w] = np.array([-1j*_ky/(K*mat.k**2), 1j*_ky/(K*mat.k**2)])
+            Phi[1+2*_w, 0+2*_w:2+2*_w] = np.array([1, 1])
+    else:
+        n_w = 1
+        Phi = np.zeros((2*n_w, 2*n_w), dtype=complex)
+        lam = np.zeros(2*n_w, dtype=complex)
+        Phi[0, 0:2] = np.array([-1j*ky/(K*mat.k**2), 1j*ky/(K*mat.k**2)])
+        Phi[1, 0:2] = np.array([1, 1])
     
     lam[::2] = -1j*ky
     lam[1::2] = 1j*ky

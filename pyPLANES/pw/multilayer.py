@@ -27,6 +27,7 @@ import numpy.linalg as LA
 import matplotlib.pyplot as plt
 
 from mediapack import Air, Fluid
+from mediapack.medium import Medium
 from pyPLANES.utils.io import load_material
 
 from pyPLANES.pw.pw_layers import *
@@ -40,16 +41,39 @@ class MultiLayer():
         # Creation of the list of layers
         self.method_TM = method_TM
         self.layers = []
+        self.kx = None
         _x = 0   
         for _l in ml:
-            mat = load_material(_l[0])
-            d = _l[1]
-            if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.layers.append(FluidLayer(mat, d, x_0=_x, method_TM=self.method_TM))
-            if mat.MEDIUM_TYPE == "pem":
-                self.layers.append(PemLayer(mat, d, x_0=_x, method_TM=self.method_TM))
-            if mat.MEDIUM_TYPE == "elastic":
-                self.layers.append(ElasticLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+            if isinstance(_l, PwGeneric):
+                if _l.method_TM != self.method_TM:
+                    _l.method_TM = self.method_TM
+                # print(_l.method_TM)
+                _l.x_0 = _x
+                d = _l.d
+                self.layers.append(_l)
+            elif isinstance(_l,(list,tuple)):
+                mat,d = _l
+                assert isinstance(mat,str) & np.isscalar(d)
+                load_mat = load_material(mat)
+                if isinstance(load_mat, Medium):
+                    mat = load_mat
+                    if mat.MODEL in ["fluid", "eqf"]:
+                        self.layers.append(FluidLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                    elif mat.MODEL == "pem":
+                        self.layers.append(PemLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                    elif mat.MODEL == "elastic":
+                        self.layers.append(ElasticLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                    elif mat.MODEL == "bell":
+                        self.layers.append(Bell(mat, d, x_0=_x, method_TM=self.method_TM, param=param))
+                else: # Case of a python file
+                    mat, alpha = load_mat
+                    if mat.MODEL == "inhomogeneous":
+                        self.layers.append(InhomogeneousLayer(mat, d, x_0=_x, method_TM=self.method_TM,state_matrix=alpha))
+                        print(self.layers[-1].method_TM)
+                    else: 
+                        raise NameError("alpha matrix and not an inhomogenenous mat")
+            else:
+                raise NameError("Invalid Material")
             _x += d
         # Creation of the list of interfaces
         self.interfaces = []
@@ -134,8 +158,9 @@ class MultiLayer():
                 self.nb_PW += 1 
 
     def update_frequency(self, omega, kx):
+        self.kx = kx
         for _l in self.layers:
-            _l.update_frequency(omega, kx)
+            _l.update_frequency(omega, self.kx)
         for _i in self.interfaces:
-            _i.update_frequency(omega, kx)
+            _i.update_frequency(omega, self.kx)
         

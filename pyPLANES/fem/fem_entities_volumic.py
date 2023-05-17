@@ -101,7 +101,6 @@ class FluidFem(FemEntity):
             rho = self.mat.rho
             K = self.mat.K 
 
-
         if self.condensation:
             for _el in self.elements:
                 pp = _el.H/(rho*omega**2)- _el.Q/K

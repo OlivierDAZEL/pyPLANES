@@ -151,7 +151,7 @@ def check_IFS(self):
 def check_pem_formulation(self):
     for _e in self.entities:
         if isinstance(_e, PemFem):
-            # _e.formulation98 = True
+            _e.formulation98 = True
             _e.formulation98 = False
 
 

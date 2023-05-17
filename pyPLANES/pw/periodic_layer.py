@@ -77,7 +77,6 @@ class PeriodicLayer(Mesh):
 
         periodic_dofs_identification(self)
 
-
     def update_frequency(self, omega, kx):
         self.F_i, self.F_v = [], []
         self.A_i, self.A_j, self.A_v = [], [], []
@@ -90,13 +89,12 @@ class PeriodicLayer(Mesh):
         self.kx = kx
         self.nb_waves = len(kx)
         self.delta_periodicity = np.exp(-1j*self.kx[0]*self.period)
-
+        self.omega = omega # Needs to be stored
         for _ent in self.pwfem_entities:
             _ent.dofs = np.arange(_ent.nb_dof_per_node*len(self.kx))
             _ent.nb_dofs = len(_ent.dofs)
-        self.create_transfert_matrix(omega)
 
-    def create_transfert_matrix(self, omega):
+    def create_transfert_matrix(self):
         # Initialisation of the lists
         self.A_i, self.A_j, self.A_v = [], [], []
         # Number of dof of the D_ii marix
@@ -108,7 +106,7 @@ class PeriodicLayer(Mesh):
 
         # Creation of the D_ii matrix (volumic term of the weak form) 
         for _ent in self.fem_entities:
-            self.update_system(*_ent.update_system(omega))
+            self.update_system(*_ent.update_system(self.omega))
         # Application of periodicity on Dii
         for i_left, dof_left in enumerate(self.dof_left):
             # Corresponding dof
@@ -222,27 +220,42 @@ class PeriodicLayer(Mesh):
         M_1 = np.zeros((2*_s, 2*_s), dtype=complex)
         M_2 = np.zeros((2*_s, 2*_s), dtype=complex)
 
-        M_1[:_s,:] = DD_xi[1]@RR[0]# [D_ti][R_b] 
+        M_1[:_s,:] = DD_xi[1]@RR[0]# [D_ti][R_b]
         M_1[_s:,:] = DD[0]+DD_xi[0]@RR[0]# [D_bb]+[D_bi][R_b]
 
-        M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1]# [D_tt]+[D_ti][R_t] 
+        M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1]# [D_tt]+[D_ti][R_t]
         M_2[_s:,:] = DD_xi[0]@RR[1]# [D_bi][R_t]
 
+        self.M_1 = M_1
+        self.M_2 = M_2
+        # MM_1 = M_1.copy()
+        # MM_2 = M_2.copy()
         self.TM = -LA.solve(M_1, M_2)
 
-
-        # print(self.TM)
-        # import matplotlib.pyplot as plt
-        # plt.matshow(np.log10(np.abs(self.TM)))
-        # plt.colorbar()
-        # plt.show()
-        # dsq
-        
-
-    def transfert(self, Om):
+    def update_Omega(self, Om, omega, method="Recursive Method"):
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
-        return self.TM@Om, np.eye(Om.shape[1])
+        self.create_transfert_matrix()
+        m = self.nb_waves_in_medium*self.nb_waves
+        Xi = np.eye(m)
+        for M in [self.M_2, -LA.inv(self.M_1)]: # Inverse order for multiplication   
+            lambda_, Phi = LA.eig(M)
+            _index = np.argsort(np.abs(lambda_))
+            lambda_ = lambda_[_index]
+            Phi = Phi[:, _index]
+            Phi_inv = LA.inv(Phi)
+            _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
+            Lambda = np.diag(np.array(_list))
+            alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+            xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
+            _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
+            xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
+            Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
+            for i in range(m-1):
+                Om[:,i] += Phi[:, i]
+            Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
+        return Om, Xi
+        # return self.TM@Om, np.eye(Om.shape[1])
 
     def update_system(self, _A_i, _A_j, _A_v, _F_i, _F_v, _T_i=None, _T_j=None, _T_v=None):
         self.A_i.extend(_A_i)

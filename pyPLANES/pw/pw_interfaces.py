@@ -68,7 +68,6 @@ class PwInterface():
         i_eq += self.number_relations
         return i_eq
 
-
     def update_Omega(self, Om):
 
         if isinstance(self.layers[0], PwLayer):
@@ -388,7 +387,7 @@ class PemBacking(PwInterface):
         super().__init__(layer1,layer2)
 
     def __str__(self):
-        out = "\t Rigid backing"
+        out = "\t PEM Rigid backing"
         return out
 
     def update_M_global(self, M, i_eq):
@@ -436,7 +435,7 @@ class ElasticBacking(PwInterface):
         super().__init__(layer1,layer2)
 
     def __str__(self):
-        out = "\t Rigid backing"
+        out = "\t Elastic Rigid backing"
         return out
 
     def Omega(self, nb_bloch_waves=1):

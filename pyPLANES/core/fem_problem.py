@@ -77,8 +77,8 @@ class FemProblem(Mesh, Calculus):
         self.Q_i, self.Q_j, self.Q_v = [], [], []
         for _ent in self.fem_entities:
             self.update_system(*_ent.update_system(omega))
-            if _ent.dim == 2:
-                self.update_Q(*_ent.update_Q())
+            # if _ent.dim == 2:
+            #     self.update_Q(*_ent.update_Q())
 
     def update_frequency(self, omega):
             Calculus.update_frequency(self, omega)

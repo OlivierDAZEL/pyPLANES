@@ -26,7 +26,8 @@ import numpy as np
 import numpy.linalg as LA
 import matplotlib.pyplot as plt
 import os.path
-from mediapack import Air, Fluid
+from mediapack import Air, Fluid 
+from mediapack.medium import Medium
 from pyPLANES.pw.pw_layers import PwLayer
 
 from pyPLANES.utils.io import load_material
@@ -40,8 +41,9 @@ class PeriodicMultiLayer():
     """
     Periodic Multilayer structure
     """
-    def __init__(self, ml, **kwargs):
+    def __init__(self, ml, method_TM="JAP", **kwargs):
         # Creation of the list of layers
+        self.method_TM = method_TM
         self.layers = []
         self.interfaces = []
         self.theta_d = kwargs.get("theta_d", 0.0)
@@ -51,23 +53,32 @@ class PeriodicMultiLayer():
         self.period = False # If period is false: homogeneous layer
         _x = 0
 
-
         for _l in ml:
-            mat = load_material(_l[0])
-            if mat is not None:
-                d = _l[1]
-                if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
-                    self.layers.append(FluidLayer(mat, d, _x))
-                if mat.MEDIUM_TYPE == "pem":
-                    self.layers.append(PemLayer(mat, d, _x))
-                if mat.MEDIUM_TYPE == "elastic":
-                    self.layers.append(ElasticLayer(mat, d, _x))
-                _x += d
-            elif os.path.isfile("msh/" + _l[0] + ".msh"):
-                self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
-                self.Result.n_dof = self.layers[-1].nb_dof_master
-                self.period = self.layers[-1].period
-                _x += self.layers[-1].d
+            if isinstance(_l, PwGeneric):
+                if _l.method_TM != self.method_TM:
+                    _l.method_TM = self.method_TM
+                # print(_l.method_TM)
+                _l.x_0 = _x
+                d = _l.d
+                self.layers.append(_l)
+            elif isinstance(_l,(list,tuple)):
+                mat,d = _l
+                assert isinstance(mat,str)
+                load_mat = load_material(mat)
+                if isinstance(load_mat, Medium):
+                    mat = load_mat
+                    if mat.MEDIUM_TYPE in ["fluid", "eqf"]:
+                        self.layers.append(FluidLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                    if mat.MEDIUM_TYPE == "pem":
+                        self.layers.append(PemLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                    if mat.MEDIUM_TYPE == "elastic":
+                        self.layers.append(ElasticLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                    _x += d
+                elif os.path.isfile("msh/" + _l[0] + ".msh"):
+                    self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
+                    self.Result.n_dof = self.layers[-1].nb_dof_master
+                    self.period = self.layers[-1].period
+                    _x += self.layers[-1].d
             else:
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
 
@@ -138,7 +149,7 @@ class PeriodicMultiLayer():
             medium_type = self.layers[0].medium.MEDIUM_TYPE
 
         # Addition of a fictious Air-Layer for the interface.
-        incident_layer=FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, -1.e-2)
+        incident_layer=FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
 
         if medium_type in ["fluid", "eqf"]:
             self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
