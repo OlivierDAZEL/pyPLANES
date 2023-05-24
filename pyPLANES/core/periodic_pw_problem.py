@@ -175,6 +175,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             # print("R={}".format(R))
             if self.verbose:
                 print("R={}".format(R))
+            print("R={}".format(R))
             self.Result.R0.append(R[0])
 
             self.Result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))

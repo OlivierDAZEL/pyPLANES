@@ -20,7 +20,7 @@ from pyPLANES.core.result import Results, Result, Test
 
 plot_solution = [True, True, True, False, False, False]
 # plot_solution = [False]*6
-verbose = [True, False][0]
+verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 10.00000
 nb_layers = 1

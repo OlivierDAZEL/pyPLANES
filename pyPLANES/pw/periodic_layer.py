@@ -228,27 +228,71 @@ class PeriodicLayer(Mesh):
 
         self.M_1 = M_1
         self.M_2 = M_2
-        # MM_1 = M_1.copy()
-        # MM_2 = M_2.copy()
         self.TM = -LA.solve(M_1, M_2)
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
         self.create_transfert_matrix()
+
         m = self.nb_waves_in_medium*self.nb_waves
+
         Xi = np.eye(m)
-        for M in [self.M_2, -LA.inv(self.M_1)]: # Inverse order for multiplication   
+
+        self.TM = np.eye(2*m)
+        for i_M, M in enumerate([self.M_2, -self.M_1]): # Inverse order for multiplication
+            
+            # ##### Direct resolution
+            # if i_M ==0: 
+            #     self.TM = M@self.TM
+            # else:
+            #     self.TM = LA.inv(M)@self.TM
+            
+            #### SVD resolution
+            # Phi, lambda_, Phi_inv = LA.svd(M)
+            # if i_M ==0: 
+            #     MM = Phi @ np.diag(lambda_) @ Phi_inv
+            #     print(LA.norm(M))
+            #     print(LA.norm(M-MM))
+            #     print(np.allclose(M, MM))
+            # else:
+            #     # print(lambda_)
+            #     MM = Phi @ np.diag(1/lambda_) @ Phi_inv
+            #     # MM = Phi @ np.diag(lambda_) @ Phi_inv
+            #     # print(LA.norm(M))
+            #     # print(LA.norm(M-MM))
+            #     # print(np.allclose(M, MM))
+            # self.TM = MM@self.TM
+            
+            ##### eigenvalue resolution
             lambda_, Phi = LA.eig(M)
-            _index = np.argsort(np.abs(lambda_))
-            lambda_ = lambda_[_index]
-            Phi = Phi[:, _index]
-            Phi_inv = LA.inv(Phi)
+            if i_M ==0: 
+                _index = np.argsort(np.abs(lambda_))[::-1]
+                lambda_ = lambda_[_index]
+                Phi = Phi[:, _index]
+                Phi_inv = LA.inv(Phi)
+            else:
+                np.argsort(np.abs(lambda_))
+                lambda_ = 1/lambda_[_index]
+                Phi = Phi[:, _index]
+                Phi_inv = LA.inv(Phi)
+            
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.semilogy(np.abs(lambda_))
+            plt.show()
+            
+            
+            # MM = Phi @ np.diag(lambda_) @ Phi_inv
+            # self.TM = MM@self.TM
+
             _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
+            print(np.abs(np.array(_list)))
             Lambda = np.diag(np.array(_list))
             alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
             xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
             _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
+            print(_list)
             xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
             Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
             for i in range(m-1):

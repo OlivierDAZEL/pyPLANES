@@ -299,10 +299,12 @@ def elements(self, f):
                 vertices = [self.vertices[n] for n in node_tag]
             else:
                 raise NameError("{} is an incompatible type of element".format(element_type))
-
-
+            print(self.entity_tag[entity_tag])
+            print(self.elements[element_tag])
+            print(element_tag)
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.elements[element_tag] = FemElement(element_type, element_tag, vertices)
+
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
             elif isinstance(self.entities[self.entity_tag[entity_tag]], DgmEntity):
                 self.elements[element_tag] = DgmElement(element_type, element_tag, vertices)

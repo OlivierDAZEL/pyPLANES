@@ -229,19 +229,6 @@ class Calculus():
         elif frequency == None:
             self.frequencies = np.array([1e3], dtype=np.float)
         
-
-        # if f_bounds[2] > 0:
-        #         frequencies = np.linspace(f_bounds[0], f_bounds[1], f_bounds[2])
-        # elif f_bounds[2]<0:
-        #     frequencies = np.logspace(np.log10(f_bounds[0]),np.log10(f_bounds[1]),abs(f_bounds[2]))
-        # # else % Case of complex frequency
-        #     temp_1=linspace(frequency.min,frequency.max,frequency.nb(1));
-        #     temp_2=linspace(frequency.min_imag,frequency.max_imag,frequency.nb(2));
-        #     frequency.vec=[];
-        #     for ii=1:frequency.nb(2)
-        #         frequency.vec=[frequency.vec temp_1+1j*temp_2(ii)];
-        #     end
-        #     frequency.nb=frequency.nb(1)*frequency.nb(2);
         return frequency
 
     def update_frequency(self, omega):
