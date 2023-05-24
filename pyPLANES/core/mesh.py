@@ -33,8 +33,8 @@ class Mesh():
         self.fem_entities = [] # List of FEM Entities
         self.pwfem_entities = [] # List of Plane Wave FEM Entities
         self.dgm_entities = [] # List of DGM entities
-        self.vertices = []
-        self.elements = []
+        self.vertices = [] # List of vertices 
+        self.elements = [] # List of elements 
         self.edges = []
         self.faces = []
         self.bubbles = []
