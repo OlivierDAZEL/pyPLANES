@@ -89,7 +89,6 @@ def run_pymls(**kwargs):
             result.T0.append(_["T"][0])
     result.save("out/" + name_project + "_pymls","w")
 
-
 def close_out_files(self):
     duration = time.time()-self.start_time
     self.info_file.write("Calculus ended at %s.\n"%(datetime.datetime.now()))

@@ -41,7 +41,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import axes3d
 from numpy.polynomial.legendre import leggauss
-import quadpy as quadpy
 from pyPLANES.fem.quadlaum import quadlaum
 
 
@@ -207,10 +206,9 @@ class Kt:
     def __init__(self, order=2):
         self.order = order
         # Integration scheme
-        scheme = quadpy.t2.schemes["dunavant_{:02d}".format(2*order)]()
-        _points = (scheme.points.T).dot(np.array([[-1, -1], [1, -1], [-1, 1]]))
-        self.xi_1, self.xi_2, self.w = _points[:, 0], _points[:,1], 2*scheme.weights
-
+        self.xi_1, self.xi_2, self.w = quadlaum(2*order, "Kt")
+        
+        
         # Number of Shape Functions
         self.nb_v = 3
         self.nb_e = 3*(order-1)

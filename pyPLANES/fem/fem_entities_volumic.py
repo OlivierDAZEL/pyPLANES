@@ -52,7 +52,6 @@ class FluidFem(FemEntity):
     def elementary_matrices(self, _el):
         # Elementary matrices
         H, Q = fluid_elementary_matrices(_el)
-        
         orient_p = orient_element(_el)
         _el.H = (orient_p @ H) @ orient_p
         _el.Q = (orient_p @ Q) @ orient_p
@@ -306,6 +305,7 @@ class PMLFem(FemEntity):
 
     def elementary_matrices(self, _el):
         # Elementary matrices
+
         H, Q = fluid_elementary_matrices(_el)
         
         orient_p = orient_element(_el)
