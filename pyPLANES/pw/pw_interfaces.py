@@ -377,7 +377,7 @@ class FluidRigidBacking(PwInterface):
         out = np.array([0,1]).reshape(2,1)
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
-        return np.array(out, dtype=np.complex)
+        return np.array(out, dtype=complex)
 
 class PemBacking(PwInterface):
     """
@@ -418,13 +418,13 @@ class PemBacking(PwInterface):
         return i_eq
 
     def Omega(self, nb_bloch_waves=1):
-        out = np.zeros((6,3), dtype=np.complex)
+        out = np.zeros((6,3), dtype=complex)
         out[4,0] = 1.
         out[0,1] = 1.
         out[3,2] = 1.
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
-        return np.array(out, dtype=np.complex)
+        return np.array(out, dtype=complex)
 
 class ElasticBacking(PwInterface):
 
@@ -439,12 +439,12 @@ class ElasticBacking(PwInterface):
         return out
 
     def Omega(self, nb_bloch_waves=1):
-        out = np.zeros((4,2), dtype=np.complex)
+        out = np.zeros((4,2), dtype=complex)
         out[0,1] = 1.
         out[2,0] = 1.
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
-        return np.array(out, dtype=np.complex)
+        return np.array(out, dtype=complex)
 
 
     def update_M_global(self, M, i_eq):

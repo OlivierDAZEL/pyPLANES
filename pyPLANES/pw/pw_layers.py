@@ -205,7 +205,7 @@ class PwGeneric():
             # print(self.transfert_matrix_cheb(omega, direction))
             return self.transfert_matrix_cheb_2(omega, direction)
         else:
-            raise NameError("selt.method_TM incorrect")
+            raise NameError("self.method_TM incorrect")
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         """
