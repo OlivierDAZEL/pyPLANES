@@ -79,7 +79,6 @@ class FemProblem(Mesh, Calculus):
             self.update_system(*_ent.update_system(omega))
             # if _ent.dim == 2:
             #     self.update_Q(*_ent.update_Q())
-
     def update_frequency(self, omega):
             Calculus.update_frequency(self, omega)
             self.F_i, self.F_v = [], []
@@ -156,8 +155,6 @@ class FemProblem(Mesh, Calculus):
         if self.verbose:
             print("Resolution of the linear system")
         X = linsolve.spsolve(A, F)
-        # print(np.abs(X))
-        # Concatenation of the first (zero) dof at the begining of the vector
         X = np.insert(X, 0, 0)
         if self.condensation:
            # Concatenation of the slave dofs at the end of the vector
@@ -172,18 +169,12 @@ class FemProblem(Mesh, Calculus):
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
                 _vr.sol[i_dim] = X[_vr.dofs[i_dim]]
-            # print(_vr)
-            # print(_vr.sol)
         for _ed in self.edges:
             for i_dim in range(4):
                 _ed.sol[i_dim] = X[_ed.dofs[i_dim]]
-            # print(_ed)
-            # print(_ed.sol)
         for _fc in self.faces:
             for i_dim in range(4):
                 _fc.sol[i_dim] = X[_fc.dofs[i_dim]]
-            # print(_fc)
-            # print(_fc.sol)
         for _bb in self.bubbles:
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]       
@@ -197,49 +188,15 @@ class FemProblem(Mesh, Calculus):
             ome = 2*np.pi*self.f
             # pr = X[1:self.nb_dof_master].dot(F)/d/(1j*ome/(Air.Z*ome**2))
 
-
             for _ent in self.entities:
                 if isinstance(_ent, (ImposedPwFem, ImposedDisplacementFem)):
                     Z = _ent.impedance_on_entity(X, ome)
-
             R= (Z-Air.Z)/(Z+Air.Z)
-            # print(R)
             k = ome/Air.c
-            # Z_0=-1j*Air.Z/np.tan(k)
-
-
-            # print(Z)
-            # print(Z_0)
-            # dsqsdqdsq
-            # R_0= (Z_0-Air.Z)/(Z_0+Air.Z)
-            # print("ref={}".format(R_0))
-
             L2 = X.T@(Q@X)
-
-            # A=1/np.sin(k)
-
-            # print(pr)
-            # print(Air.rho*Air.c**2*k*A*np.cos(k))
-            # AA = (Air.rho*Air.c**2*k*A)**2 
-            # II = (1.+np.sin(2*k)/(2*k))/2
-
-
-            # D_lambda = np.sqrt(self.nb_dof_FEM)-1
-            # D_lambda *= 2*np.pi/(k*d)
-
-            # self.Results["R0"].append(L2.real)
-            # self.Results["R0"].append(np.sqrt(np.abs(L2.real-AA*II)))
             self.Result.R0.append(R)
             self.Result.n_dof.append(self.nb_dof_master)
-            # self.Result.D_lambda.append(D_lambda)
-
         return X
-
-
-    # def results_to_json(self):
-    #     self.Results["real(R0)"] = np.real(self.Results["R0"]).tolist()
-    #     self.Results["imag(R0)"] = np.imag(self.Results["R0"]).tolist()
-    #     del self.Results["R0"]
 
 
     def resolution(self):

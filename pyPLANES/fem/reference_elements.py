@@ -57,7 +57,6 @@ class Ka:
         else:
             raise NameError("pyPLANES limited at order 7 (for the moment until integration schemes are validated for orders >7)")
 
-        self.xi, self.w = leggauss(p)
         self.xi, self.w = quadlaum(p)
         # Number of Shape Functions
         self.nb_v = 2
@@ -207,15 +206,12 @@ class Kt:
         self.order = order
         # Integration scheme
         self.xi_1, self.xi_2, self.w = quadlaum(2*order, "Kt")
-        
-        
         # Number of Shape Functions
         self.nb_v = 3
         self.nb_e = 3*(order-1)
         self.nb_f = int(((order-1)*(order-2))/2)
         # Number of master shape functions
         self.nb_m_SF = self.nb_v+ self.nb_e
-
         # Number of slave shape functions (to condense)
         self.nb_s_SF = self.nb_f
         self.nb_SF = self.nb_m_SF+self.nb_s_SF

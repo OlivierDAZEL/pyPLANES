@@ -128,8 +128,10 @@ class FemElement(GenericElement):
     typ : int
         GMSH type of the element
 
-    coorde : numpy array
-        Array of nodes coordinates (dim = 3x nb vertices )
+    tag : int
+        GMSH tag of the entity
+
+    vertices : list of FemVertex entities
 
     Ref_Elem : Reference Element
 
@@ -196,8 +198,6 @@ class FemElement(GenericElement):
         else: 
             raise NameError("Unknown type of element in fem/elements_fem/FemElement/get_jacobian_matrix")
         
-
-
     def __str__(self):
         out = "Element #{} / typ={} / reference element ={}\n".format(self.tag, self.typ, self.reference_element)
         if self.typ == 1: 

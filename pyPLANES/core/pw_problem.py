@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# -*- coding:utf8 -*-
+# -*- coding:utf-8 -*-
 #
 # pw_classes.py
 #
@@ -38,7 +38,7 @@ from pyPLANES.pw.pw_interfaces import *
 
 class PwProblem(Calculus, MultiLayer):
     """
-        Plane Wave Problem 
+        Plane Wave Problem Class
     """
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
@@ -121,7 +121,7 @@ class PwProblem(Calculus, MultiLayer):
             self.Result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
             if self.verbose:
                 print("R_0={}".format(self.Result.R0))
-            print("R_0={}".format(self.Result.R0))
+
             self.Result.abs.append(1-np.abs(self.Result.R0[-1])**2)
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":

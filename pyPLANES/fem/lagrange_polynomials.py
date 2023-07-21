@@ -35,7 +35,7 @@ def lagrange_on_Ka(order, xi):
     return d, p 
 
 
-def lagrange_on_Kt(order,xi_1,xi_2):
+def lagrange_on_Kt(order, xi_1, xi_2):
     """
     Lagrange shape functions on Ka
 

@@ -39,7 +39,6 @@ def fluid_elementary_matrices(elem):
 
         vh += _weight*np.dot(Gd.T, Gd)
         vq += _weight*np.dot(_Phi.T, _Phi)
-
     return vh, vq
 
 def elas_elementary_matrices(elem):

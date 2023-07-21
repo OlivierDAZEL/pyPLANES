@@ -21,20 +21,17 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-from termcolor import colored
+
 import numpy as np
 import numpy.linalg as LA
 
 from numpy import pi
 
 import matplotlib.pyplot as plt
-
 from mediapack import Air, Fluid
-
 from pyPLANES.core.calculus import Calculus
 
 from pyPLANES.pw.periodic_multilayer import PeriodicMultiLayer
-
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
@@ -50,7 +47,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         Calculus.__init__(self, **kwargs)
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "jap")
-        # print(self.method)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -74,17 +70,15 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.Result.Solver = type(self).__name__
 
         # Out files
-        self.out_file_method = "eTMM"
 
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
      
-
         self.add_excitation_and_termination(self.termination)
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
 
-
+        
     def preprocess(self):
         Calculus.preprocess(self)
         self.info_file.write("Periodic Plane Wave solver // Recursive method\n")
@@ -109,12 +103,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.nb_waves = 1
             self.kx = np.array([k_x])
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
-        # print("ky={}".format(k_y))
         self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
         PeriodicMultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
-        # print(self.verbose)
         Calculus.create_linear_system(self, omega)
         if self.termination == "transmission":
             self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
@@ -134,6 +126,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 # print(_l)
                 _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
                 self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+
 
 
     def solve(self):
@@ -182,11 +175,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             abs = 1-self.Result.R[-1]
 
             self.X_0_minus = X[:self.nb_waves]
-            # print("XO={}".format(self.X_0_minus))
             if self.termination == "transmission":
-                # print(self.back_prop.shape)
-                # print(self.back_prop)
-                # print(self.back_prop@self.X_0_minus)
                 T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]  
                 self.Result.T0.append(T[0])
                 if self.verbose:
@@ -196,10 +185,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.Result.abs.append(abs)
             # if self.verbose:
             #     print("abs={}".format(abs))
-
-
-
-
 
     def plot_solution(self):
         x_minus = self.X_0_minus # Information vector at incident interface  x^-

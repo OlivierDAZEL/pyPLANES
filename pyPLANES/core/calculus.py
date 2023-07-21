@@ -23,14 +23,13 @@
 #
 
 import platform
-import socket
 import datetime
 
 from os import path, mkdir, rename
 
-import time, timeit
+import time
+import timeit
 import numpy as np
-import numpy.linalg as LA
 from numpy import pi
 
 from termcolor import colored

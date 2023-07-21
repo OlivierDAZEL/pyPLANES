@@ -31,7 +31,6 @@ from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 
 from mediapack import Air
 
-
 class GmshEntity():
     def __init__(self, **kwargs):
         self.dim = kwargs["dim"]
@@ -94,6 +93,7 @@ class FemEntity(GmshEntity):
         self.condensation = kwargs.get("condensation", True)
         # self.order = kwargs["order"]
         self.elements = []
+        
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Fem" + GmshEntity.__str__(self)
@@ -109,15 +109,11 @@ class FemEntity(GmshEntity):
             for v in elem.vertices:
                 print(v)
 
-
-
-
     # def condensation(self, omega):
     #     return [], [], [], [], [], []
 
     def update_frequency(self, omega):
         pass
-
 
     def elementary_matrices(self, _elem):
         """"  Create elementary matrices of the entity"""

@@ -277,12 +277,6 @@ class PeriodicLayer(Mesh):
                 Phi = Phi[:, _index]
                 Phi_inv = LA.inv(Phi)
             
-            import matplotlib.pyplot as plt
-            plt.figure()
-            plt.semilogy(np.abs(lambda_))
-            plt.show()
-            
-            
             # MM = Phi @ np.diag(lambda_) @ Phi_inv
             # self.TM = MM@self.TM
 
