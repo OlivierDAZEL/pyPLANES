@@ -1,3 +1,3 @@
-{"real(R0)": [0.9831684617064255], "imag(R0)": [-0.18270132978667897], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [100.0]}
-{"real(R0)": [0.9831684617064257], "imag(R0)": [-0.18270132978667908], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "abs": [0.0], "f": [100.0]}
-{"R": [1.0], "real(R0)": [0.9831684617105952], "imag(R0)": [-0.18270132976424086], "Server": "ODs-MacBook-Pro.local", "Solver": "PeriodicPwProblem", "abs": [0.0], "f": [100.0], "n_dof": 158, "order": 2}
+{"real(R0)": [0.9831684617064255], "imag(R0)": [-0.18270132978667897], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [100.0], "h": null}
+{"real(R0)": [0.9831684617064257], "imag(R0)": [-0.18270132978667908], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [100.0], "h": null}
+{"R": [1.0], "real(R0)": [0.9831684617105952], "imag(R0)": [-0.18270132976424086], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [0.0], "f": [100.0], "h": null, "n_dof": 158, "order": 2}

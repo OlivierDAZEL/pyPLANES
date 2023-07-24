@@ -66,8 +66,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
         self.order = kwargs.get("order", 2)
         self.nb_bloch_waves = kwargs.get("nb_bloch_waves", False)
-        self.Result.order = self.order
-        self.Result.Solver = type(self).__name__
+        self.result.order = self.order
+        self.result.Solver = type(self).__name__
 
         # Out files
 
@@ -169,10 +169,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             if self.verbose:
                 print("R={}".format(R))
             print("R={}".format(R))
-            self.Result.R0.append(R[0])
+            self.result.R0.append(R[0])
 
-            self.Result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
-            abs = 1-self.Result.R[-1]
+            self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
+            abs = 1-self.result.R[-1]
 
             self.X_0_minus = X[:self.nb_waves]
             if self.termination == "transmission":
@@ -182,7 +182,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     print("T={}".format(T))
                 self.Result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
                 abs -= self.Result.T[-1]
-            self.Result.abs.append(abs)
+            self.result.abs.append(abs)
             # if self.verbose:
             #     print("abs={}".format(abs))
 

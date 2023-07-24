@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding:utf8 -*-
 #
-# problem.py
+# result.py
 #
 # This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
@@ -21,29 +21,41 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-from termcolor import colored
-import platform
 
 import platform
 import json
+
+from termcolor import colored
+
+
 import numpy as np
-import matplotlib.pyplot as plt
 import numpy.linalg as LA
+import matplotlib.pyplot as plt
+
 plot_color = ["r", "b", "m", "k", "g", "y"]*5
 
 
 class Result():
-    """ pyPLANES Result
+    """
+    Base class for a pyPLANES Result
 
-    Attributes :
-    ------------------------
+    Attributes
+    ----------
+    f : list 
+        Calculation frequencies
 
-    f : real or complex
-        frequency of the simulation
+
+    Methods
+    -------
+    colorspace(c='rgb')
+        Represent the photo in the given colorspace.
+    gamma(n=1.0)
+        Change the photo's gamma exposure.
 
     """
 
-    def __init__(self, _in=None):
+    def __init__(self, **kwargs):
+        _in = kwargs.get("_in", None)
         if _in == None: # Creation of a void instance 
             self.f = []
             self.R0 = []
@@ -54,7 +66,12 @@ class Result():
             self.Solver = None
             self.Server = platform.node()
             self.h = []
-        else: # Creation of a Result on either a dict or a file 
+            
+            label = kwargs.get("label", False)
+            if label:
+                self.label = label
+            self.h = kwargs.get("h", None)
+        else: # Creation of a Result on either a dict or a file
             if isinstance(_in, dict):
                 d = _in
             elif isinstance(_in, str):
@@ -142,8 +159,6 @@ class Result():
     def loglog(self, indicator, *args, **kwargs):
         plt.loglog(self.f, indicator, *args, **kwargs)
 
-
-
     def plot_dispersion(self,s):
         nb_f = self.k.shape[0]
         nb_k = self.k.shape[1]
@@ -206,72 +221,6 @@ class Results():
         if file:
             for l in open(file, 'r'):
                 self.list.append(Result(json.loads(l)))
-
-    # def create_convergence_curve(self):
-    #     reference = [r for r in self.list if r.Solver == ]
-    #     index_reference = [i for i, x in enumerate(list_solvers) if x]
-    #     if len(index_reference) == 1:
-    #         reference = self.list[index_reference[0]]
-    #         self.list.pop(index_reference[0])
-    #         for r in self.list:
-    #             r.error = np.abs(r.R0-reference.R0)
-    #         #     print(r.error)
-    #         # qdssqddsq
-            
-    #         plt.figure()
-    #         if len(reference.f) == 1:
-    #             # Computation of the errors 
-    #             list_orders = set([r.order for r in self.list])
-    #             convergence_curve = dict()
-    #             for order in list_orders:
-    #                 n_dof_list = [r.n_dof for r in self.list if r.order == order]
-    #                 error_list = [r.error[-1] for r in self.list if r.order == order]
-    #                 convergence_curve[str(order)] = (n_dof_list, error_list)
-    #             plt.figure()
-    #             for key in convergence_curve.keys():
-    #                 cc = convergence_curve[key]
-    #                 plt.loglog(cc[0],cc[1],".-", label=key)
-    #         else: 
-    #             for r in self.list:
-    #                 # print("order={}, error={}".format(r.order,r.error))
-    #                 plt.loglog(r.f*(0.1/340), r.error, r.plot_symbol, label=r.order)
-    #             # ord=1;plt.loglog(r.f*(0.1/340),1e-8*r.f**(2*ord+1),"b--",label="{}".format(ord))
-    #             # ord=2;plt.loglog(r.f,1e-19*r.f**(2*ord+1+2),"m--",label="{}".format(ord))
-    #             # ord=3;plt.loglog(r.f,2e-25*r.f**(2*ord+1),"g--",label="{}".format(ord))
-    #             # ord=4;plt.loglog(r.f,2e-28*r.f**(2*ord+1),"m--",label="{}".format(ord))
-    #             # plt.loglog(r.f,1e-19*r.f**(2*3+1),"r--")
-    #     elif len(index_reference) > 1:
-    #         raise NameError("Several reference results")
-    #     else: # Eigen problem 
-    #             list_orders = set([r.order for r in self.list])
-    #             convergence_curve = dict()
-    #             for order in list_orders:
-    #                 n_elem_list = [r.h for r in self.list if r.order == order]
-    #                 error_list = [r.error[-1] for r in self.list if r.order == order]
-    #                 convergence_curve[str(order)] = (n_elem_list, error_list)
-    #             plt.figure()
-    #             for key in convergence_curve.keys():
-    #                 cc = convergence_curve[key]
-    #                 plt.loglog(cc[0],cc[1],".-", label=key)
-    #             h= np.array(cc[0])
-    #             plt.loglog(h, h**(-2.),"b--",label="2")
-    #             plt.loglog(h, h**(-3.),"b--",label="3")
-        
-
-    #     plt.legend()
-    #     plt.savefig("cc.pdf")
-    #     plt.show()
-
-class ConvergenceCurve():
-    def __init__(self, ref, results, indicator, param):
-        ref = ref 
-        results = results
-        indicator = indicator
-        param = param 
-
-
-
-
 
 
 # class PwResult(Result):

@@ -22,9 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-import platform
 import datetime
-
 from os import path, mkdir, rename
 
 import time
@@ -45,57 +43,60 @@ from alive_progress import alive_bar
 Air = Air()
 
 class Calculus():
-    """ pyPLANES Calculus 
+    """
+    Base class for any pyPLANES Calculus
 
-    Attributes :
-    ------------------------
-
-    frequencies : ndarray
-        list of calculation frequencies
-
-    current_frequency : real or complex
-        current frequency
-
-    omega : real or complex
-        current circular frequency
-
-    theta_d : real or False
-        Incident angle in degree 
+    Attributes
+    ----------
+    verbose : boolean
+        Control the verbosity of the output
 
     name_project : str
-        Incident angle in degree 
+        Name of the project
 
-    outfiles_directory : str or False
-        Directory for out files
+    sub_project : str 
+        Potential number of the subproject
 
-    plot : Boolean
-        True/False if plots are on/off
+    save_append : str 
+        Control if we append the result file
+
+    plot : list of boolean (dim=6) to control if the solutions are plot
+        [u_x, u_y, p, u_x(map), u_y(map), p(map)]
+
+    export_plot : list of False or str (dim=6) to control if the plots are exported
+        [u_x, u_y, p, u_x(map), u_y(map), p(map)]
+        
+    result: Instance of Result
+        Store the results of the calculation
+
+    frequencies: numpy 1d-array
+        List of the calculation frequencies, created by the init_frequencies method
+
+    Methods
+    -------
+    colorspace(c='rgb')
+        Represent the photo in the given colorspace.
+    gamma(n=1.0)
+        Change the photo's gamma exposure.
 
     """
-
+    
     def __init__(self, **kwargs):
-        self.name_server = platform.node()
-        self.txt_file_extension = False
-        self.verbose = kwargs.get("verbose", False)
-        self.save_format = kwargs.get("save_format", "json")        
-        self.save_append = kwargs.get("save_append", "w")
-        self.Result = Result() 
-        label = kwargs.get("label", False)
-        if label:
-            self.Result["label"] = label
-            
-        self.init_vec_frequencies(kwargs.get("frequencies", False))
-       
-        h = kwargs.get("h", None)
-        if h:
-            self.Result.h = h
 
-        self.print_result = kwargs.get("print_result", False)    
-        self.plot = kwargs.get("plot_solution", [False]*6)   
-        
-        self.export_plots = kwargs.get("export_plots", [False]*6)   
-        self.export_paraview = kwargs.get("export_paraview", False)  
-        self.outfiles_directory = kwargs.get("outfiles_directory", False)
+        # Create the attributes from the keyword arguments 
+        self.name_project = kwargs.get("name_project", "unnamed_project")
+        self.sub_project = kwargs.get("sub_project", "")
+        self.verbose = kwargs.get("verbose", False)
+        self.save_append = kwargs.get("save_append", "w")
+        self.plot = kwargs.get("plot_solution", [False]*6)
+        self.export_plots = kwargs.get("export_plots", [False]*6)
+
+        # Create the calculus core attributes
+        self.result = Result(**kwargs) # Result of the calculation
+        self.init_frequencies(kwargs.get("frequencies", False)) # Frequency list
+       
+
+        outfiles_directory = "out"
 
         if self.outfiles_directory:
             if not path.exists(self.outfiles_directory):
@@ -110,14 +111,15 @@ class Calculus():
                 mkdir("vtk")
             self.export_paraview = 0 # To count the animation
 
-        self.name_project = kwargs.get("name_project", "unnamed_project")
-        self.sub_project = kwargs.get("sub_project", False)
+
         self.file_names = self.outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
         # self.info_file_name = self.file_names + ".info.txt"
         # self.open_info_file()
         self.start_time = time.time()
+
+
 
     def resolution(self):
         """  Resolution of the problem """
@@ -140,7 +142,7 @@ class Calculus():
                 self.solve()
                 self.plot_solutions()
 
-        self.Result.save(self.file_names,self.save_append)
+        self.result.save(self.file_names,self.save_append)
 
     def results_to_json(self):
         pass
@@ -172,12 +174,13 @@ class Calculus():
         if self.verbose:
             print("Resolution of the linear system")
 
-        self.Result.f.append(self.f)
+        self.result.f.append(self.f)
         omega = 2*pi*self.f
         self.update_frequency(omega)
         self.create_linear_system(omega)
 
     def plot_solutions(self):
+        
         if any(self.plot):
             self.plot_solution()
         if any(self.export_plots):
@@ -187,7 +190,6 @@ class Calculus():
 
     def close_info_file(self):
         """  Close out files at the end of the calculus """
-        # self.txt_file.close()
         self.info_file.close()
         # rename the info file so as to include the name of the method in the name of the text part
         new_name = self.info_file_name.split(".")
@@ -197,23 +199,23 @@ class Calculus():
     def plot_solution(self):
         pass
 
-    def init_vec_frequencies(self, frequency):
+    def init_frequencies(self, frequency):
         """
         Assignate to  self.frequency the frequency vector that will be used in the calculations
 
         Parameters
         ----------
-        # frequency : can be of different types 
-        #       if frequency is a ndarray, self.frequency is frequency
-        #       if frequency is a scalar self.frequency is a ndarray with this single frequency
-        #       if frequency is a list of 3 numbers corresponding to the
-        #           f_bounds[0] is the first frequency
-        #           f_bounds[1] is the last frequency
-        #           f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
+        frequency : it can be of different types 
+            if frequency is a ndarray, self.frequency is frequency
+            if frequency is a scalar self.frequency is a ndarray with this single frequency
+            if frequency is a list of 3 numbers corresponding to the
+                f_bounds[0] is the first frequency
+                f_bounds[1] is the last frequency
+                f_bounds[2] corresponds to the number of frequency steps. If positive (resp. negative), a linear (resp. logarithmic) step is chosen.
 
         Returns
         -------
-        # ndarray of the frequencies
+        ndarray of the frequencies
         """
 
         if isinstance(frequency, np.ndarray):

@@ -76,7 +76,7 @@ class PeriodicMultiLayer():
                     _x += d
                 elif os.path.isfile("msh/" + _l[0] + ".msh"):
                     self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
-                    self.Result.n_dof = self.layers[-1].nb_dof_master
+                    self.result.n_dof = self.layers[-1].nb_dof_master
                     self.period = self.layers[-1].period
                     _x += self.layers[-1].d
             else:
