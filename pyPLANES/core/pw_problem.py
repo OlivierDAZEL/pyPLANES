@@ -127,12 +127,12 @@ class PwProblem(Calculus, MultiLayer):
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
                 self.result.T0.append(Omega_end[0])
-                self.result.abs[-1] -= np.abs(self.Result.T0[-1])**2
+                self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.result.R0.append(self.X[0])
             if self.verbose:
-                print("R_0={}".format(self.Result.R0))
+                print("R_0={}".format(self.result.R0))
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":
                 self.result.T0.append(self.X[-1])

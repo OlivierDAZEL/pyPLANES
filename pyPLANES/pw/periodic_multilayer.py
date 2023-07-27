@@ -79,6 +79,8 @@ class PeriodicMultiLayer():
                     self.result.n_dof = self.layers[-1].nb_dof_master
                     self.period = self.layers[-1].period
                     _x += self.layers[-1].d
+                    
+                    
             else:
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
 

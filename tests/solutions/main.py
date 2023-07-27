@@ -18,13 +18,13 @@ plot_solution = [True, True, True, False, False, False]
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 0.00000
-nb_layers = 1
+nb_layers = 2
 L = 5e-2
 d = 5e-2
 lcar = 5e-2/5
 
 
-frequency = 1e2
+frequency = 1e3
 
 name_project="solution"
 termination = ["rigid", "transmission"][0]

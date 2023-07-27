@@ -143,7 +143,6 @@ def plot_fem_solution(self, kx=0.):
         if isinstance(_en, FluidFem):
             if any(self.plot[2::3]): # Plot of pressure  == True
                 for ie, _elem in enumerate(_en.elements):
-                    # print(ie/len(_en.elements))
                     x_elem, y_elem, p_elem = _elem.display_sol(3)
                     p_elem = p_elem[:, 0]
                     if kx !=0:

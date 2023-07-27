@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# -*- coding:utf8 -*-
+# -*- coding:utf-8 -*-
 #
 # result.py
 #
@@ -47,10 +47,8 @@ class Result():
 
     Methods
     -------
-    colorspace(c='rgb')
-        Represent the photo in the given colorspace.
-    gamma(n=1.0)
-        Change the photo's gamma exposure.
+    save(file, append_file)
+        Save the result.
 
     """
 
@@ -175,31 +173,6 @@ class Result():
             plt.plot(np.real(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"k"+s)
             plt.figure(2)
             plt.plot(np.imag(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"r"+s)
-
-
-
-        # plt.plot(np.abs(np.real(kk[:, 0]))*self.period/np.pi, self.f,"r"+s)
-        # plt.plot(np.abs(np.real(kk[:, 0]))*self.period/np.pi, self.f,"r"+s)
-        # list_k=self.k.flatten()*self.period/np.pi
-        # indices = (np.imag(k)>-1) & (np.imag(k)<0)
-        # list_k()
-        # plt.plot(np.abs(np.real(self.k[:, i_w]))*self.period/np.pi, self.f,"r"+s)
-
-
-
-
-
-        # if hasattr(self, 'k'):
-        #     for i_w in range(self.k.shape[1]):
-        #         plt.figure(1)
-        #         plt.plot(np.abs(np.real(self.k[:, i_w]))*self.period/np.pi, self.f,"r"+s)
-        #         # plt.plot(-np.abs(np.real(self.k[:, i_w]))*self.period/np.pi+2, self.f,"r"+s)
-        #         # plt.figure(2)
-        #         plt.plot(-np.abs(np.imag(self.k[:, i_w]))*self.period/np.pi, self.f,"b"+s)
-
-        # else: 
-        #     raise NameError("Result.plot_dispersion: no k atribute in instance")
-
 
 class Test():
     def __init__(self, ref, result, indicator, **kwargs):

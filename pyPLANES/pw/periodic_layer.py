@@ -48,10 +48,13 @@ class PeriodicLayer(Mesh):
     def __init__(self, **kwargs):
         self.condensation = kwargs.get("condensation", True)
         Mesh.__init__(self, **kwargs)
-
         _x = kwargs.get("_x", 0)
         for _v in self.vertices[1:]:
             _v.coord[1] += _x
+        for _e in self.elements[1:]:
+             _e.coord[1,:] += _x
+             
+             
         y = [_v.coord[1] for _v in self.vertices[1:]]
         self.d = np.max(y)-np.min(y)
 
@@ -239,61 +242,61 @@ class PeriodicLayer(Mesh):
 
         Xi = np.eye(m)
 
-        self.TM = np.eye(2*m)
-        for i_M, M in enumerate([self.M_2, -self.M_1]): # Inverse order for multiplication
+        # self.TM = np.eye(2*m)
+        # for i_M, M in enumerate([self.M_2, -self.M_1]): # Inverse order for multiplication
             
-            # ##### Direct resolution
-            # if i_M ==0: 
-            #     self.TM = M@self.TM
-            # else:
-            #     self.TM = LA.inv(M)@self.TM
+        #     # ##### Direct resolution
+        #     # if i_M ==0: 
+        #     #     self.TM = M@self.TM
+        #     # else:
+        #     #     self.TM = LA.inv(M)@self.TM
             
-            #### SVD resolution
-            # Phi, lambda_, Phi_inv = LA.svd(M)
-            # if i_M ==0: 
-            #     MM = Phi @ np.diag(lambda_) @ Phi_inv
-            #     print(LA.norm(M))
-            #     print(LA.norm(M-MM))
-            #     print(np.allclose(M, MM))
-            # else:
-            #     # print(lambda_)
-            #     MM = Phi @ np.diag(1/lambda_) @ Phi_inv
-            #     # MM = Phi @ np.diag(lambda_) @ Phi_inv
-            #     # print(LA.norm(M))
-            #     # print(LA.norm(M-MM))
-            #     # print(np.allclose(M, MM))
-            # self.TM = MM@self.TM
+        #     #### SVD resolution
+        #     # Phi, lambda_, Phi_inv = LA.svd(M)
+        #     # if i_M ==0: 
+        #     #     MM = Phi @ np.diag(lambda_) @ Phi_inv
+        #     #     print(LA.norm(M))
+        #     #     print(LA.norm(M-MM))
+        #     #     print(np.allclose(M, MM))
+        #     # else:
+        #     #     # print(lambda_)
+        #     #     MM = Phi @ np.diag(1/lambda_) @ Phi_inv
+        #     #     # MM = Phi @ np.diag(lambda_) @ Phi_inv
+        #     #     # print(LA.norm(M))
+        #     #     # print(LA.norm(M-MM))
+        #     #     # print(np.allclose(M, MM))
+        #     # self.TM = MM@self.TM
             
-            ##### eigenvalue resolution
-            lambda_, Phi = LA.eig(M)
-            if i_M ==0: 
-                _index = np.argsort(np.abs(lambda_))[::-1]
-                lambda_ = lambda_[_index]
-                Phi = Phi[:, _index]
-                Phi_inv = LA.inv(Phi)
-            else:
-                np.argsort(np.abs(lambda_))
-                lambda_ = 1/lambda_[_index]
-                Phi = Phi[:, _index]
-                Phi_inv = LA.inv(Phi)
+        #     ##### eigenvalue resolution
+        #     lambda_, Phi = LA.eig(M)
+        #     if i_M ==0: 
+        #         _index = np.argsort(np.abs(lambda_))[::-1]
+        #         lambda_ = lambda_[_index]
+        #         Phi = Phi[:, _index]
+        #         Phi_inv = LA.inv(Phi)
+        #     else:
+        #         np.argsort(np.abs(lambda_))
+        #         lambda_ = 1/lambda_[_index]
+        #         Phi = Phi[:, _index]
+        #         Phi_inv = LA.inv(Phi)
             
-            # MM = Phi @ np.diag(lambda_) @ Phi_inv
-            # self.TM = MM@self.TM
+        #     # MM = Phi @ np.diag(lambda_) @ Phi_inv
+        #     # self.TM = MM@self.TM
 
-            _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
-            print(np.abs(np.array(_list)))
-            Lambda = np.diag(np.array(_list))
-            alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-            xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
-            _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
-            print(_list)
-            xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
-            Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
-            for i in range(m-1):
-                Om[:,i] += Phi[:, i]
-            Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
-        return Om, Xi
-        # return self.TM@Om, np.eye(Om.shape[1])
+        #     _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
+        #     print(np.abs(np.array(_list)))
+        #     Lambda = np.diag(np.array(_list))
+        #     alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+        #     xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
+        #     _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
+        #     print(_list)
+        #     xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
+        #     Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
+        #     for i in range(m-1):
+        #         Om[:,i] += Phi[:, i]
+        #     Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
+        # return Om, Xi
+        return self.TM@Om, np.eye(Om.shape[1])
 
     def update_system(self, _A_i, _A_j, _A_v, _F_i, _F_v, _T_i=None, _T_j=None, _T_v=None):
         self.A_i.extend(_A_i)

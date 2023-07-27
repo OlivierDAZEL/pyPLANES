@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-# -*- coding:utf8 -*-
+# -*- coding:utf-8 -*-
 #
-# problem.py
+# calculus.py
 #
 # This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
@@ -97,22 +97,10 @@ class Calculus():
        
 
         outfiles_directory = "out"
+        if not path.exists(outfiles_directory):
+                mkdir(outfiles_directory) 
 
-        if self.outfiles_directory:
-            if not path.exists(self.outfiles_directory):
-                    mkdir(self.outfiles_directory) 
-        else: 
-            self.outfiles_directory = "out"
-            if not path.exists("out"):
-                mkdir("out")
-        if self.export_paraview:
-            self.paraview_directory = "vtk"
-            if not path.exists("vtk"):
-                mkdir("vtk")
-            self.export_paraview = 0 # To count the animation
-
-
-        self.file_names = self.outfiles_directory + "/" + self.name_project
+        self.file_names = outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
         # self.info_file_name = self.file_names + ".info.txt"
