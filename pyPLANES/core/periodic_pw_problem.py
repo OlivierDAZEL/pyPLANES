@@ -123,11 +123,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.Omega = self.interfaces[-1].Omega(self.nb_waves)
             for i, _l in enumerate(self.layers[::-1]):
                 next_interface = self.interfaces[-i-2]
-                # print(_l)
                 _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
                 self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
-
-
 
     def solve(self):
         Calculus.solve(self)
@@ -168,7 +165,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             # print("R={}".format(R))
             if self.verbose:
                 print("R={}".format(R))
-            print("R={}".format(R))
+            # print("R={}".format(R))
             self.result.R0.append(R[0])
 
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
@@ -193,16 +190,11 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             x_minus = np.array([x_minus])
         for i, _l in enumerate(self.layers):
             x_plus = self.interfaces[i].Tau @ x_minus # Transfert through the interface x^+
-            # print("x_plus={}".format(x_plus))
+            x_minus = (_l.Xi)@x_plus # Transfert through the layer x^-_{+1}
             if isinstance(_l, PeriodicLayer):
                 S_b = _l.Omega_plus @ x_plus
-                # S_b[0] *= -1
-                S_t = LA.solve(_l.TM, S_b)
-                # S_t[0] *= -1
-                # print("S_b={}".format(S_b))
-                # print("S_t={}".format(S_t))
+                S_t = _l.Omega_minus @ x_minus
                 _l.plot_solution(S_b, S_t)
             else: # Homogeneous layer
                 q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
                 _l.plot_solution_recursive(self.plot, q)
-            x_minus = LA.inv(_l.Xi)@x_plus # Transfert through the layer x^-_{+1}

@@ -18,7 +18,7 @@ plot_solution = [True, True, True, False, False, False]
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 0.00000
-nb_layers = 2
+nb_layers = 4
 L = 5e-2
 d = 5e-2
 lcar = 5e-2/5
@@ -32,16 +32,23 @@ material = ["Air", "Wwood", "melamine"][0]
 
 ml = [(material, d)]*nb_layers
 
-global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=False, print_result=True)
+global_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()
+RG = global_method.result.R0 
+print(global_method.result.R0)
 recursive_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,save_append="a", print_result=True)
 recursive_method.resolution()
+print(recursive_method.result.R0)
 
 one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 ml_fem = [ ("mesh", None)]*nb_layers
 
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=0, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True)
 eTMM_method.resolution()
+print(eTMM_method.result.R0)
+
+print(1+np.array(RG))
 
 if any(plot_solution):
-    plt.show()
+    plt.show() 
+    
