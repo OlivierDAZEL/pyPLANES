@@ -268,15 +268,17 @@ class PeriodicLayer(Mesh):
             # self.TM = MM@self.TM
             
             ##### eigenvalue resolution
-            lambda_, Phi = LA.eig(M)
+
             if i_M ==0: 
+                lambda_, Phi = LA.eig(M)
                 _index = np.argsort(np.abs(lambda_))[::-1]
                 lambda_ = lambda_[_index]
                 Phi = Phi[:, _index]
                 Phi_inv = LA.inv(Phi)
             else:
-                np.argsort(np.abs(lambda_))
-                lambda_ = 1/lambda_[_index]
+                lambda_, Phi = LA.eig(LA.inv(M))
+                _index = np.argsort(np.abs(lambda_))[::-1]
+                lambda_ = lambda_[_index]
                 Phi = Phi[:, _index]
                 Phi_inv = LA.inv(Phi)
             
