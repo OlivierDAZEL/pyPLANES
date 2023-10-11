@@ -179,12 +179,14 @@ class Test():
         self.eps = kwargs.get("eps", 1e-12)
         self.error = LA.norm(result.__dict__[indicator]-ref.__dict__[indicator])/len(result.__dict__[indicator])
     
-    def check(self):
+    def check(self, print_resut=True):
         if self.error< self.eps:
-            print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
+            if print_resut:
+               print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
             return True
         else:
-            print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
+            if print_resut:
+                print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
             return False
 
 class Results():

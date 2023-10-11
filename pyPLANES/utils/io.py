@@ -87,6 +87,7 @@ def run_pymls(**kwargs):
         result.R0.append(_["R"][0])
         if termination == "transmission" :
             result.T0.append(_["T"][0])
+    # print(f"R_pymls ={result.R0[0]}")
     result.save("out/" + name_project + "_pymls","w")
 
 def close_out_files(self):

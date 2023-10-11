@@ -245,8 +245,8 @@ class PwGeneric():
             xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
             Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
 
-            for i in range(m-1):
-                Om[:,i] += Phi[:, i]
+            Om[:,:m-1]  += Phi[:,:m-1]    
+            
             Xi = xi_prime_lambda*np.exp(lambda_[m-1]*self.d)
             return Om, Xi
 

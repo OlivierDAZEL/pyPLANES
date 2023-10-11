@@ -116,9 +116,25 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
     G.new_physical(l_2, "condition=top")
     G.new_physical([l_1, l_3], "condition=Periodicity")
     G.new_physical(l_0, "condition=bottom")
-    G.new_physical(matrice, "mat="+mat_core)
-    G.new_physical(ring, "mat="+mat_ring)
-    G.new_physical(internal_inclusion, "mat="+mat_internal)
+    
+    
+    if mat_ring == mat_core:
+        if mat_internal == mat_ring: # Homogeneous case 
+            G.new_physical([matrice, ring, internal_inclusion], "mat="+mat_core)
+        else: 
+            G.new_physical([matrice, ring], "mat="+mat_core)
+            G.new_physical(internal_inclusion, "mat="+mat_internal)
+    elif mat_internal == mat_core:
+        G.new_physical([matrice, internal_inclusion], "mat="+mat_core)
+        G.new_physical(ring , "mat="+mat_ring)
+    else:
+        G.new_physical(matrice, "mat="+mat_core)
+        G.new_physical(ring, "mat="+mat_ring)
+        G.new_physical(internal_inclusion, "mat="+mat_internal)
+       
+    
+    
+
 
     list_FEM_1D = [l_0.tag, l_1.tag, l_3.tag, l_2.tag]
     list_FSI =[]
@@ -132,8 +148,6 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
     if set([material_ring.MODEL, material_internal.MODEL]) == set(["elastic", "fluid"]):
         list_FEM_1D.extend(c_1.tag_arcs)
         list_FSI.extend(c_1.tag_arcs)
-
-
     if len(list_FSI)>0:
         G.new_physical_curve(list_FSI, "condition=Fluid_Structure")
     G.new_physical_curve(list_FEM_1D, "typ=1D")

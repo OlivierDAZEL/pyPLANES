@@ -88,6 +88,7 @@ class PwInterface():
             M_X = M[:self.n_1,:]
             M_S = M[self.n_1:,:]
             Omega = P_in@M_S +P_out 
+            
         else: 
             SV = self.pw_method(mat, np.zeros(1))[0] 
             P_in = SV[:,:self.n_0].reshape((2*self.n_0, self.n_0))
@@ -141,7 +142,6 @@ class FluidPemInterface(PwInterface):
     def __str__(self):
         out = "\t Fluid-PEM interface"
         return out
-
 
 class PemFluidInterface(PwInterface):
     """
