@@ -195,7 +195,8 @@ class Results():
         self.f = []
         if file:
             for l in open(file, 'r'):
-                self.list.append(Result(json.loads(l)))
+                print("toto")
+                self.list.append(Result(_in="json.loads(l)"))
 
 
 # class PwResult(Result):

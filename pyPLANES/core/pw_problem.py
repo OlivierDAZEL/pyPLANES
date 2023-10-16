@@ -46,7 +46,6 @@ class PwProblem(Calculus, MultiLayer):
         # self.Results["R0"], self.Results["T0"] = [], [] 
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
-        # print(self.method)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -55,8 +54,13 @@ class PwProblem(Calculus, MultiLayer):
             self.method = "TMM"
             if self.theta_d == 0:
                 self.theta_d = 1e-12
+        elif self.method.lower() in ["characteristics", "characteristic", "carac"]:
+            self.method = "characteristics"
+            if self.theta_d == 0:
+                self.theta_d = 1e-12
         else: 
             self.method = "Global Method"
+            
         self.method_TM = kwargs.get("method_TM", "diag")
         if self.method_TM in ["cheb_1"]:
             self.order_chebychev = kwargs.get("order_chebychev", 20)
@@ -64,7 +68,7 @@ class PwProblem(Calculus, MultiLayer):
         assert "ml" in kwargs
         ml = kwargs.get("ml")
 
-        MultiLayer.__init__(self, ml, self.method_TM)
+        MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM)
         if self.method_TM in ["cheb_1"]:
             for l in self.layers:
                 l.order_chebychev = self.order_chebychev 
@@ -93,14 +97,31 @@ class PwProblem(Calculus, MultiLayer):
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
                     self.back_prop = self.back_prop@next_interface.Tau
-
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
                     self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+        elif self.method == "characteristics":
+            if self.termination == "transmission":
+                self.Omega, self.back_prop = self.interfaces[-1].Omegac()
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_minus = self.Omega
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    self.back_prop = self.back_prop@_l.Xi
+                    self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    self.back_prop = self.back_prop@next_interface.Tau
+            else: # Rigid backing
+                self.Omega = self.interfaces[-1].Omegac()
 
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_minus = self.Omega
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    
         elif self.method == "Global Method":
             self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
             i_eq = 0
@@ -114,14 +135,15 @@ class PwProblem(Calculus, MultiLayer):
 
     def solve(self):
         Calculus.solve(self)
-        if self.method in ["Recursive Method", "TMM"]:
+        if self.method in ["Recursive Method", "TMM", "characteristics"]:
             self.Omega = self.Omega.reshape(2)
+            if self.method == "characteristics":
+                self.Omega = self.interfaces[0].carac_bottom.P@self.Omega
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]
             self.result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
             if self.verbose:
                 print("R_0={}".format(self.result.R0))
-
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
@@ -142,13 +164,22 @@ class PwProblem(Calculus, MultiLayer):
         if self.method == "Global Method":
             for _l in self.layers[1:]:
                 _l.plot_solution_global(self.plot,self.X[_l.dofs-1])  
-        else:
+        elif self.method == "Recursive Method":
             x = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
             for i, _l in enumerate(self.layers):
                 x = self.interfaces[i].Tau @ x # Transfert through the interface x^+
                 q = LA.solve(_l.SV, _l.Omega_plus@x)
                 _l.plot_solution_recursive(self.plot, q)
                 x = _l.Xi@x # Transfert through the layer x^-_{+1}
+        elif self.method == "characteristics":
+            q = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
+            for i, _l in enumerate(self.layers):
+                q = self.interfaces[i].Tau @ q # Transfert through the interface x^+
+                q = _l.Xi@q # Transfert through the layer x^-_{+1}
+                _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q)
+
+        else: 
+            raise NameError("No method")
 
     def load_results(self):
 

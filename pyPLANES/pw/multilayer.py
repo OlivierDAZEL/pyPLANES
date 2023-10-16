@@ -37,9 +37,11 @@ class MultiLayer():
     """
     Multilayer structure
     """
-    def __init__(self, ml, method_TM="diag"):
+    def __init__(self, **kwargs):
+        ml = kwargs.get("ml", None) 
+        self.method_TM = kwargs.get("method_TM","diag")
+        self.method = kwargs.get("method","Global Method")
         # Creation of the list of layers
-        self.method_TM = method_TM
         self.layers = []
         self.kx = None
         _x = 0   
@@ -69,7 +71,6 @@ class MultiLayer():
                     mat, alpha = load_mat
                     if mat.MODEL == "inhomogeneous":
                         self.layers.append(InhomogeneousLayer(mat, d, x_0=_x, method_TM=self.method_TM,state_matrix=alpha))
-                        print(self.layers[-1].method_TM)
                     else: 
                         raise NameError("alpha matrix and not an inhomogenenous mat")
             else:
@@ -116,21 +117,22 @@ class MultiLayer():
             self.interfaces.append(SemiInfinite(self.layers[-1]))
         else: # Case of a rigid backing 
             if self.layers[-1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.interfaces.append(FluidRigidBacking(self.layers[-1]))
+                self.interfaces.append(FluidRigidBacking(self.layers[-1], None, self.method))
             elif self.layers[-1].medium.MEDIUM_TYPE == "pem":
                 self.interfaces.append(PemBacking(self.layers[-1]))
             elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
         
-        if method in ["Recursive Method", "TMM"]:
+        if method in ["Recursive Method", "TMM", "characteristics"]:
+            incident_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
             if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.interfaces.insert(0,FluidFluidInterface(None ,self.layers[0]))
+                self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
             elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-                self.interfaces.insert(0,FluidPemInterface(None, self.layers[0]))
+                self.interfaces.insert(0,FluidPemInterface(incident_layer, self.layers[0]))
             elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-                self.interfaces.insert(0,FluidElasticInterface(None, self.layers[0]))
-            # Addition of a fictious Air-Layer for the interface.
-            self.interfaces[0].layers[0] = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
+                self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
+            # # Addition of a fictious Air-Layer for the interface.
+            # self.interfaces[0].layers[0] = incident_layer
         
         else:
             Air_mat = Air()
