@@ -44,9 +44,15 @@ class PwInterface():
         self.number_relations = None
         self.pw_method = None
         self.C_bottom, self.C_top = None, None
-        self.carac_bottom = Characteristics(self.layers[0].medium)
+        if isinstance(self.layers[0],PwLayer):
+            self.carac_bottom = Characteristics(self.layers[0].medium)
+        elif isinstance(self.layers[0],PeriodicLayer):
+            self.carac_bottom = Characteristics(self.layers[0].medium[1])
         if layer2 != None:
-            self.carac_top = Characteristics(self.layers[1].medium)
+            if isinstance(self.layers[1],PwLayer):
+                self.carac_top = Characteristics(self.layers[1].medium)
+            elif isinstance(self.layers[1],PeriodicLayer):
+                self.carac_top = Characteristics(self.layers[1].medium[0])
         else:
             self.carac_top = None
 

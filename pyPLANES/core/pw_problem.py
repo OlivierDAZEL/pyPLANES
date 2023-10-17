@@ -115,12 +115,14 @@ class PwProblem(Calculus, MultiLayer):
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omegac()
-
+                # print(self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    # print(_l.Omega_plus)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    # print(self.Omega)
                     
         elif self.method == "Global Method":
             self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)

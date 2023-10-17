@@ -101,15 +101,13 @@ def fluid_waves_TMM(mat, kx):
     """
     if mat.MEDIUM_TYPE == 'eqf':
         K = mat.K_eq_til
+        ky = np.sqrt(mat.k**2-kx**2+0j)
     elif mat.MEDIUM_TYPE == 'fluid':
         K = mat.K
+        ky = np.sqrt(mat.k**2-kx**2+0j)
     else:
         raise ValueError('Provided material is not a fluid')
 
-    ky = np.sqrt(mat.k**2-kx**2+0j)
-    # kx = np.real(kx)-1j*np.imag(kx)
-    
-    
     if isinstance(kx, np.ndarray):
         n_w = len(kx)
         Phi = np.zeros((2*n_w, 2*n_w), dtype=complex)

@@ -43,6 +43,8 @@ class PeriodicMultiLayer():
     """
     def __init__(self, ml, method_TM="JAP", **kwargs):
         # Creation of the list of layers
+        
+       
         self.method_TM = method_TM
         self.layers = []
         self.interfaces = []
@@ -79,8 +81,6 @@ class PeriodicMultiLayer():
                     self.result.n_dof = self.layers[-1].nb_dof_master
                     self.period = self.layers[-1].period
                     _x += self.layers[-1].d
-                    
-                    
             else:
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
 

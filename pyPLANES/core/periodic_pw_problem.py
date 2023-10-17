@@ -55,9 +55,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.method = "TMM"
             if self.theta_d == 0:
                 self.theta_d = 1e-12
+        elif self.method.lower() in ["characteristics", "characteristic", "carac"]:
+            self.method = "characteristics"
         else: 
-            raise NameError("Invalid method in PeriodicPwProblem")
-        
+            raise NameError("Invalid method name" + self.method)
         self.method_TM = kwargs.get("method_TM", False)
         
         if self.method_TM in ["cheb_1", "cheb_2"]:
@@ -74,7 +75,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         # Out files
 
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
-     
+
         self.add_excitation_and_termination(self.termination)
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
@@ -100,6 +101,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 _[2+2*i]= -(i+1)
             self.kx = k_x+_*(2*pi/self.period)
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
+            self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
+            
         else:
             self.nb_waves = 1
             self.kx = np.array([k_x])
@@ -109,39 +112,60 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
     def create_linear_system(self, omega):
         Calculus.create_linear_system(self, omega)
-        if self.termination == "transmission":
-            self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
-            for i, _l in enumerate(self.layers[::-1]):
-                next_interface = self.interfaces[-i-2]
-                _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
-                # print("_l.Xi=\n{}".format(_l.Xi))
-                self.back_prop = self.back_prop@_l.Xi
-                self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
-                # print("tau=\n{}.".format(next_interface.Tau))
-                self.back_prop = self.back_prop@next_interface.Tau
-            # print("backprop=\n{}".format(self.back_prop))
-        else: # Rigid backing
-            self.Omega = self.interfaces[-1].Omega(self.nb_waves)
-            for i, _l in enumerate(self.layers[::-1]):
-                next_interface = self.interfaces[-i-2]
-                _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
-                self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
-
+        if self.method in ["Recursive Method", "TMM"]:
+            if self.termination == "transmission":
+                self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
+                    # print("_l.Xi=\n{}".format(_l.Xi))
+                    self.back_prop = self.back_prop@_l.Xi
+                    self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+                    # print("tau=\n{}.".format(next_interface.Tau))
+                    self.back_prop = self.back_prop@next_interface.Tau
+                # print("backprop=\n{}".format(self.back_prop))
+            else: # Rigid backing
+                self.Omega = self.interfaces[-1].Omega(self.nb_waves)
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
+                    self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+        elif self.method == "characteristics":
+            if self.termination == "transmission":
+                self.Omega, self.back_prop = self.interfaces[-1].Omegac()
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_minus = self.Omega
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    self.back_prop = self.back_prop@_l.Xi
+                    self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    self.back_prop = self.back_prop@next_interface.Tau
+            else: # Rigid backing
+                self.Omega = self.interfaces[-1].Omegac()
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_minus = self.Omega
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    # print(_l.Omega_plus)
+                    self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    # print(self.Omega)
     def solve(self):
+
         Calculus.solve(self)
-        if self.nb_waves == 0:
+        if self.nb_waves == 1:
             self.Omega = self.Omega.reshape(2)
-            _ = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
-            det = -self.Omega[0]+_*self.Omega[1]
-            R0 = (self.Omega[0]+_*self.Omega[1])/det
-            self.Result.R0.append(R0)
+            if self.method == "characteristics":
+                self.Omega = self.interfaces[0].carac_bottom.P@self.Omega
+            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+            det = -self.Omega[0]+alpha*self.Omega[1]
+            self.result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
             if self.verbose:
-                print("R_0={}".format(R0))
-            abs = 1-np.abs(R0)**2
-            self.X_0_minus = 2*_/det
+                print("R_0={}".format(self.result.R0))
+            abs = 1-np.abs(self.result.R0)**2
+            self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                self.Result.T0.append(Omega_end[0])
+                self.result.T0.append(Omega_end[0])
                 if self.verbose:
                     print("T_0={}".format(Omega_end[0]))
         else:
@@ -251,9 +275,16 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             if isinstance(_l, PeriodicLayer):
                 S_b = _l.Omega_plus @ x_plus
                 S_t = _l.Omega_minus @ x_minus
-                print(f"S_b={S_b}")
-                print(f"S_t={S_t}")
+                # print(f"S_b={S_b}")
+                # print(f"S_t={S_t}")
                 _l.plot_solution(S_b, S_t)
             else: # Homogeneous layer
-                q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
-                _l.plot_solution_recursive(self.plot, q)
+                if self.method == "Recursive Method":
+                    q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
+                    _l.plot_solution_recursive(self.plot, q)
+                elif self.method == "characteristics":
+                    q = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
+                    for i, _l in enumerate(self.layers):
+                        q = self.interfaces[i].Tau @ q # Transfert through the interface x^+
+                        q = _l.Xi@q # Transfert through the layer x^-_{+1}
+                        _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q)
