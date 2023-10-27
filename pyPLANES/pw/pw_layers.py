@@ -269,6 +269,16 @@ class PwGeneric():
         lambda_ = self.lam
 
         Phi_inv = LA.inv(Phi)
+        
+        # d = 5e-2
+        # print("MT=", np.exp(lambda_*d))
+        # # print(omega)
+        # print(Air.c)
+        # print(d)
+        # print(np.exp(1j*(omega/Air.c)*d))
+
+        
+        
         m = self.nb_waves_in_medium*self.nb_waves
         _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
         Lambda = np.diag(np.array(_list))

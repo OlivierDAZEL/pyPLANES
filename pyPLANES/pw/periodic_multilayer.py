@@ -117,7 +117,7 @@ class PeriodicMultiLayer():
                     self.interfaces.append(ElasticPemInterface(_layer, self.layers[i_l+1]))
                 elif _medium_type_top == "elastic":
                     self.interfaces.append(ElasticElasticInterface(_layer, self.layers[i_l+1]))
-
+                    
     def __str__(self):
         out = "Interface #0\n"
         out += self.interfaces[0].__str__()+"\n"

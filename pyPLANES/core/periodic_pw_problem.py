@@ -77,6 +77,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
 
         self.add_excitation_and_termination(self.termination)
+        
+        
+        for i_l, _layer in enumerate(self.layers):
+            if isinstance(_layer, PeriodicLayer):
+                _layer.characteristics[0] = self.interfaces[i_l].carac_top
+                _layer.characteristics[1] = self.interfaces[i_l+1].carac_bottom
+        
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
@@ -133,10 +140,11 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         elif self.method == "characteristics":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac()
+
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
-                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
                     self.back_prop = self.back_prop@next_interface.Tau
@@ -145,10 +153,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
-                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
-                    # print(_l.Omega_plus)
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
-                    # print(self.Omega)
+                    
     def solve(self):
 
         Calculus.solve(self)

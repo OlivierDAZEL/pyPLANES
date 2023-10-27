@@ -48,11 +48,13 @@ class PwInterface():
             self.carac_bottom = Characteristics(self.layers[0].medium)
         elif isinstance(self.layers[0],PeriodicLayer):
             self.carac_bottom = Characteristics(self.layers[0].medium[1])
+            self.carac_bottom.typ = self.layers[0].pwfem_entities[1].typ
         if layer2 != None:
             if isinstance(self.layers[1],PwLayer):
                 self.carac_top = Characteristics(self.layers[1].medium)
             elif isinstance(self.layers[1],PeriodicLayer):
                 self.carac_top = Characteristics(self.layers[1].medium[0])
+                self.carac_top.typ = self.layers[1].pwfem_entities[1].typ
         else:
             self.carac_top = None
 
@@ -481,9 +483,14 @@ class PemBacking(PwInterface):
 
     def Omegac(self, nb_bloch_waves=1):
         C = np.zeros((3,6), dtype=complex)
-        C[0,1] = 1.
-        C[1,2] = 1.
-        C[2,5] = 1.
+        if self.carac_bottom.typ == None:
+            C[0,1] = 1.
+            C[1,2] = 1.
+            C[2,5] = 1.
+        elif self.carac_bottom.typ in ["Biot01", "Biot98"]:
+            C[:,3:] = np.eye(3)
+        else: 
+            raise NameError("invalide typ")            
         out = np.zeros((6, 3), dtype=complex)
         out[:3,:] = np.eye(3)
         out[3:,:] = -LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus
@@ -556,7 +563,45 @@ class SemiInfinite(PwInterface):
         self.medium = load_material("Air")
         PwInterface.__init__(self, layer1, transmission_layer)
         self.SV = None
+        # Determine the type of the last layer
 
+        self.typ =None
+        if isinstance(self.layers[0], PwLayer):
+            t = self.layers[0].medium.MEDIUM_TYPE
+        elif isinstance(self.layers[0], PeriodicLayer):
+            t = self.layers[0].medium[1].MEDIUM_TYPE
+        if t in ["fluid", "eqf"]:
+            self.typ = "fluid"
+            self.n_0 = self.n_1 = 1
+            self.number_relations = 2
+            self.C_bottom = np.eye(self.number_relations)
+            self.C_top = -np.eye(self.number_relations)
+            self.pw_method = fluid_waves_TMM
+        elif t in ["pem"]:
+            self.typ = "pem"
+            formulation = "Biot98"
+            self.n_0 = 3
+            self.n_1 = 1
+            self.pw_method = PEM_waves_TMM
+            # if isinstance(self.layers[0], PeriodicLayer):
+            #     if self.layers[0].pwfem_entities[0].typ == "Biot01":
+            #         typ = "Biot01"
+            #     else:
+            #         typ = "Biot98"
+            # else:
+            #     typ = "Biot98"
+            self.number_relations = 4
+            self.C_bottom = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
+            self.C_top = np.array([[1,0],[0,1], [0,0], [0, 0]])
+        elif t in ["elastic"]:
+            self.typ ="elastic"
+            self.n_0, self.n_1 = 2, 1
+            self.number_relations = 3
+            self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
+            self.C_top = np.array([[0,0],[1,0],[0,1]])
+            self.pw_method = elastic_waves_TMM
+        else:
+            raise NameError("Invalid type")
 
     def __str__(self):
         out = "\t Semi-infinite transmission medium\n\t\t"
@@ -631,51 +676,7 @@ class SemiInfinite(PwInterface):
             return out, np.eye(2*max([nb_bloch_waves,1]))
 
     def Omegac(self, nb_bloch_waves=1):
-        typ =None
-        if isinstance(self.layers[0], PwLayer):
-            if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-                typ = "fluid"
-                self.n_0 = self.n_1 = 1
-                self.number_relations = 2
-                self.C_bottom = np.eye(self.number_relations)
-                self.C_top = -np.eye(self.number_relations)
-                self.pw_method = fluid_waves_TMM
-            elif self.layers[0].medium.MEDIUM_TYPE in ["pem"]:
-                typ ="pem"
-                formulation = "Biot98"
-                self.n_0 = 3
-                self.n_1 = 1
-                self.pw_method = PEM_waves_TMM
-                # if isinstance(self.layers[0], PeriodicLayer):
-                #     if self.layers[0].pwfem_entities[0].typ == "Biot01":
-                #         typ = "Biot01"
-                #     else:
-                #         typ = "Biot98"
-                # else:
-                #     typ = "Biot98"
-                self.number_relations = 4
-                self.C_bottom = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
-                self.C_top = np.array([[1,0],[0,1], [0,0], [0, 0]])
-            elif self.layers[0].medium.MEDIUM_TYPE in ["elastic"]:
-                typ ="elastic"
-                self.n_0, self.n_1 = 2, 1
-                self.number_relations = 3
-                self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
-                self.C_top = np.array([[0,0],[1,0],[0,1]])
-                self.pw_method = elastic_waves_TMM
-                
-        else:
-            if self.layers[0].medium[1].MEDIUM_TYPE in ["fluid", "eqf"]:
-                typ ="fluid"
-            elif self.layers[0].medium[1].MEDIUM_TYPE in ["pem"]:
-                typ ="pem"
-                formulation = self.layers[0].pwfem_entities[1].typ
-            elif self.layers[0].medium[1].MEDIUM_TYPE in ["elastic"]:
-                typ ="elastic"
-        # else:
-        #     raise NameError("Layer is neither PwLayer nor PeriodicLayer")PL
-
-        if typ == "fluid":
+        if self.typ == "fluid":
             self.len_X = 1
             out = np.zeros((2*nb_bloch_waves, nb_bloch_waves), dtype=complex)
             MM = np.zeros((nb_bloch_waves, nb_bloch_waves), dtype=complex)
@@ -688,7 +689,7 @@ class SemiInfinite(PwInterface):
                 out[2*_w + 0:2, _w] = Om.reshape(2)
                 MM[_w, _w] = M_X
             return out, MM
-        elif typ == "pem":
+        elif self.typ == "pem":
             self.len_X = 3
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
             MM = np.zeros((3*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
@@ -701,7 +702,7 @@ class SemiInfinite(PwInterface):
                 out[slice(6*_w,6*_w+6), slice(3*_w, 3*_w+3)] = Om
                 MM[3*_w + 0:3, 3*_w + 0:3] = M_X
             return out, MM
-        elif typ  == "elastic":
+        elif self.typ  == "elastic":
             self.len_X = 2
             out = np.zeros((4*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)
             MM = np.zeros((2*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)

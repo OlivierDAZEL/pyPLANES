@@ -36,12 +36,13 @@ class Characteristics():
         self.medium = medium
         self.P = None
         self.Q = None
+        self.typ = None
 
 
     def update_frequency(self, omega):
         self.medium.update_frequency(omega)
         if self.medium.MEDIUM_TYPE in ['eqf', 'fluid']:
-            n_w = 1
+            self.n_w = 1
             if self.medium.MEDIUM_TYPE == "eqf":
                 K = self.medium.K_eq_til
             else:
@@ -51,15 +52,23 @@ class Characteristics():
             self.lam = np.array([-1j*self.medium.k, 1j*self.medium.k])
             self.Q = np.array([[-1, _],[1,_]])/(2*_)
         elif self.medium.MEDIUM_TYPE == "pem":
-            n_w = 3
+            self.n_w = 3
             self.P, self.lam = PEM_waves_TMM(self.medium, np.array([0]))
             self.Q = LA.inv(self.P)
+            if self.typ == "Biot98":
+                M_98 = np.array([[1, 0, 0, 0, 0, 0],[0, 0, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
+                self.P, self.Q = M_98@self.P, self.Q@LA.inv(M_98)
+            elif self.typ == "Biot01":
+                M_01 = np.array([[1, 0, 0, 0, -1, 0],[0, 0, 0, 1, -1, 0], [0, -1, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
+                self.P, self.Q = M_01@self.P, self.Q@LA.inv(M_01)
+
+            
         elif self.medium.MEDIUM_TYPE == "elastic":
-            n_w = 2
+            self.n_w = 2
             self.P, self.lam = elastic_waves_TMM(self.medium, np.array([0]))
             self.Q = LA.inv(self.P)
         else:
             pass
-        self.P_plus, self.P_minus = self.P[:,:n_w], self.P[:,n_w:]
-        self.Q_plus, self.Q_minus = self.Q[:n_w,:], self.Q[n_w:,:]
-        self.lam_plus, self.lam_minus = self.lam[:n_w], self.lam[n_w:]
+        self.P_plus, self.P_minus = self.P[:,:self.n_w], self.P[:,self.n_w:]
+        self.Q_plus, self.Q_minus = self.Q[:self.n_w,:], self.Q[self.n_w:,:]
+        self.lam_plus, self.lam_minus = self.lam[:self.n_w], self.lam[self.n_w:]

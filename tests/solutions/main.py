@@ -17,29 +17,28 @@ plot_solution = [True, True, True, False, False, False]
 # plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
-theta_d = 0.00000
-nb_layers = 3
-L = 5e-2
-d = 5e-2
-lcar = 5e-2/5
+theta_d = 60.00000
+nb_layers = 1
+L = 1.
+d = 1.
+lcar = d/6
 
 
-frequency = np.linspace( 5e1, 1e4,1)
+frequency = np.linspace( 5e0, 1e4,1)
 
 name_project="solution"
+method_FEM = ["jap", "characteristics"][1]
 termination = ["rigid", "transmission"][1]
-material = ["Air", "Wwood", "melamine"][2]
+material = ["Air", "Wwood", "melamine"][0]
 
 ml = [(material, d)]*nb_layers
 
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()
 
-
 RG = global_method.result.R0 
 recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,save_append="a", print_result=True)
 recursive_method.resolution()
-
 
 characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose,save_append="a", print_result=True)
 characteristic_method.resolution()
@@ -47,9 +46,9 @@ characteristic_method.resolution()
 one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 ml_fem = [ ("mesh", None)]*nb_layers
 
-eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=0, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method="characteristics")
+eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=0, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
-print(f"R FM ={eTMM_method.result.R0}")
+
 
 print(f"R GM ={global_method.result.R0}")
 print(f"R RM ={recursive_method.result.R0}")
@@ -67,12 +66,6 @@ print(f"R FEM={eTMM_method.result.R0}")
 #     print(f"\t\tET RM={np.abs(recursive_method.result.T0[0]-global_method.result.T0[0])}")
 #     print(f"\t\tET CM={np.abs(characteristic_method.result.T0[0]-global_method.result.T0[0])}")
 
-
-
-
-
-
 if any(plot_solution):
     # plt.legend()
     plt.show() 
-    

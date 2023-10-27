@@ -101,6 +101,21 @@ def dof_uy_element(_elem):
     orient = np.diag(orient_uy)
     return dof_uy, orient
 
+def dof_up_element(_elem):
+    dof_ux, orient_ux = dof_element(_elem, 0)
+    print(orient_ux)
+    dof_uy, orient_uy = dof_element(_elem, 1)
+    print(orient_uy)
+    dof_p, orient_p = dof_element(_elem, 3)
+    print(orient_p)
+    elem_dof = local_dofs(_elem, "up")
+    dof = dof_ux + dof_uy +dof_p
+    orient = np.diag(orient_ux) # return a single one
+    return dof, orient, elem_dof
+
+
+
+
 def orient_element(_elem, f="p"):
     order = _elem.reference_element.order
     if _elem.typ in [2,9]: # Triangles
@@ -136,7 +151,14 @@ def local_dofs(_elem, field="p"):
             elem_dof["dof_c_x"] = slice(nb_m, nb_d)
             elem_dof["dof_m_y"] = slice(nb_d, nb_d+nb_m)
             elem_dof["dof_c_y"] = slice(nb_d+nb_m, 2*nb_d)
-
+        elif field == "up":
+            elem_dof =dict()
+            elem_dof["dof_m_x"] = slice(nb_m)
+            elem_dof["dof_c_x"] = slice(nb_m, nb_d)
+            elem_dof["dof_m_y"] = slice(nb_d, nb_d+nb_m)
+            elem_dof["dof_c_y"] = slice(nb_d+nb_m, 2*nb_d)
+            elem_dof["dof_m_p"] = slice(2*nb_d, 2*nb_d+nb_m)
+            elem_dof["dof_c_p"] = slice(2*nb_d+nb_m, 3*nb_d)
 
     elif _elem.typ in [1, 8]:
         elem_dof = None

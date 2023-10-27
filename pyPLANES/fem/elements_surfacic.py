@@ -49,7 +49,7 @@ def imposed_pw_elementary_vector(_elem, k):
     h = _elem.coord[0, 1]-_elem.coord[0, 0]
     x_mid = (_elem.coord[0, 1]+_elem.coord[0, 0])/2.
     k_prime = k*h/2
-    F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)
+    F_analytical = _elem.reference_element.int_lobatto_exponential(k_prime)#.reshape((_elem.reference_element.nb_SF,1))
     
     return np.abs(h/2.)*np.exp(-1j*k*x_mid)*F_analytical
 
@@ -63,32 +63,16 @@ def fsi_elementary_matrix(_elem):
         for ipg in range(m):
             _Phi = K_ref.Phi[:, ipg].reshape(n)
             M += J*K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
+        return M
     elif _elem.typ == 8:
         for ipg in range(m):
             _Phi = K_ref.Phi[:, ipg].reshape(n)
             J = _elem.get_jacobian_matrix(K_ref.xi[ipg])
             M += J*K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
             n_ = _elem.get_normal(K_ref.xi[ipg], _elem.elem2d)
-            
-            # print(_elem.elem2d)
-            # n_ = _elem.normal_fluid
             M_x = M*n_[0]
             M_y = M*n_[1]
-            # print("--")
-            # print(n_)
-            # print(_elem.normal_fluid)
-            
-            # import matplotlib.pyplot as plt 
-            # plt.figure()
-            # c = _elem.elem2d.coord
-            # plt.plot(c[0,:], c[1,:], "ro")
-            # plt.plot(_elem.coord[0,:], _elem.coord[1,:], "b.")
-
-            # plt.axis("equal")
-            # plt.show()
-           
-            # dsqdqsqs
-    return M_x, M_y
+        return M_x, M_y
 
 def fsi_elementary_matrix_incompatible(_elem):
     """
