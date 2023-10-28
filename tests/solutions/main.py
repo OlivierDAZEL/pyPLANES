@@ -14,21 +14,21 @@ from pyPLANES.core.result import Results, Result, Test
 
 
 plot_solution = [True, True, True, False, False, False]
-# plot_solution = [False]*6
+plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 60.00000
 nb_layers = 1
 L = 1.
 d = 1.
-lcar = d/6
+lcar = d/10
 
 
 frequency = np.linspace( 5e0, 1e4,1)
 
 name_project="solution"
 method_FEM = ["jap", "characteristics"][1]
-termination = ["rigid", "transmission"][1]
+termination = ["rigid", "transmission"][0]
 material = ["Air", "Wwood", "melamine"][0]
 
 ml = [(material, d)]*nb_layers

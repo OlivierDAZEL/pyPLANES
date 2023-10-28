@@ -25,7 +25,7 @@
 import numpy as np
 
 def PEM_waves_TMM(mat, kx):
-    ''' S={0:\hat{\sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:\hat{\sigma}_{yy}, 4:p, 5:u_x^s}'''
+    ''' S={0: hat{sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:hat{sigma}_{yy}, 4:p, 5:u_x^s}'''
     
     n_w = len(kx)
     Phi = np.zeros((6*n_w, 6*n_w), dtype=complex)

@@ -294,17 +294,14 @@ class PeriodicLayer(Mesh):
         for _elem in _ent.elements:
             M_elem = fsi_elementary_matrix(_elem)
             if _ent.typ == "fluid":
-                M = n_y*(Q[0,1]/Q[0,0])*M_elem
                 dof, orient, __ = dof_p_element(_elem)
-                M = orient @ M @ orient
-                self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
-                self.A_j.extend(list(dof)*len(dof))
-                self.A_v.extend(M.flatten())
             elif _ent.typ in ["Biot98", "Biot01"]:
                 dof, orient, __ = dof_up_element(_elem)
-                M = orient @ M_elem @ orient
-                M = n_y*np.kron(Q[:n_w,n_w:]/Q[:n_w,:n_w], M)
-
+            M = orient @ M_elem @ orient
+            M = n_y*np.kron(Q[:n_w,n_w:]/Q[:n_w,:n_w], M)
+            self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
+            self.A_j.extend(list(dof)*len(dof))
+            self.A_v.extend(M.flatten())
         # Bottom interface
         _ent = self.pwfem_entities[0]
         Q, n_w = self.characteristics[0].Q, self.characteristics[0].n_w
@@ -313,19 +310,14 @@ class PeriodicLayer(Mesh):
         for _elem in _ent.elements:
             M_elem = fsi_elementary_matrix(_elem)
             if _ent.typ == "fluid":
-                M_elem = n_y*(Q[0,1]/Q[0,0])*M_elem
                 dof, orient, __ = dof_p_element(_elem)
-                M = orient @ M_elem @ orient
-                self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
-                self.A_j.extend(list(dof)*len(dof))
-                self.A_v.extend(M.flatten())
             elif _ent.typ in ["Biot98", "Biot01"]:
                 dof, orient, __ = dof_up_element(_elem)                 
-                M = orient @ M_elem @ orient
-                M = n_y*np.kron(Q[:n_w,n_w:]/Q[:n_w,:n_w], M)
-                self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
-                self.A_j.extend(list(dof)*len(dof))
-                self.A_v.extend(M.flatten())
+            M = orient @ M_elem @ orient
+            M = n_y*np.kron(Q[:n_w,n_w:]/Q[:n_w,:n_w], M)
+            self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
+            self.A_j.extend(list(dof)*len(dof))
+            self.A_v.extend(M.flatten())
                         
                     
         # Application of periodicity on Dii
@@ -367,37 +359,42 @@ class PeriodicLayer(Mesh):
         _ent = self.pwfem_entities[1]
         Q = self.characteristics[1].Q
         P = self.characteristics[1].P
+        n_w = self.characteristics[1].n_w
         n_y = 1.
         for _w, kx in enumerate(self.kx):
             for _elem in _ent.elements:
                 M_elem = imposed_pw_elementary_vector(_elem, kx)
-                dof_p, orient_p, __ = dof_p_element(_elem)
-                dof_p =[d-1 for d in dof_p]
-                D_it[dof_p, _w] -= (n_y/Q[0,0])*(orient_p@M_elem).reshape((3))
-                # D_it[dof_p, _w] += (n_y*P[0,0])*(orient_p@M_elem).reshape((3))
-                # D_it[dof_p, _w+1] += (n_y*P[0,1])*(orient_p@M_elem).reshape((3))
-   
-                D_ti[_w, dof_p] += (orient_p@np.conj(M_elem)).reshape((3))
-            D_tt[_w, _w] -= P[1, 0] * _ent.period
-            D_tt[_w, _w+1] -= P[1,1] * _ent.period
+                if _ent.typ == "fluid":
+                    dof, orient, __ = dof_p_element(_elem)
+                elif _ent.typ in ["Biot98", "Biot01"]:
+                    dof, orient, __ = dof_up_element(_elem)  
+                dof =[d-1 for d in dof]
+                M = orient @ M_elem
+                D_it[dof, 2*_w] -= (n_y*M.reshape((len(dof), n_w))@LA.inv(Q[:n_w,:n_w].reshape((n_w,n_w)))).reshape((len(dof)))
+                D_ti[_w, dof] += np.conj(M)
+            D_tt[_w, 2*_w:2*_w+2*n_w] = D_tt[_w, 2*_w:2*_w+2*n_w]-P[n_w:, :] * _ent.period
+            # D_tt[_w, _w+1] -= P[n_w:,n_w:] * _ent.period
 
         # Bottom interface
         _ent = self.pwfem_entities[0]
         n_y = -1.
         Q = self.characteristics[0].Q
         P = self.characteristics[0].P
+        n_w = self.characteristics[0].n_w
         for _w, kx in enumerate(self.kx):
             for _elem in _ent.elements:
                 M_elem = imposed_pw_elementary_vector(_elem, kx)
-                dof_p, orient_p, __ = dof_p_element(_elem)
-                dof_p =[d-1 for d in dof_p]
-                D_ib[dof_p, _w] -= (n_y/Q[0,0])*(orient_p@M_elem).reshape((3))
-                # D_ib[dof_p, _w+1] += (n_y*P[0,0])*(orient_p@M_elem).reshape((3))
-                # D_ib[dof_p, _w] += (n_y*P[0,1])*(orient_p@M_elem).reshape((3))
-                
-                D_bi[_w, dof_p] += (orient_p@np.conj(M_elem)).reshape((3))
-            D_bb[_w, _w+1] -= P[1,0] * _ent.period
-            D_bb[_w, _w] -= P[1,1] * _ent.period
+                if _ent.typ == "fluid":
+                    dof, orient, __ = dof_p_element(_elem)
+                elif _ent.typ in ["Biot98", "Biot01"]:
+                    dof, orient, __ = dof_up_element(_elem)  
+                dof =[d-1 for d in dof]
+                M = orient @ M_elem
+                D_ib[dof, 2*_w] -= (n_y*M.reshape((len(dof), n_w))@LA.inv(Q[:n_w,:n_w].reshape((n_w,n_w)))).reshape((len(dof)))
+                D_bi[_w, dof] += np.conj(M)
+            D_bb[_w, 2*_w:2*_w+2*n_w] = D_bb[_w, 2*_w:2*_w+2*n_w]-P[n_w:, :] * _ent.period
+
+
 
         # # Application of periodicity to the columns of D_xi (D_ti and D_bi)
         for i_left, dof_left in enumerate(self.dof_left):
@@ -426,8 +423,11 @@ class PeriodicLayer(Mesh):
 
         self.M_1 = M_1
         self.M_2 = M_2
+        
+        
+        
         self.TM = -LA.solve(M_1, M_2)
-        # print("TM=", self.TM)
+
         m = self.nb_waves_in_medium*self.nb_waves
 
         Xi = np.eye(m)
@@ -443,6 +443,8 @@ class PeriodicLayer(Mesh):
         _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
         Lambda = np.diag(np.array(_list))
         alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+        print(Phi_inv[:m,:].shape)
+        print(Om.shape)
         xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
         _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
         xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))

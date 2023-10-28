@@ -149,7 +149,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
-                self.Omega = self.interfaces[-1].Omegac()
+                self.Omega = self.interfaces[-1].Omegac(self.nb_waves)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
@@ -178,6 +178,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         else:
             # Excitation (10) and (11) JAP
             if self.typ_solver == "direct":
+                if self.method == "characteristics":
+                    self.Omega = np.kron(np.eye(self.nb_waves), self.interfaces[0].carac_bottom.P)@self.Omega
                 alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
                 E_0 = np.zeros(2*self.nb_waves, dtype=complex)
                 E_0[:2] = np.array([-alpha, 1]).reshape((2))
