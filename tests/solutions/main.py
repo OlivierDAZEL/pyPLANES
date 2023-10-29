@@ -30,6 +30,7 @@ name_project="solution"
 method_FEM = ["jap", "characteristics"][1]
 termination = ["rigid", "transmission"][0]
 material = ["Air", "Wwood", "melamine"][0]
+# material = ["Air", "Wwood", "melamine"][2]
 
 ml = [(material, d)]*nb_layers
 
@@ -46,7 +47,7 @@ characteristic_method.resolution()
 one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 ml_fem = [ ("mesh", None)]*nb_layers
 
-eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=0, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
+eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=2, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
 
 
