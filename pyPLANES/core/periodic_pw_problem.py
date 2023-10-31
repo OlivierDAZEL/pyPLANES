@@ -70,6 +70,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.nb_bloch_waves = kwargs.get("nb_bloch_waves", False)
         self.result.order = self.order
         self.result.Solver = type(self).__name__
+        self.result.Method = self.method
         
 
         # Out files
@@ -140,7 +141,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         elif self.method == "characteristics":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac()
-
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
@@ -150,6 +150,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omegac(self.nb_waves)
+                # print(self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega

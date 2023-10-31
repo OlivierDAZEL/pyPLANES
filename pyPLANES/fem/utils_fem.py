@@ -103,11 +103,8 @@ def dof_uy_element(_elem):
 
 def dof_up_element(_elem):
     dof_ux, orient_ux = dof_element(_elem, 0)
-    print(orient_ux)
     dof_uy, orient_uy = dof_element(_elem, 1)
-    print(orient_uy)
     dof_p, orient_p = dof_element(_elem, 3)
-    print(orient_p)
     elem_dof = local_dofs(_elem, "up")
     dof = dof_ux + dof_uy +dof_p
     orient = np.diag(orient_ux) # return a single one

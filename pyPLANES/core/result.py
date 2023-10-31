@@ -54,6 +54,7 @@ class Result():
 
     def __init__(self, **kwargs):
         _in = kwargs.get("_in", None)
+        
         if _in == None: # Creation of a void instance 
             self.f = []
             self.R0 = []
@@ -62,6 +63,7 @@ class Result():
             self.T = []
             self.abs =[]
             self.Solver = None
+            self.Method = None
             self.Server = platform.node()
             self.h = []
             
@@ -80,6 +82,8 @@ class Result():
                 self.f = d["f"]
             if "h" in keys:
                 self.h = d["h"]
+            if "Method" in keys:
+                self.Method = d["Method"]
             if "Solver" in keys:
                 self.Solver = d["Solver"]
                 if self.Solver == "FemProblem":
@@ -195,8 +199,7 @@ class Results():
         self.f = []
         if file:
             for l in open(file, 'r'):
-                print("toto")
-                self.list.append(Result(_in="json.loads(l)"))
+                self.list.append(Result(_in=json.loads(l)))
 
 
 # class PwResult(Result):

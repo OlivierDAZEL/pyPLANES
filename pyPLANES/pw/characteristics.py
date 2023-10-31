@@ -51,6 +51,8 @@ class Characteristics():
             self.P = np.array([[-_, _],[1,1]])
             self.lam = np.array([-1j*self.medium.k, 1j*self.medium.k])
             self.Q = np.array([[-1, _],[1,_]])/(2*_)
+            
+            
         elif self.medium.MEDIUM_TYPE == "pem":
             self.n_w = 3
             self.P, self.lam = PEM_waves_TMM(self.medium, np.array([0]))
@@ -59,7 +61,8 @@ class Characteristics():
                 M_98 = np.array([[1, 0, 0, 0, 0, 0],[0, 0, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
                 self.P, self.Q = M_98@self.P, self.Q@LA.inv(M_98)
             elif self.typ == "Biot01":
-                M_01 = np.array([[1, 0, 0, 0, -1, 0],[0, 0, 0, 1, -1, 0], [0, -1, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
+                # P={0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y 3 u_x^s  4:u_y^s, 5: p}
+                M_01 = np.array([[1, 0, 0, 0, 0, 0],[0, 0, 0, 1, -1, 0], [0, -1, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
                 self.P, self.Q = M_01@self.P, self.Q@LA.inv(M_01)
 
             

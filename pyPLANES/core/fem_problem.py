@@ -46,7 +46,7 @@ from mediapack import Air
 class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
-        self.Result.Solver = type(self).__name__
+        self.result.Solver = type(self).__name__
         self.condensation = kwargs.get("condensation", True)
         self.order = kwargs.get("order", 2)
         Mesh.__init__(self, **kwargs)
@@ -61,10 +61,10 @@ class FemProblem(Mesh, Calculus):
 
         fem_preprocess(self)
         if self.list_vr is not False:
-            self.Result.R0 = []
-        self.Result.order = self.order
-        self.Result.n_dof = []
-        self.Result.D_lambda = []
+            self.result.R0 = []
+        self.result.order = self.order
+        self.result.n_dof = []
+        self.result.D_lambda = []
 
 
     def create_linear_system(self, omega):
@@ -178,8 +178,8 @@ class FemProblem(Mesh, Calculus):
         for _bb in self.bubbles:
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]       
-        if self.export_paraview is not False:
-            export_paraview(self)
+        # if self.export_paraview is not False:
+        #     export_paraview(self)
 
         if self.list_vr is not False:
             l_x = [v.coord[0] for v in self.list_vr]
@@ -194,15 +194,15 @@ class FemProblem(Mesh, Calculus):
             R= (Z-Air.Z)/(Z+Air.Z)
             k = ome/Air.c
             L2 = X.T@(Q@X)
-            self.Result.R0.append(R)
-            self.Result.n_dof.append(self.nb_dof_master)
+            self.result.R0.append(R)
+            self.result.n_dof.append(self.nb_dof_master)
         return X
 
 
     def resolution(self):
         Calculus.resolution(self)
         
-        if self.name_server == "helmholtz":
-            mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
-            os.system(mail)
+        # if self.name_server == "helmholtz":
+        #     mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
+        #     os.system(mail)
 

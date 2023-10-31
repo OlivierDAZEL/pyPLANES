@@ -239,6 +239,8 @@ class PeriodicLayer(Mesh):
         self.M_1 = M_1
         self.M_2 = M_2
         self.TM = -LA.solve(M_1, M_2)
+        # print("TM FEM")
+        # print(self.TM)
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         self.Omega_minus = Om # To plot the solution
@@ -274,6 +276,7 @@ class PeriodicLayer(Mesh):
 
 
     def update_Omegac(self, Om, omega):
+
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
 
@@ -289,7 +292,7 @@ class PeriodicLayer(Mesh):
         # Creation of the D_ii matrix (volumic term of the weak form) 
         for _ent in self.fem_entities:
             self.update_system(*_ent.update_system(self.omega))
-        
+
         # Stabilisation terms 
         # Top interface
         _ent = self.pwfem_entities[1]
@@ -300,10 +303,11 @@ class PeriodicLayer(Mesh):
             M_elem = fsi_elementary_matrix(_elem)
             dof, orient, __ = _ent.method_dof(_elem)
             M = orient @ M_elem @ orient
-            M = n_y*np.kron(Q[:n_w,n_w:]/Q[:n_w,:n_w], M)
+            M = n_y*np.kron(LA.solve(Q[n_w:,:n_w],Q[n_w:,n_w:]), M)
             self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
             self.A_j.extend(list(dof)*len(dof))
             self.A_v.extend(M.flatten())
+
         # Bottom interface
         _ent = self.pwfem_entities[0]
         Q, n_w = self.characteristics[0].Q, self.characteristics[0].n_w
@@ -313,12 +317,11 @@ class PeriodicLayer(Mesh):
             M_elem = fsi_elementary_matrix(_elem)
             dof, orient, __ = _ent.method_dof(_elem)
             M = orient @ M_elem @ orient
-            M = n_y*np.kron(Q[:n_w,n_w:]/Q[:n_w,:n_w], M)
+            M = n_y*np.kron(LA.solve(Q[:n_w,:n_w],Q[:n_w,n_w:]), M)
             self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
             self.A_j.extend(list(dof)*len(dof))
             self.A_v.extend(M.flatten())
-                        
-                    
+
         # Application of periodicity on Dii
         for i_left, dof_left in enumerate(self.dof_left):
             # Corresponding dof
@@ -361,16 +364,18 @@ class PeriodicLayer(Mesh):
         n_w = self.characteristics[1].n_w
         n_y = 1.
         for _w, kx in enumerate(self.kx):
+            dof_q  = slice(2*_w*n_w, 2*(_w+1)*n_w)
+            dof_qm = slice(2*n_w*_w+n_w, 2*(_w+1)*n_w)
+            dof_eq = slice(_w*n_w, (_w+1)*n_w)
             for _elem in _ent.elements:
                 M_elem = imposed_pw_elementary_vector(_elem, kx)
                 dof, orient, __ = _ent.method_dof(_elem)
                 dof =[d-1 for d in dof]
                 M = orient @ M_elem
-                MM = -n_y*np.kron(LA.inv(Q[:n_w,:n_w]), M).T
-                D_it[dof, slice(2*n_w*_w,2*n_w*_w+n_w)] += MM
-                D_ti[slice(_w*n_w, (_w+1)*n_w), dof] += np.kron(np.eye(n_w), np.conj(M))
-                
-            D_tt[slice(_w*n_w, (_w+1)*n_w), slice(2*_w*n_w, 2*(_w+1)*n_w)] += -P[n_w:, :] * _ent.period
+                MM = n_y*np.kron(LA.inv(Q[n_w:,:n_w]), M).T
+                D_it[dof, dof_qm] -= MM
+                D_ti[dof_eq , dof] += np.kron(np.eye(n_w), np.conj(M))
+            D_tt[dof_eq, dof_q] -= P[n_w:, :] * _ent.period
             # D_tt[_w, _w+1] -= P[n_w:,n_w:] * _ent.period
 
         # Bottom interface
@@ -380,25 +385,18 @@ class PeriodicLayer(Mesh):
         n_w = self.characteristics[0].n_w
         n_y = -1.
         for _w, kx in enumerate(self.kx):
+            dof_q  = slice(2*_w*n_w, 2*(_w+1)*n_w)
+            dof_qp = slice(2*n_w*_w,2*n_w*_w+n_w)
+            dof_eq = slice(_w*n_w, (_w+1)*n_w)
             for _elem in _ent.elements:
                 M_elem = imposed_pw_elementary_vector(_elem, kx)
                 dof, orient, __ = _ent.method_dof(_elem)
                 dof =[d-1 for d in dof]
                 M = orient @ M_elem
-                MM = -n_y*np.kron(LA.inv(Q[:n_w,:n_w]), M).T
-
-                D_ib[dof, slice(2*n_w*_w, 2*n_w*_w+n_w)] += MM
-
-                D_bi[slice(_w*n_w, (_w+1)*n_w), dof] += np.kron(np.eye(n_w), np.conj(M))
-            # D_bb[_w, 2*_w:2*_w+2*n_w] = D_bb[_w, 2*_w:2*_w+2*n_w]-P[n_w:, :] * _ent.period
-
-
-
-                
-            D_bb[slice(_w*n_w, (_w+1)*n_w), slice(2*_w*n_w, 2*(_w+1)*n_w)] += -P[n_w:, :] * _ent.period
-
-
-
+                MM = n_y*np.kron(LA.inv(Q[:n_w,:n_w]), M).T
+                D_ib[dof, dof_qp] -= MM
+                D_bi[dof_eq, dof] += np.kron(np.eye(n_w), np.conj(M))
+            D_bb[dof_eq, dof_q] -= P[n_w:, :] * _ent.period
 
 
         # # Application of periodicity to the columns of D_xi (D_ti and D_bi)
@@ -429,15 +427,22 @@ class PeriodicLayer(Mesh):
         self.M_1 = M_1
         self.M_2 = M_2
         
-        
-        
         self.TM = -LA.solve(M_1, M_2)
+        # print("TM carac")
+        # print(self.TM)
 
         m = self.nb_waves_in_medium*self.nb_waves
 
         Xi = np.eye(m)
-      
+
         lambda_, Phi = LA.eig(self.TM)
+        
+        # print("Pwlayer")
+        # print(lambda_)
+
+        # print(Phi)
+
+
         _index = np.argsort(np.abs(lambda_))[::-1]
         lambda_ = lambda_[_index]
   
@@ -448,8 +453,6 @@ class PeriodicLayer(Mesh):
         _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
         Lambda = np.diag(np.array(_list))
         alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-        print(Phi_inv[:m,:].shape)
-        print(Om.shape)
         xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
         _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
         xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))

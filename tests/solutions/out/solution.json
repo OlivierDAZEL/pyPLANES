@@ -1159,3 +1159,255 @@
 {"R": [1.0000000000140463], "real(R0)": [0.9957832248359931], "imag(R0)": [-0.09173750132457396], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.4046319662952556e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
 {"real(R0)": [0.99578322483019], "imag(R0)": [-0.09173750131100813], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
 {"R": [1.0000000000140463], "real(R0)": [0.9957832248359931], "imag(R0)": [-0.09173750132457396], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.4046319662952556e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000206333], "real(R0)": [0.983168461719454], "imag(R0)": [-0.18270132977303646], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.063327286805361e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000206333], "real(R0)": [0.983168461719454], "imag(R0)": [-0.18270132977303646], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.063327286805361e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000206333], "real(R0)": [0.983168461719454], "imag(R0)": [-0.18270132977303646], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.063327286805361e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.5107785542676355], "real(R0)": [-0.7146776824510966], "imag(R0)": [0.0037900493354349613], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [0.4892214457323645], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000206333], "real(R0)": [0.983168461719454], "imag(R0)": [-0.18270132977303646], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.063327286805361e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000357496], "real(R0)": [0.9831684617217369], "imag(R0)": [-0.18270132980212087], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-3.574962548213989e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000357496], "real(R0)": [0.9831684617217369], "imag(R0)": [-0.18270132980212087], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-3.574962548213989e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000357496], "real(R0)": [0.9831684617217369], "imag(R0)": [-0.18270132980212087], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-3.574962548213989e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000206333], "real(R0)": [0.983168461719454], "imag(R0)": [-0.18270132977303646], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.063327286805361e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000357496], "real(R0)": [0.9831684617217369], "imag(R0)": [-0.18270132980212087], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-3.574962548213989e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064254], "imag(R0)": [-0.18270132978667894], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000206333], "real(R0)": [0.983168461719454], "imag(R0)": [-0.18270132977303646], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.063327286805361e-11], "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.8119032023875605], "imag(R0)": [-0.29706053664335164], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.2525682275219877], "f": [5.0], "h": null}
+{"real(R0)": [0.8119032023875605], "imag(R0)": [-0.29706053664335164], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.2525682275219877], "f": [5.0], "h": null}
+{"real(R0)": [0.8119032023875605], "imag(R0)": [-0.29706053664335164], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.2525682275219877], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.99578322483019], "imag(R0)": [-0.09173750131100813], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9957832248302977], "imag(R0)": [-0.09173750130981152], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.8262327907577794], "imag(R0)": [-0.2260326089030038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.26624863518911324], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-0.9999999996343953], "imag(R0)": [5.709500233708198e-10], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [11.538549730035433], "imag(R0)": [2.060694515036155], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0807122010582142], "imag(R0)": [0.41286094698683534], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9166851837343477], "imag(R0)": [-0.12307922713004973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.1445397777709948], "f": [5.0], "h": null}
+{"real(R0)": [-1.0965349842038878], "imag(R0)": [0.517671624673079], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1576, "order": 2}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.982938055871795], "imag(R0)": [-0.18861819935052762], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 526, "order": 2}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [1.0167369440986238], "imag(R0)": [-0.4996171813780463], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1675, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [1.0167369440986238], "imag(R0)": [-0.4996171813780463], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1675, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [1.0167369440986238], "imag(R0)": [-0.4996171813780463], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1675, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9829284303438259], "imag(R0)": [-0.18265672496925206], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 6338, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9678064544922631], "imag(R0)": [-0.17984662150876468], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 38, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [1.0167369440986238], "imag(R0)": [-0.4996171813780463], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1675, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [1.0167369440986238], "imag(R0)": [-0.4996171813780463], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1675, "order": 5}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9825715918088981], "imag(R0)": [-0.18457697587189076], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2441, "order": 7}
+{"real(R0)": [0.9831684617064256], "imag(R0)": [-0.182701329786679], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9831384577862521], "imag(R0)": [-0.18269575418377917], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 9250, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999981898677555], "imag(R0)": [-0.0018373320476410306], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 534, "order": 2}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999981898677555], "imag(R0)": [-0.0018373320476410306], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 534, "order": 2}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"R": [0.9999998341158911], "real(R0)": [0.9999979560973932], "imag(R0)": [-0.0019803830254062514], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [1.6588410889362137e-07], "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [8.830654385964926e-17], "imag(R0)": [-4.0796971571594935e-19], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "real(T0)": [0.9999995780258258], "imag(T0)": [-0.0009186665174919435], "abs": [-4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [4.028301225155296e-07], "imag(R0)": [0.0001907344450884467], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "real(T0)": [0.999999578025828], "imag(T0)": [-0.0009186665145260248], "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999987149337973], "imag(R0)": [-0.0016465978056906263], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 2479, "order": 7}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999981898677555], "imag(R0)": [-0.0018373320476410306], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 534, "order": 2}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983997145121], "imag(R0)": [-0.0017419648742916945], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 158, "order": 2}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.99999826553753], "imag(R0)": [-0.0018373322253797347], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 923, "order": 3}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999980609126621], "imag(R0)": [-0.001980383197034366], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1701, "order": 5}
+{"real(R0)": [0.9999983121036592], "imag(R0)": [-0.0018373322596767969], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [2.220446049250313e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983384466344], "imag(R0)": [-0.0018134904917371554], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999990095016522], "imag(R0)": [-0.0014074784948797038], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [1.1102230246251565e-15], "f": [5.0], "h": null}
+{"real(R0)": [0.9999990095015532], "imag(R0)": [-0.0014074785682171138], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999990095016523], "imag(R0)": [-0.0014074784948797051], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [8.881784197001252e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999514520332788], "imag(R0)": [0.00818610749991383], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999990095016523], "imag(R0)": [-0.0014074784948797051], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [8.881784197001252e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999990095016048], "imag(R0)": [-0.001407478531424329], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999990095016523], "imag(R0)": [-0.0014074784948797051], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [8.881784197001252e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999990095016048], "imag(R0)": [-0.001407478531424329], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999990095016523], "imag(R0)": [-0.0014074784948797051], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [8.881784197001252e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999990095015548], "imag(R0)": [-0.0014074785570393755], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999990095016523], "imag(R0)": [-0.0014074784948797051], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [8.881784197001252e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999990095015548], "imag(R0)": [-0.0014074785570393755], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999990095016523], "imag(R0)": [-0.0014074784948797051], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [8.881784197001252e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999990095015548], "imag(R0)": [-0.0014074785570393755], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983902651567], "imag(R0)": [-0.0018134905174753638], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983902651567], "imag(R0)": [-0.0018134905174753638], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983121036067], "imag(R0)": [-0.0018373322883846245], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983121036067], "imag(R0)": [-0.0018373322883846245], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983121036473], "imag(R0)": [-0.0018373322665011537], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983121036473], "imag(R0)": [-0.0018373322665011537], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983121036473], "imag(R0)": [-0.0018373322665011537], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983121036593], "imag(R0)": [-0.0018373322596767973], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983121036067], "imag(R0)": [-0.0018373322883846245], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983629998774], "imag(R0)": [-0.001809419123619139], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983629999226], "imag(R0)": [-0.0018094190980718432], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.9999999999999981], "real(R0)": [0.9999983629999155], "imag(R0)": [-0.0018094191021528737], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [1.887379141862766e-15], "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.999999999999998], "real(R0)": [0.9999983629998774], "imag(R0)": [-0.0018094191231672265], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [1.9984014443252818e-15], "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.9999999997129402], "real(R0)": [0.9999983628574072], "imag(R0)": [-0.0018094185379588699], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [2.870598203585928e-10], "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.000000000000067], "real(R0)": [0.9999983629743486], "imag(R0)": [-0.001809433251014506], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-6.705747068735946e-14], "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000001403149], "real(R0)": [0.9999983626858496], "imag(R0)": [-0.001809631436151643], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.4031487083343563e-10], "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.999955202583243], "real(R0)": [0.9999758859144156], "imag(R0)": [-0.0018520726019153064], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [4.4797416757003106e-05], "f": [5.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.9998336923552678], "real(R0)": [0.999915328281769], "imag(R0)": [-0.0017402937769815715], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [0.00016630764473224424], "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000000135], "real(R0)": [0.999998362179339], "imag(R0)": [-0.0018098725515612933], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.354472090042691e-14], "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000000135], "real(R0)": [0.999998362179339], "imag(R0)": [-0.0018098725515612933], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.354472090042691e-14], "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000000000000056], "real(R0)": [0.9999983661909804], "imag(R0)": [-0.0018076546615378498], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-5.551115123125783e-15], "f": [5.0], "h": null, "n_dof": 6364, "order": 5}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.9999999999999871], "real(R0)": [0.9999983552341551], "imag(R0)": [-0.0018137058668750918], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [1.2878587085651816e-14], "f": [5.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [1.0000007434454525], "real(R0)": [0.999998955395785], "imag(R0)": [-0.0016830486598393216], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-7.434454525334644e-07], "f": [5.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"real(R0)": [0.9999983629999475], "imag(R0)": [-0.001809419084886744], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [4.440892098500626e-16], "f": [5.0], "h": null}
+{"R": [0.9999773198917057], "real(R0)": [0.9999867534040011], "imag(R0)": [-0.0019526669534796538], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [2.2680108294315104e-05], "f": [5.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [0.9999999491036818], "imag(R0)": [0.00031904957275628165], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [3.552713678800501e-15], "f": [5.0], "h": null}
+{"R": [1.0002025373996566], "real(R0)": [1.000101136616168], "imag(R0)": [-0.0005039233129374154], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-0.00020253739965658824], "f": [5.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [0.9831684617064252], "imag(R0)": [-0.18270132978667897], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [6.661338147750939e-16], "f": [500.0], "h": null}
+{"R": [1.000000122733188], "real(R0)": [0.9831686833757085], "imag(R0)": [-0.18270047280306645], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.2273318805711142e-07], "f": [500.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [0.9999997224388353], "real(R0)": [-0.263392331734927], "imag(R0)": [-0.9646886554853195], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [2.775611647187759e-07], "f": [5000.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [0.9999999984966318], "real(R0)": [-0.26339227253206304], "imag(R0)": [-0.9646888147309614], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [1.5033682077003618e-09], "f": [5000.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [1.0000000012786678], "real(R0)": [-0.2633922732826999], "imag(R0)": [-0.964688815967947], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.2786678382781247e-09], "f": [5000.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [1.0000000012786678], "real(R0)": [-0.2633922732826999], "imag(R0)": [-0.964688815967947], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.2786678382781247e-09], "f": [5000.0], "h": null, "n_dof": 7826, "order": 6}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [1.0000000010881416], "real(R0)": [-0.2633922735941947], "imag(R0)": [-0.9646888157841483], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-1.0881415768437819e-09], "f": [5000.0], "h": null, "n_dof": 3440, "order": 3}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [0.9999999983240931], "real(R0)": [-0.26339227281414773], "imag(R0)": [-0.9646888145645158], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [1.6759068577343328e-09], "f": [5000.0], "h": null, "n_dof": 3440, "order": 3}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"R": [1.0000000000000004], "real(R0)": [-0.2633922731989196], "imag(R0)": [-0.964688815328086], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-4.440892098500626e-16], "f": [5000.0], "h": null, "n_dof": 3440, "order": 3}
+{"real(R0)": [-0.26339227317948777], "imag(R0)": [-0.9646888153333913], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.0], "f": [5000.0], "h": null}
+{"real(R0)": [-0.2633922716980977], "imag(R0)": [-0.9646888157378596], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5000.0], "h": null, "n_dof": 1978, "order": 2}
+{"real(R0)": [-0.2530890986958114], "imag(R0)": [-0.7375119757833748], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "abs": [0.3920219936974447], "f": [5000.0], "h": null}
+{"real(R0)": [-1.0], "imag(R0)": [-5.955700410381799e-22], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "f": [5000.0], "h": null, "n_dof": 5932, "order": 2}

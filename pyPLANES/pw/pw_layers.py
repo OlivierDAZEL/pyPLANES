@@ -189,16 +189,12 @@ class PwGeneric():
         elif self.method_TM == "diag":
             Phi = self.SV
             Phi_inv = LA.inv(Phi)
-            # print(Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv))
             return Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv)
         elif self.method_TM == "analytic":
-            # print(self.transfert_matrix_analytic(omega, direction))
             return self.transfert_matrix_analytic(omega, direction)
         elif self.method_TM == "cheb_1":
-            # print(self.transfert_matrix_cheb(omega, direction))
             return self.transfert_matrix_cheb_1(omega, direction)
         elif self.method_TM == "cheb_2":
-            # print(self.transfert_matrix_cheb(omega, direction))
             return self.transfert_matrix_cheb_2(omega, direction)
         else:
             raise NameError("self.method_TM incorrect")
@@ -267,17 +263,14 @@ class PwGeneric():
 
         Phi = self.carac.Q@self.SV
         lambda_ = self.lam
-
+        # print("Pwlayer")
+        # print(np.exp(lambda_*1e-2))
+        # print("Phi Pwlayer")
+        
         Phi_inv = LA.inv(Phi)
-        
-        # d = 5e-2
-        # print("MT=", np.exp(lambda_*d))
-        # # print(omega)
-        # print(Air.c)
-        # print(d)
-        # print(np.exp(1j*(omega/Air.c)*d))
-
-        
+        # print("TM")
+        # direction = -1
+        # print(Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv))
         
         m = self.nb_waves_in_medium*self.nb_waves
         _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
