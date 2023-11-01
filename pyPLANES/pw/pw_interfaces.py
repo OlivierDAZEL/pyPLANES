@@ -140,7 +140,7 @@ class PwInterface():
             M_X = M[:self.n_1,:]
             M_S = M[self.n_1:,:]
             Omega = np.zeros((2*self.n_0,self.n_0), dtype=complex)
-            Omega[:self.n_0,:] = np.eye(self.n_0) 
+            Omega[:self.n_0,:] = np.eye(self.n_0)
             Omega[self.n_0:,:] = M_S
             # Omega = self.carac_bottom.P_minus@M_S +self.carac_bottom.P_plus 
 
@@ -186,12 +186,14 @@ class FluidPemInterface(PwInterface):
         self.n_0 = 1
         self.n_1 = 3
         self.number_relations = 4
+        # 0: u_y-u_y^t 1: p-p=0 2: hat{sigma}_{xy}=0 3 hat{sigma}_{xy}=0
         self.C_bottom = np.array([[1,0],[0,1], [0,0], [0, 0]])
         self.C_top = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
         if isinstance(self.layers[1], PeriodicLayer):
             if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                # 0: u_y-u_y^t 1: p-p=0 2: p+{sigma}^t_{yy}=0 3 hat{sigma}_{xy}=0
                 self.C_bottom = np.array([[1,0],[0,1], [0,1], [0, 0]])
-                self.C_top = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
+                self.C_top = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
         self.pw_method = fluid_waves_TMM
 
     def __str__(self):
@@ -488,9 +490,13 @@ class PemBacking(PwInterface):
             C[1,2] = 1.
             C[2,5] = 1.
         elif self.carac_bottom.typ in ["Biot01", "Biot98"]:
-            C[:,3:] = np.eye(3)
+            # P={0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y=0 3 u_x^s=0  4:u_y^s=0, 5: p}
+            C[0,2] = 1.
+            C[1,3] = 1.
+            C[2,4] = 1.
         else: 
-            raise NameError("invalide typ")            
+            raise NameError("invalid typ")
+        
         out = np.zeros((6, 3), dtype=complex)
         out[:3,:] = np.eye(3)
         out[3:,:] = -LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus

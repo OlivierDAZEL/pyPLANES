@@ -59,7 +59,6 @@ class PeriodicMultiLayer():
             if isinstance(_l, PwGeneric):
                 if _l.method_TM != self.method_TM:
                     _l.method_TM = self.method_TM
-                # print(_l.method_TM)
                 _l.x_0 = _x
                 d = _l.d
                 self.layers.append(_l)
