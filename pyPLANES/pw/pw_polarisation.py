@@ -59,7 +59,7 @@ def PEM_waves_TMM(mat, kx):
     return Phi, lam
 
 def elastic_waves_TMM(mat, kx):
-    ''' S={0:\sigma_{xy}, 1: u_y, 2 \sigma_{yy}, 3 u_x}'''
+    ''' S={0:sigma_{xy}, 1: u_y, 2 sigma_{yy}, 3 u_x}'''
 
     n_w = len(kx)
     Phi = np.zeros((4*n_w,4*n_w), dtype=complex)

@@ -55,13 +55,16 @@ class Characteristics():
             
         elif self.medium.MEDIUM_TYPE == "pem":
             self.n_w = 3
+            # {0: hat{sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:hat{sigma}_{yy}, 4:p, 5:u_x^s}
             self.P, self.lam = PEM_waves_TMM(self.medium, np.array([0]))
             self.Q = LA.inv(self.P)
             if self.typ == "Biot98":
+                # TO CHECK
+                # {0: {sigma}_{xy}, 1: {sigma}_{yy}, 2: u_y^f 3 u_x^s  4:u_y^s, 5: p}
                 M_98 = np.array([[1, 0, 0, 0, 0, 0],[0, 0, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
                 self.P, self.Q = M_98@self.P, self.Q@LA.inv(M_98)
             elif self.typ == "Biot01":
-                # P={0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y 3 u_x^s  4:u_y^s, 5: p}
+                # {0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y 3 u_x^s  4:u_y^s, 5: p}
                 M_01 = np.array([[1, 0, 0, 0, 0, 0],[0, 0, 0, 1, -1, 0], [0, -1, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
                 self.P, self.Q = M_01@self.P, self.Q@LA.inv(M_01)
 

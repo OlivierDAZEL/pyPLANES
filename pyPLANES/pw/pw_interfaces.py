@@ -21,7 +21,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-
+from itertools import chain 
 import numpy as np
 import numpy.linalg as LA
 from numpy import sqrt
@@ -44,6 +44,7 @@ class PwInterface():
         self.number_relations = None
         self.pw_method = None
         self.C_bottom, self.C_top = None, None
+        self.C_bottomc, self.C_topc = None, None
         if isinstance(self.layers[0],PwLayer):
             self.carac_bottom = Characteristics(self.layers[0].medium)
         elif isinstance(self.layers[0],PeriodicLayer):
@@ -132,9 +133,9 @@ class PwInterface():
         elif isinstance(self.layers[0], PeriodicLayer):
             mat = self.layers[0].medium[1]
         if self.nb_waves == 1:
-            M1 = self.C_top@self.carac_top.P@Om
-            M2 = self.C_bottom@self.carac_bottom.P_minus
-            M3 = self.C_bottom@self.carac_bottom.P_plus
+            M1 = self.C_topc@self.carac_top.P@Om
+            M2 = self.C_bottomc@self.carac_bottom.P_minus
+            M3 = self.C_bottomc@self.carac_bottom.P_plus
 
             M = -LA.inv(np.hstack((M1,M2)))@M3
             M_X = M[:self.n_1,:]
@@ -145,19 +146,37 @@ class PwInterface():
             # Omega = self.carac_bottom.P_minus@M_S +self.carac_bottom.P_plus 
 
         else: 
-            SV = self.pw_method(mat, np.zeros(1))[0] 
-            P_in = SV[:,:self.n_0].reshape((2*self.n_0, self.n_0))
-            P_out = SV[:,self.n_0:].reshape((2*self.n_0, self.n_0))
-
-            M1 = np.kron(np.eye(self.nb_waves), self.C_top)@Om
-            M2 = np.kron(np.eye(self.nb_waves), self.C_bottom@P_in)
-            M3 = np.kron(np.eye(self.nb_waves), self.C_bottom@P_out)
+            M1 = np.kron(np.eye(self.nb_waves), self.C_topc@self.carac_top.P)@Om
+            M2 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_minus)
+            M3 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_plus)
 
             M = -LA.inv(np.hstack((M1,M2)))@M3
-
             M_X = M[:self.n_1*self.nb_waves,:]
-            M_S = M[self.n_1*self.nb_waves:,:]
-            Omega = np.kron(np.eye(self.nb_waves), P_in)@M_S +np.kron(np.eye(self.nb_waves), P_out) 
+            M_qminus = M[self.n_1*self.nb_waves:,:]
+            
+            Omega = np.zeros((2*self.n_0*self.nb_waves,self.n_0*self.nb_waves), dtype=complex)
+            
+            index_plus = list(chain.from_iterable([ list(range(2*self.n_0*d,2*self.n_0*d+self.n_0)) for d in range(self.nb_waves)]))
+            index_minus = list(chain.from_iterable([ list(range(2*self.n_0*d+self.n_0,2*self.n_0*d+2*self.n_0)) for d in range(self.nb_waves)]))
+            Omega[index_plus,:] = np.eye(self.n_0*self.nb_waves)
+            Omega[index_minus,:] = M_qminus
+
+
+
+
+            # SV = self.pw_method(mat, np.zeros(1))[0] 
+            # P_in = SV[:,:self.n_0].reshape((2*self.n_0, self.n_0))
+            # P_out = SV[:,self.n_0:].reshape((2*self.n_0, self.n_0))
+
+            # M1 = np.kron(np.eye(self.nb_waves), self.C_topc)@Om
+            # M2 = np.kron(np.eye(self.nb_waves), self.C_bottomc@P_in)
+            # M3 = np.kron(np.eye(self.nb_waves), self.C_bottomc@P_out)
+
+            # M = -LA.inv(np.hstack((M1,M2)))@M3
+
+            # M_X = M[:self.n_1*self.nb_waves,:]
+            # M_S = M[self.n_1*self.nb_waves:,:]
+            # Omega = np.kron(np.eye(self.nb_waves), P_in)@M_S +np.kron(np.eye(self.nb_waves), P_out) 
         return Omega, M_X
 
 class FluidFluidInterface(PwInterface):
@@ -170,6 +189,7 @@ class FluidFluidInterface(PwInterface):
         self.number_relations = 2
         self.C_bottom = np.eye(self.number_relations)
         self.C_top = -np.eye(self.number_relations)
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
 
     def __str__(self):
@@ -189,11 +209,14 @@ class FluidPemInterface(PwInterface):
         # 0: u_y-u_y^t 1: p-p=0 2: hat{sigma}_{xy}=0 3 hat{sigma}_{xy}=0
         self.C_bottom = np.array([[1,0],[0,1], [0,0], [0, 0]])
         self.C_top = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         if isinstance(self.layers[1], PeriodicLayer):
             if self.layers[1].pwfem_entities[0].typ == "Biot01":
-                # 0: u_y-u_y^t 1: p-p=0 2: p+{sigma}^t_{yy}=0 3 hat{sigma}_{xy}=0
                 self.C_bottom = np.array([[1,0],[0,1], [0,1], [0, 0]])
-                self.C_top = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
+                self.C_top = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
+                # 0: u_y-u_y^t 1: p-p=0 2: p+{sigma}^t_{yy}=0 3 hat{sigma}_{xy}=0
+                self.C_bottomc = np.array([[1,0],[0,1], [0,1], [0, 0]])
+                self.C_topc = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
         self.pw_method = fluid_waves_TMM
 
     def __str__(self):
@@ -225,6 +248,7 @@ class PemFluidInterface(PwInterface):
             if self.layers[0].pwfem_entities[0].typ == "Biot01":
                 self.C_bottom = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
                 self.C_top = np.array([[1,0],[0,1], [0,1], [0, 0]])
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
     def __str__(self):
         out = "\t PEM-Fluid interface"
@@ -241,6 +265,8 @@ class FluidElasticInterface(PwInterface):
         self.number_relations = 3
         self.C_bottom = np.array([[0,0],[1,0],[0,1]])
         self.C_top = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
         self.pw_method = fluid_waves_TMM
 
     def __str__(self):
@@ -258,6 +284,8 @@ class ElasticFluidInterface(PwInterface):
         self.number_relations = 3
         self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
         self.C_top = np.array([[0,0],[1,0],[0,1]])
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
         self.pw_method = elastic_waves_TMM
 
     def __str__(self):
@@ -275,6 +303,8 @@ class ElasticElasticInterface(PwInterface):
         self.number_relations = 4
         self.C_bottom = np.eye(self.number_relations)
         self.C_top = -np.eye(self.number_relations)
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
         self.pw_method = elastic_waves_TMM
 
     def __str__(self):
@@ -292,6 +322,8 @@ class PemPemInterface(PwInterface):
         self.number_relations = 6
         self.C_bottom = np.eye(self.number_relations)
         self.C_top = -np.eye(self.number_relations)
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
         self.pw_method = PEM_waves_TMM
 
     def __str__(self):
@@ -347,6 +379,7 @@ class ElasticPemInterface(PwInterface):
                 self.C_top[3, 4] = 0.
         # u_x = u_x_s 
         self.C_bottom[4, 3], self.C_top[4, 5] = 1., -1.
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
 
 
@@ -407,6 +440,7 @@ class PemElasticInterface(PwInterface):
                 self.C_bottom[3, 4] = 0.
         # u_x = u_x_s 
         self.C_top[4, 3], self.C_bottom[4, 5] = 1., -1.
+        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
 
     def __str__(self):
@@ -499,7 +533,8 @@ class PemBacking(PwInterface):
         
         out = np.zeros((6, 3), dtype=complex)
         out[:3,:] = np.eye(3)
-        out[3:,:] = -LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus
+        out[3:,:] = np.eye(3) #-LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus
+
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
@@ -582,6 +617,8 @@ class SemiInfinite(PwInterface):
             self.number_relations = 2
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
+            self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
             self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
@@ -599,12 +636,16 @@ class SemiInfinite(PwInterface):
             self.number_relations = 4
             self.C_bottom = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
             self.C_top = np.array([[1,0],[0,1], [0,0], [0, 0]])
+            self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
         elif t in ["elastic"]:
             self.typ ="elastic"
             self.n_0, self.n_1 = 2, 1
             self.number_relations = 3
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
+            self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+
             self.pw_method = elastic_waves_TMM
         else:
             raise NameError("Invalid type")

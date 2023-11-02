@@ -239,8 +239,7 @@ class PeriodicLayer(Mesh):
         self.M_1 = M_1
         self.M_2 = M_2
         self.TM = -LA.solve(M_1, M_2)
-        # print("TM FEM")
-        # print(self.TM)
+
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         self.Omega_minus = Om # To plot the solution
@@ -248,7 +247,7 @@ class PeriodicLayer(Mesh):
             print("Creation of the Transfer Matrix of the FEM layer")
         self.create_transfert_matrix()
 
-        # print("TM=", self.TM)
+        # print("TM=", np.diag(self.TM))
 
 
         m = self.nb_waves_in_medium*self.nb_waves
@@ -372,11 +371,10 @@ class PeriodicLayer(Mesh):
                 dof, orient, __ = _ent.method_dof(_elem)
                 dof =[d-1 for d in dof]
                 M = orient @ M_elem
-                MM = n_y*np.kron(LA.inv(Q[n_w:,:n_w]), M).T
+                MM = n_y*np.kron(LA.inv(Q[n_w:,:n_w]).T, M).T
                 D_it[dof, dof_qm] -= MM
                 D_ti[dof_eq , dof] += np.kron(np.eye(n_w), np.conj(M))
             D_tt[dof_eq, dof_q] -= P[n_w:, :] * _ent.period
-            # D_tt[_w, _w+1] -= P[n_w:,n_w:] * _ent.period
 
         # Bottom interface
         _ent = self.pwfem_entities[0]
@@ -393,7 +391,7 @@ class PeriodicLayer(Mesh):
                 dof, orient, __ = _ent.method_dof(_elem)
                 dof =[d-1 for d in dof]
                 M = orient @ M_elem
-                MM = n_y*np.kron(LA.inv(Q[:n_w,:n_w]), M).T
+                MM = n_y*np.kron(LA.inv(Q[:n_w,:n_w]).T, M).T
                 D_ib[dof, dof_qp] -= MM
                 D_bi[dof_eq, dof] += np.kron(np.eye(n_w), np.conj(M))
             D_bb[dof_eq, dof_q] -= P[n_w:, :] * _ent.period
@@ -437,12 +435,6 @@ class PeriodicLayer(Mesh):
 
         lambda_, Phi = LA.eig(self.TM)
         
-        # print("Pwlayer")
-        # print(lambda_)
-
-        # print(Phi)
-
-
         _index = np.argsort(np.abs(lambda_))[::-1]
         lambda_ = lambda_[_index]
   

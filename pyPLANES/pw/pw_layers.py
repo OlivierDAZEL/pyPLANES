@@ -268,9 +268,8 @@ class PwGeneric():
         # print("Phi Pwlayer")
         
         Phi_inv = LA.inv(Phi)
-        # print("TM")
         # direction = -1
-        # print(Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv))
+        # TM = Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv)
         
         m = self.nb_waves_in_medium*self.nb_waves
         _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
