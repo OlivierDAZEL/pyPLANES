@@ -24,10 +24,13 @@ d = 1.e-2
 lcar = d/5
 
 frequency = np.linspace( 5e3, 1e4,1)
+frequency = np.linspace( 5e3, 1e4,1)
 
 name_project="solution"
-method_FEM = ["jap", "characteristics"][1]
+method_FEM = ["jap", "characteristics"][0]
 termination = ["rigid", "transmission"][0]
+# material = ["Air", "Wwood", "melamine"][0]
+material = ["Air", "Wwood", "melamine"][2]
 # material = ["Air", "Wwood", "melamine"][0]
 material = ["Air", "Wwood", "melamine"][2]
 
@@ -50,10 +53,10 @@ eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=th
 eTMM_method.resolution()
 
 
-print(f"R GM ={global_method.result.R0}")
-print(f"R RM ={recursive_method.result.R0}")
-print(f"R CM ={characteristic_method.result.R0}")
-print(f"R FEM={eTMM_method.result.R0}")
+# print(f"R GM ={global_method.result.R0}")
+# print(f"R RM ={recursive_method.result.R0}")
+# print(f"R CM ={characteristic_method.result.R0}")
+# print(f"R FEM={eTMM_method.result.R0}")
 
 # print(f"xxxxxxxxxxxx")
 # print(f"\t\tER RM={np.abs(recursive_method.result.R0[0]-global_method.result.R0[0])}")
