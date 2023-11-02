@@ -68,6 +68,7 @@ class Characteristics():
                 M_01 = np.array([[1, 0, 0, 0, 0, 0],[0, 0, 0, 1, -1, 0], [0, -1, 1, 0, 0, 0],[0, 0, 0, 0, 0, 1],[0,1,0,0,0,0],[0,0,0,0,1,0]])
                 self.P, self.Q = M_01@self.P, self.Q@LA.inv(M_01)
 
+
             
         elif self.medium.MEDIUM_TYPE == "elastic":
             self.n_w = 2

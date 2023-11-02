@@ -240,15 +240,11 @@ class PeriodicLayer(Mesh):
         self.M_2 = M_2
         self.TM = -LA.solve(M_1, M_2)
 
-
     def update_Omega(self, Om, omega, method="Recursive Method"):
         self.Omega_minus = Om # To plot the solution
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
         self.create_transfert_matrix()
-
-        # print("TM=", np.diag(self.TM))
-
 
         m = self.nb_waves_in_medium*self.nb_waves
 
@@ -272,7 +268,6 @@ class PeriodicLayer(Mesh):
         Om[:,:m-1] += Phi[:, :m-1]
         Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
         return Om, Xi
-
 
     def update_Omegac(self, Om, omega):
 
@@ -445,6 +440,8 @@ class PeriodicLayer(Mesh):
         _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
         Lambda = np.diag(np.array(_list))
         alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+        print(Phi_inv[:m,:].shape)
+        print(Om.shape)
         xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
         _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
         xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))

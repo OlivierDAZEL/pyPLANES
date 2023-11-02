@@ -140,7 +140,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
         elif self.method == "characteristics":
             if self.termination == "transmission":
-                self.Omega, self.back_prop = self.interfaces[-1].Omegac()
+                self.Omega, self.back_prop = self.interfaces[-1].Omegac(self.nb_waves)
+                print(self.Omega.shape)
+                dqs
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega

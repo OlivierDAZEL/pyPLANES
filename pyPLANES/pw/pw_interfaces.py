@@ -132,52 +132,21 @@ class PwInterface():
             mat = self.layers[0].medium
         elif isinstance(self.layers[0], PeriodicLayer):
             mat = self.layers[0].medium[1]
-        if self.nb_waves == 1:
-            M1 = self.C_topc@self.carac_top.P@Om
-            M2 = self.C_bottomc@self.carac_bottom.P_minus
-            M3 = self.C_bottomc@self.carac_bottom.P_plus
+        M1 = np.kron(np.eye(self.nb_waves), self.C_topc@self.carac_top.P)@Om
+        M2 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_minus)
+        M3 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_plus)
 
-            M = -LA.inv(np.hstack((M1,M2)))@M3
-            M_X = M[:self.n_1,:]
-            M_S = M[self.n_1:,:]
-            Omega = np.zeros((2*self.n_0,self.n_0), dtype=complex)
-            Omega[:self.n_0,:] = np.eye(self.n_0)
-            Omega[:self.n_0,:] = np.eye(self.n_0)
-            Omega[self.n_0:,:] = M_S
-            # Omega = self.carac_bottom.P_minus@M_S +self.carac_bottom.P_plus 
+        M = -LA.inv(np.hstack((M1,M2)))@M3
+        M_X = M[:self.n_1*self.nb_waves,:]
+        M_qminus = M[self.n_1*self.nb_waves:,:]
+        
+        Omega = np.zeros((2*self.n_0*self.nb_waves,self.n_0*self.nb_waves), dtype=complex)
+        
+        index_plus = list(chain.from_iterable([ list(range(2*self.n_0*d,2*self.n_0*d+self.n_0)) for d in range(self.nb_waves)]))
+        index_minus = list(chain.from_iterable([ list(range(2*self.n_0*d+self.n_0,2*self.n_0*d+2*self.n_0)) for d in range(self.nb_waves)]))
+        Omega[index_plus,:] = np.eye(self.n_0*self.nb_waves)
+        Omega[index_minus,:] = M_qminus
 
-        else: 
-            M1 = np.kron(np.eye(self.nb_waves), self.C_topc@self.carac_top.P)@Om
-            M2 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_minus)
-            M3 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_plus)
-
-            M = -LA.inv(np.hstack((M1,M2)))@M3
-            M_X = M[:self.n_1*self.nb_waves,:]
-            M_qminus = M[self.n_1*self.nb_waves:,:]
-            
-            Omega = np.zeros((2*self.n_0*self.nb_waves,self.n_0*self.nb_waves), dtype=complex)
-            
-            index_plus = list(chain.from_iterable([ list(range(2*self.n_0*d,2*self.n_0*d+self.n_0)) for d in range(self.nb_waves)]))
-            index_minus = list(chain.from_iterable([ list(range(2*self.n_0*d+self.n_0,2*self.n_0*d+2*self.n_0)) for d in range(self.nb_waves)]))
-            Omega[index_plus,:] = np.eye(self.n_0*self.nb_waves)
-            Omega[index_minus,:] = M_qminus
-
-
-
-
-            # SV = self.pw_method(mat, np.zeros(1))[0] 
-            # P_in = SV[:,:self.n_0].reshape((2*self.n_0, self.n_0))
-            # P_out = SV[:,self.n_0:].reshape((2*self.n_0, self.n_0))
-
-            # M1 = np.kron(np.eye(self.nb_waves), self.C_topc)@Om
-            # M2 = np.kron(np.eye(self.nb_waves), self.C_bottomc@P_in)
-            # M3 = np.kron(np.eye(self.nb_waves), self.C_bottomc@P_out)
-
-            # M = -LA.inv(np.hstack((M1,M2)))@M3
-
-            # M_X = M[:self.n_1*self.nb_waves,:]
-            # M_S = M[self.n_1*self.nb_waves:,:]
-            # Omega = np.kron(np.eye(self.nb_waves), P_in)@M_S +np.kron(np.eye(self.nb_waves), P_out) 
         return Omega, M_X
 
 class FluidFluidInterface(PwInterface):
@@ -521,18 +490,18 @@ class PemBacking(PwInterface):
         return i_eq
 
     def Omegac(self, nb_bloch_waves=1):
-        C = np.zeros((3,6), dtype=complex)
-        if self.carac_bottom.typ == None:
-            C[0,1] = 1.
-            C[1,2] = 1.
-            C[2,5] = 1.
-        elif self.carac_bottom.typ in ["Biot01", "Biot98"]:
-            # P={0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y=0 3 u_x^s=0  4:u_y^s=0, 5: p}
-            C[0,2] = 1.
-            C[1,3] = 1.
-            C[2,4] = 1.
-        else: 
-            raise NameError("invalid typ")
+        # C = np.zeros((3,6), dtype=complex)
+        # if self.carac_bottom.typ == None:
+        #     C[0,1] = 1.
+        #     C[1,2] = 1.
+        #     C[2,5] = 1.
+        # elif self.carac_bottom.typ in ["Biot01", "Biot98"]:
+        #     # P={0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y=0 3 u_x^s=0  4:u_y^s=0, 5: p}
+        #     C[0,2] = 1.
+        #     C[1,3] = 1.
+        #     C[2,4] = 1.
+        # else: 
+        #     raise NameError("invalid typ")
         
         out = np.zeros((6, 3), dtype=complex)
         out[:3,:] = np.eye(3)
@@ -629,17 +598,20 @@ class SemiInfinite(PwInterface):
             self.n_0 = 3
             self.n_1 = 1
             self.pw_method = PEM_waves_TMM
-            # if isinstance(self.layers[0], PeriodicLayer):
-            #     if self.layers[0].pwfem_entities[0].typ == "Biot01":
-            #         typ = "Biot01"
-            #     else:
-            #         typ = "Biot98"
-            # else:
-            #     typ = "Biot98"
+
             self.number_relations = 4
             self.C_bottom = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
             self.C_top = np.array([[1,0],[0,1], [0,0], [0, 0]])
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+            if isinstance(self.layers[0], PeriodicLayer):
+                if self.layers[0].pwfem_entities[0].typ == "Biot01":
+                    typ = "Biot01"
+                    self.C_bottomc = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
+                    self.C_topc = np.array([[1,0],[0,1], [0,1], [0, 0]])
+                else:
+                    typ = "Biot98"
+            else:
+                typ = "Biot98"
 
         elif t in ["elastic"]:
             self.typ ="elastic"
@@ -743,13 +715,18 @@ class SemiInfinite(PwInterface):
             self.len_X = 3
             out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
             MM = np.zeros((3*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
-            Om = np.zeros((2,1), dtype=complex)
+
             for _w in range(nb_bloch_waves):
+                Om = np.zeros((2,1), dtype=complex)
+                print(Om)
                 Om[0, 0] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
                 Om[1, 0] = 1
-                Om = self.carac_top.Q@Om.reshape((2,1))
+                print("Q=", self.carac_top.Q.shape)
+                print("Om", Om)
+                Om = self.carac_top.Q@Om
                 Om, M_X = self.update_Omegac(Om)
                 out[slice(6*_w,6*_w+6), slice(3*_w, 3*_w+3)] = Om
+                print(M_X.shape)
                 MM[3*_w + 0:3, 3*_w + 0:3] = M_X
             return out, MM
         elif self.typ  == "elastic":
@@ -765,7 +742,6 @@ class SemiInfinite(PwInterface):
                 out[slice(4*_w,4*_w+4), slice(2*_w, 2*_w+2)] = Om
                 MM[2*_w + 0:2, 2*_w + 0:2] = M_X
             return out, MM
-
 
     def update_M_global(self, M, i_eq):
         if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:

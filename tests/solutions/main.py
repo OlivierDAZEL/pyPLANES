@@ -17,8 +17,8 @@ plot_solution = [True, True, True, False, False, False]
 # plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
-theta_d = 00.00000
-nb_layers = 1
+theta_d = 60.00000
+nb_layers = 2
 L = 1.e-2
 d = 1.e-2
 lcar = d/5
@@ -27,12 +27,10 @@ frequency = np.linspace( 5e3, 1e4,1)
 frequency = np.linspace( 5e3, 1e4,1)
 
 name_project="solution"
-method_FEM = ["jap", "characteristics"][0]
-termination = ["rigid", "transmission"][0]
-# material = ["Air", "Wwood", "melamine"][0]
+method_FEM = ["jap", "characteristics"][1]
+termination = ["rigid", "transmission"][1]
 material = ["Air", "Wwood", "melamine"][2]
 # material = ["Air", "Wwood", "melamine"][0]
-material = ["Air", "Wwood", "melamine"][2]
 
 ml = [(material, d)]*nb_layers
 
@@ -49,14 +47,13 @@ characteristic_method.resolution()
 one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
 ml_fem = [ ("mesh", None)]*nb_layers
 
-eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=1, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
+eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=2, nb_bloch_waves=2, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
 
-
-# print(f"R GM ={global_method.result.R0}")
-# print(f"R RM ={recursive_method.result.R0}")
-# print(f"R CM ={characteristic_method.result.R0}")
-# print(f"R FEM={eTMM_method.result.R0}")
+print(f"R GM ={global_method.result.R0}")
+print(f"R RM ={recursive_method.result.R0}")
+print(f"R CM ={characteristic_method.result.R0}")
+print(f"R FEM={eTMM_method.result.R0}")
 
 # print(f"xxxxxxxxxxxx")
 # print(f"\t\tER RM={np.abs(recursive_method.result.R0[0]-global_method.result.R0[0])}")
