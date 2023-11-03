@@ -424,6 +424,14 @@ class PeriodicLayer(Mesh):
         # print("TM carac")
         # print(self.TM)
 
+        # Om = self.TM@Om
+        # Xi = np.eye(Om.shape[1])
+
+        # if self.nb_waves_in_medium == 3:
+        #     for i in range(6):
+        #         for j in range(6):
+        #             print(f"TM[{i},{j}]={self.TM[i,j]}")
+
         m = self.nb_waves_in_medium*self.nb_waves
 
         Xi = np.eye(m)
@@ -440,8 +448,6 @@ class PeriodicLayer(Mesh):
         _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
         Lambda = np.diag(np.array(_list))
         alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-        print(Phi_inv[:m,:].shape)
-        print(Om.shape)
         xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
         _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
         xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
@@ -449,9 +455,6 @@ class PeriodicLayer(Mesh):
         Om[:,:m-1] += Phi[:, :m-1]
         Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
         return Om, Xi
-
-
-
 
 
     def update_system(self, _A_i, _A_j, _A_v, _F_i, _F_v, _T_i=None, _T_j=None, _T_v=None):

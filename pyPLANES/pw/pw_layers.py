@@ -260,8 +260,8 @@ class PwGeneric():
             Back_propagation matrix (to be used only for transmission problems)
         """
         self.order_lam()
-
-        Phi = self.carac.Q@self.SV
+        
+        Phi = np.kron(np.eye(self.nb_waves),self.carac.Q)@self.SV
         lambda_ = self.lam
         # print("Pwlayer")
         # print(np.exp(lambda_*1e-2))
@@ -269,7 +269,15 @@ class PwGeneric():
         
         Phi_inv = LA.inv(Phi)
         # direction = -1
+        # print("TM Pw")
         # TM = Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv)
+        
+        # if self.nb_waves_in_medium == 3:
+        #     for i in range(6):
+        #         for j in range(6):
+        #             print(f"TM({i},{j})={TM[i,j]}")
+        # Om = TM@Om
+        # Xi = np.eye(Om.shape[1])
         
         m = self.nb_waves_in_medium*self.nb_waves
         _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
@@ -426,7 +434,6 @@ class FluidLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(self.x[1]+x_f, np.abs(pr), 'r+' ,label="abs(charac)")
             plt.plot(self.x[1]+x_f, np.imag(pr), 'm+',label="imag(charac)")
-
 
 class PemLayer(PwLayer):
 
@@ -589,8 +596,8 @@ class ElasticLayer(PwLayer):
 
     def plot_solution_characteristics(self, plot, X, nb_points=25):
         x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)
-        ux, uy = 0*1j*x_f, 0*1j*x_f
-        X = LA.inv(self.SV)@self.carac.P@X
+        ux, uy, = 0*1j*x_f, 0*1j*x_f
+        X = LA.inv(self.SV)@np.kron(np.eye(self.nb_waves),self.carac.P)@X
         for i_dim in range(4*self.nb_waves):
             ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
             uy += self.SV[3, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
@@ -602,6 +609,9 @@ class ElasticLayer(PwLayer):
             plt.figure("Solid displacement along x")
             plt.plot(self.x[1]+x_f, np.abs(uy), 'r+')
             plt.plot(self.x[1]+x_f, np.imag(uy), 'm+')
+
+
+
 
 
 class InhomogeneousLayer(PwLayer):

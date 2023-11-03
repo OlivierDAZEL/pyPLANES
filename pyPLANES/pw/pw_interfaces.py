@@ -127,11 +127,7 @@ class PwInterface():
         return Omega, M_X
 
     def update_Omegac(self, Om):
-
-        if isinstance(self.layers[0], PwLayer):
-            mat = self.layers[0].medium
-        elif isinstance(self.layers[0], PeriodicLayer):
-            mat = self.layers[0].medium[1]
+            
         M1 = np.kron(np.eye(self.nb_waves), self.C_topc@self.carac_top.P)@Om
         M2 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_minus)
         M3 = np.kron(np.eye(self.nb_waves), self.C_bottomc@self.carac_bottom.P_plus)
@@ -351,9 +347,20 @@ class ElasticPemInterface(PwInterface):
                 self.C_top[3, 4] = 0.
         # u_x = u_x_s 
         self.C_bottom[4, 3], self.C_top[4, 5] = 1., -1.
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-
-
+        
+        self.C_bottomc = self.C_bottom
+        self.C_topc = self.C_top
+        if isinstance(self.layers[1], PeriodicLayer):
+            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+                M_01 = np.zeros((6,6))
+                M_01[0,0]=1
+                M_01[1,3]=1
+                M_01[2,2]=1
+                M_01[3,5]=1
+                M_01[4,1]=1
+                M_01[5,4]=1
+                    # ''' S={0: hat{sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:hat{sigma}_{yy}, 4:p, 5:u_x^s}'''
+                self.C_topc =  self.C_top@LA.inv(M_01)
 
         self.pw_method = elastic_waves_TMM
 
@@ -412,8 +419,19 @@ class PemElasticInterface(PwInterface):
                 self.C_bottom[3, 4] = 0.
         # u_x = u_x_s 
         self.C_top[4, 3], self.C_bottom[4, 5] = 1., -1.
+        
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-
+        
+        if isinstance(self.layers[0], PeriodicLayer):
+            if self.layers[0].pwfem_entities[0].typ == "Biot01":
+                M_01 = np.zeros((6,6))
+                M_01[0,0]=1
+                M_01[1,3]=1
+                M_01[2,2]=1
+                M_01[3,5]=1
+                M_01[4,1]=1
+                M_01[5,4]=1                
+                self.C_bottomc =  self.C_bottom@LA.inv(M_01)
 
     def __str__(self):
         out = "\t PEM-Elastic interface"
@@ -542,12 +560,9 @@ class ElasticBacking(PwInterface):
         return np.array(out, dtype=complex)
 
     def Omegac(self, nb_bloch_waves=1):
-        C = np.zeros((2,4), dtype=complex)
-        C[0,1] = 1.
-        C[1,3] = 1.
         out = np.zeros((4, 2), dtype=complex)
         out[:2,:] = np.eye(2)
-        out[2:,:] = -LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus
+        out[2:,:] = np.eye(2) #-LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
@@ -620,7 +635,6 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-
             self.pw_method = elastic_waves_TMM
         else:
             raise NameError("Invalid type")
@@ -631,12 +645,12 @@ class SemiInfinite(PwInterface):
         return out
 
     def update_frequency(self, omega, kx):
-        PwInterface.update_frequency(self, omega)
+        PwInterface.update_frequency(self, omega, kx)
         self.medium.update_frequency(omega)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
         self.k = self.medium.k
         self.kx = kx
-        self.omega = omega 
+        self.omega = omega
 
     def Omega(self, nb_bloch_waves=1):
         typ =None
@@ -698,50 +712,12 @@ class SemiInfinite(PwInterface):
             return out, np.eye(2*max([nb_bloch_waves,1]))
 
     def Omegac(self, nb_bloch_waves=1):
-        if self.typ == "fluid":
-            self.len_X = 1
-            out = np.zeros((2*nb_bloch_waves, nb_bloch_waves), dtype=complex)
-            MM = np.zeros((nb_bloch_waves, nb_bloch_waves), dtype=complex)
-            Om = np.zeros((2,1), dtype=complex)
-            for _w in range(nb_bloch_waves):
-                Om[0, 0] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
-                Om[1, 0] = 1
-                Om = self.carac_top.Q@Om.reshape((2,1))
-                Om, M_X = self.update_Omegac(Om)
-                out[2*_w + 0:2, _w] = Om.reshape(2)
-                MM[_w, _w] = M_X
-            return out, MM
-        elif self.typ == "pem":
-            self.len_X = 3
-            out = np.zeros((6*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
-            MM = np.zeros((3*nb_bloch_waves, 3*nb_bloch_waves), dtype=complex)
+        Om = [np.array([self.lam[2*_w]/(self.medium.rho*self.omega**2),1]).reshape(2,1) for _w in range(nb_bloch_waves)]
+        Om = block_diag(*Om)
+        Om = np.kron(np.eye(nb_bloch_waves),self.carac_top.Q)@Om
 
-            for _w in range(nb_bloch_waves):
-                Om = np.zeros((2,1), dtype=complex)
-                print(Om)
-                Om[0, 0] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
-                Om[1, 0] = 1
-                print("Q=", self.carac_top.Q.shape)
-                print("Om", Om)
-                Om = self.carac_top.Q@Om
-                Om, M_X = self.update_Omegac(Om)
-                out[slice(6*_w,6*_w+6), slice(3*_w, 3*_w+3)] = Om
-                print(M_X.shape)
-                MM[3*_w + 0:3, 3*_w + 0:3] = M_X
-            return out, MM
-        elif self.typ  == "elastic":
-            self.len_X = 2
-            out = np.zeros((4*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)
-            MM = np.zeros((2*nb_bloch_waves, 2*nb_bloch_waves), dtype=complex)
-            Om = np.zeros((2,1), dtype=complex)
-            for _w in range(nb_bloch_waves):
-                Om[0, 0] = self.lam[2*_w]/(self.medium.rho*self.omega**2)
-                Om[1, 0] = 1
-                Om = self.carac_top.Q@Om.reshape((2,1))
-                Om, M_X = self.update_Omegac(Om)
-                out[slice(4*_w,4*_w+4), slice(2*_w, 2*_w+2)] = Om
-                MM[2*_w + 0:2, 2*_w + 0:2] = M_X
-            return out, MM
+        return self.update_Omegac(Om)
+
 
     def update_M_global(self, M, i_eq):
         if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:

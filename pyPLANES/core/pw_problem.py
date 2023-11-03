@@ -106,12 +106,18 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "characteristics":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac()
+                # print("Omega_end=\n", self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
+                    # print(i)
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
+                    # print("after_layer")
+                    # print(_l.Omega_plus)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    # print("after_interface")
+                    # print(self.Omega)
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omegac()
@@ -131,7 +137,6 @@ class PwProblem(Calculus, MultiLayer):
                     i_eq = _int.update_M_global(self.A,i_eq)
             self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             self.A = np.delete(self.A, 0, axis=1)
-
 
     def solve(self):
         Calculus.solve(self)

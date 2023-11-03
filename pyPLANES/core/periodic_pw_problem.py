@@ -141,14 +141,18 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         elif self.method == "characteristics":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac(self.nb_waves)
-                print(self.Omega.shape)
-                dqs
+                # print("Omega_end=\n", self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
+                    # print(i)
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
+                    # print("after_layer")
+                    # print(_l.Omega_plus)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    # print("after_interface")
+                    # print(self.Omega)
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omegac(self.nb_waves)
@@ -190,7 +194,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 # Matrix inverted eq (11) in JAP
                 M = np.zeros((2*self.nb_waves, 2*self.nb_waves), dtype=complex)
                 # [Omega_0^-] of JAP
-                M[:,:self.nb_waves] = self.Omega[:,:self.nb_waves]
+                M[:,:self.nb_waves] = self.Omega#[:,:self.nb_waves]
                 # [-Omega_0] second part of JAP
                 for _w in range(self.nb_waves):
                     alpha_w = 1j*(self.ky[_w]/self.k_air)/(2*pi*self.f*Air.Z)
@@ -208,10 +212,12 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
                 self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
                 abs = 1-self.result.R[-1]
-
                 self.X_0_minus = X[:self.nb_waves]
+
                 if self.termination == "transmission":
-                    T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].len_X]  
+                    T = (self.back_prop@self.X_0_minus)
+                    if self.method != "characteristics":
+                        T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].carac_bottom.n_w] 
                     self.result.T0.append(T[0])
                     if self.verbose:
                         print("T={}".format(T))
@@ -275,28 +281,35 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 raise NameError("No solver for " + __name__)
             # if self.verbose:
             #     print("abs={}".format(abs))
-
+                    
     def plot_solution(self):
-        x_minus = self.X_0_minus # Information vector at incident interface  x^-
-        # print("x_minus={}".format(x_minus))
-        if not isinstance (x_minus, np.ndarray):
-            x_minus = np.array([x_minus])
-        for i, _l in enumerate(self.layers):
-            x_plus = self.interfaces[i].Tau @ x_minus # Transfert through the interface x^+
-            x_minus = _l.Xi@x_plus # Transfert through the layer x^-_{+1}
-            if isinstance(_l, PeriodicLayer):
-                S_b = _l.Omega_plus @ x_plus
-                S_t = _l.Omega_minus @ x_minus
-                # print(f"S_b={S_b}")
-                # print(f"S_t={S_t}")
-                _l.plot_solution(S_b, S_t)
-            else: # Homogeneous layer
-                if self.method == "Recursive Method":
-                    q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
+        if self.method == "Recursive Method":
+            if not(isinstance(self.X_0_minus,np.ndarray)):
+                X_minus = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
+            else:
+                X_minus=self.X_0_minus
+            for i, _l in enumerate(self.layers):
+                X_plus = self.interfaces[i].Tau @ X_minus # Transfert through the interface x^+
+                X_minus = _l.Xi@X_plus
+                if isinstance(_l, PeriodicLayer):
+                    S_b = _l.Omega_plus @ X_plus
+                    S_t = _l.Omega_minus @ X_minus
+                    _l.plot_solution(S_b, S_t)
+                else:   
+                    q = LA.solve(_l.SV, _l.Omega_plus@X_plus)
                     _l.plot_solution_recursive(self.plot, q)
-                elif self.method == "characteristics":
-                    q = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
-                    for i, _l in enumerate(self.layers):
-                        q = self.interfaces[i].Tau @ q # Transfert through the interface x^+
-                        q = _l.Xi@q # Transfert through the layer x^-_{+1}
-                        _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q)
+        elif self.method == "characteristics":
+            if not(isinstance(self.X_0_minus,np.ndarray)):
+                q_minus = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
+            else:
+                q_minus=self.X_0_minus
+            for i, _l in enumerate(self.layers):
+                q_plus = self.interfaces[i].Tau @ q_minus # Transfert through the interface x^+
+                q_minus = _l.Xi@q_plus # Transfert through the layer x^-_{+1}
+                if isinstance(_l, PeriodicLayer):
+                    S_b = _l.Omega_plus @ q_plus
+                    S_t = _l.Omega_minus @ q_minus
+
+                    _l.plot_solution(S_b, S_t)
+                else:                
+                    _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q_minus)
