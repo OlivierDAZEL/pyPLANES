@@ -610,10 +610,6 @@ class ElasticLayer(PwLayer):
             plt.plot(self.x[1]+x_f, np.abs(uy), 'r+')
             plt.plot(self.x[1]+x_f, np.imag(uy), 'm+')
 
-
-
-
-
 class InhomogeneousLayer(PwLayer):
     def __init__(self, mat, d, **kwargs):
         PwLayer.__init__(self, mat, d, **kwargs)
