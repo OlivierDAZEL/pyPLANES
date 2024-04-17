@@ -314,12 +314,12 @@ def elements(self, f):
                 if entity_dim != 2:
                     raise NameError("in import_msh_file, entity_dim!=2 for element_type =  {}".format(element_type))
                 vertices = [self.vertices[n] for n in node_tag]
-                print(node_tag)
+                # print(node_tag)
             else:
                 raise NameError("{} is an incompatible type of element".format(element_type))
-            print("el", element_type)
-            print("et", entity_tag)
-            print(self.entity_tag[entity_tag])
+            # print("el", element_type)
+            # print("et", entity_tag)
+            # print(self.entity_tag[entity_tag])
 
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.elements[element_tag] = FemElement(element_type, element_tag, vertices)
