@@ -59,8 +59,10 @@ class Result():
             self.f = []
             self.R0 = []
             self.T0 = []
+            self.Z_prime = []
             self.R = []
             self.T = []
+            self.tau = []
             self.abs =[]
             self.Solver = None
             self.Method = None
@@ -91,11 +93,16 @@ class Result():
             if "real(R0)" in keys:
                 if "imag(R0)" in keys:
                     self.R0 = np.array(d["real(R0)"])+1j*np.array(d["imag(R0)"])
+            if "real(Z_prime)" in keys:
+                if "imag(Z_prime)" in keys:
+                    self.Z_prime = np.array(d["real(Z_prime)"])+1j*np.array(d["imag(Z_prime)"])
             if "real(T0)" in keys:
                 if "imag(T0)" in keys:
                     self.T0 = np.array(d["real(T0)"])+1j*np.array(d["imag(T0)"])
                 else:
                     raise NameError("No imag(T0) field")
+            if "TL" in keys:
+                self.TL = d["TL"]
             if "real(k)[0]" in keys:
                 # Determination of the number of waves
                 nb_w = 1
@@ -117,6 +124,7 @@ class Result():
             if "period" in keys:
                 self.period = d["period"]
 
+
     def save(self,file, append_file):
         d = dict()
         members = [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
@@ -129,6 +137,11 @@ class Result():
                     elif m == "T0":
                         d["real(T0)"] = np.real(self.T0).tolist()
                         d["imag(T0)"] = np.imag(self.T0).tolist()
+                    elif m == "tau":
+                        d["TL"] = (-10*np.log10(self.tau)).tolist()
+                    elif m == "Z_prime":
+                        d["real(Z_prime)"] = np.real(self.Z_prime).tolist()
+                        d["imag(Z_prime)"] = np.imag(self.Z_prime).tolist()
                     elif m == "k":
                         nb_f = len(self.k)
                         nb_w = len(self.k[0])
@@ -145,8 +158,6 @@ class Result():
             else: 
                 d[m] = self.__dict__[m]
 
-
-        
         with open(file+".json", append_file) as json_file:
             json.dump(d, json_file)
             json_file.write("\n")
@@ -179,19 +190,38 @@ class Result():
             plt.plot(np.imag(kk[:, ii])*self.period/np.pi, np.array(self.f)/1000,"r"+s)
 
 class Test():
-    def __init__(self, ref, result, indicator, **kwargs):
+    def __init__(self, ref, res, indicator, **kwargs):
+        self.indicator =  indicator
         self.eps = kwargs.get("eps", 1e-12)
-        self.error = LA.norm(result.__dict__[indicator]-ref.__dict__[indicator])/len(result.__dict__[indicator])
+        if indicator == "TL":
+            indicator_ref = ref.TL
+            indicator_res = res.TL
+        elif indicator == "Re_Zs":
+            indicator_ref = np.real(ref.Z_prime)
+            indicator_res = np.real(res.Z_prime)
+        elif indicator == "Im_Zs":
+            indicator_ref = np.imag(ref.Z_prime)
+            indicator_res = np.imag(res.Z_prime)
+        elif indicator == "R0":
+            indicator_ref = np.imag(ref.R0)
+            indicator_res = np.imag(res.R0)
+        print(indicator)
+
+
+        self.error = LA.norm(indicator_ref-indicator_res)/len(indicator_ref)
     
     def check(self, print_resut=True):
         if self.error< self.eps:
             if print_resut:
-               print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
+               print("Error on " + self.indicator +" = {}".format(self.error) + "\t"*2 + "["+ colored("OK", "green")  +"]")
             return True
         else:
             if print_resut:
-                print("Overall error = {}".format(self.error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
+                print("Error on " + self.indicator +"  {}".format(self.error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
             return False
+        
+    
+        
 
 class Results():
     def __init__(self, file=False, **kwargs):

@@ -31,7 +31,7 @@ from mediapack import Air, Fluid
 
 from pyPLANES.core.calculus import Calculus
 from pyPLANES.pw.multilayer import MultiLayer
-
+from pyPLANES.pw.window import Window
 
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
@@ -46,6 +46,10 @@ class PwProblem(Calculus, MultiLayer):
         # self.Results["R0"], self.Results["T0"] = [], [] 
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
+        self.window = kwargs.get("window", False)
+        if self.window is not False:
+            self.window = Window(self.window[0], self.window[1])
+        
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -65,10 +69,11 @@ class PwProblem(Calculus, MultiLayer):
         if self.method_TM in ["cheb_1"]:
             self.order_chebychev = kwargs.get("order_chebychev", 20)
         
+        
         assert "ml" in kwargs
         ml = kwargs.get("ml")
 
-        MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM)
+        MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM, material_database=self.material_database)
         if self.method_TM in ["cheb_1"]:
             for l in self.layers:
                 l.order_chebychev = self.order_chebychev 
@@ -81,9 +86,10 @@ class PwProblem(Calculus, MultiLayer):
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
-        self.kx = np.array([omega*np.sin(self.theta_d*np.pi/180)/Air.c])
-        self.ky = np.array([omega*np.cos(self.theta_d*np.pi/180)/Air.c])
         self.k_air = omega/Air.c
+        self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])
+        self.ky = self.k_air*np.array([np.cos(self.theta_d*np.pi/180)])
+
         MultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
@@ -108,16 +114,11 @@ class PwProblem(Calculus, MultiLayer):
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac()
                 # print("Omega_end=\n", self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
-                    # print(i)
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
-                    # print("after_layer")
-                    # print(_l.Omega_plus)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
-                    # print("after_interface")
-                    # print(self.Omega)
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omegac()
@@ -163,7 +164,18 @@ class PwProblem(Calculus, MultiLayer):
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":
                 self.result.T0.append(self.X[-1])
+                if self.window:
+                    self.window.update_frequency(2*pi*self.f)
+                    sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
+                else:
+                    sigma = 1/np.cos(self.theta_d*pi/180)
+                
+                self.tau_c = self.X[-1]
+                self.win = np.cos(self.theta_d*pi/180)*sigma
+
+                self.result.tau.append((np.abs(self.X[-1])**2)*np.cos(self.theta_d*pi/180)*sigma)
                 self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
+        self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1]))
 
     def plot_solution(self):
         if self.method == "Global Method":
@@ -185,36 +197,3 @@ class PwProblem(Calculus, MultiLayer):
 
         else: 
             raise NameError("No method")
-
-    def load_results(self):
-
-        name_file_with_method = self.out_file_name.split(".")
-        name_file_with_method.insert(1, self.out_file_extension)
-        name_file_with_method = ".".join(name_file_with_method)
-
-        data = np.loadtxt(name_file_with_method)
-        f  = data[:, 0]
-        R  = data[:, 1] + 1j*data[:, 2]
-        if self.termination == "transmission":
-            T = data[:,3] + 1j*data[:,4]
-        else:
-            T= False
-        return f, R, T
-
-    def plot_results(self):
-        if self.method == "Recursive Method":
-            method = " RM"
-            marker = "."
-        elif self.method == "Global Method":
-            method = " RM"
-            marker = "+"
-        f, R, T = self.load_results()
-        plt.figure(self.name_project + "/ Reflection coefficient")
-        plt.plot(f, np.real(R),"r"+marker,label="Re(R)"+method)
-        plt.plot(f, np.imag(R),"b"+marker,label="Im(R)"+method)
-        plt.legend()
-        if self.termination == "transmission":
-            plt.figure(self.name_project + "/ Transmission coefficient")
-            plt.plot(f, np.real(T),"r"+marker,label="Re(T)"+method)
-            plt.plot(f, np.imag(T),"b"+marker,label="Im(T)"+method)
-            plt.legend()

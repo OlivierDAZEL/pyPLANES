@@ -41,6 +41,7 @@ class MultiLayer():
         ml = kwargs.get("ml", None) 
         self.method_TM = kwargs.get("method_TM","diag")
         self.method = kwargs.get("method","Global Method")
+        self.material_database = kwargs.get("material_database", None)
         # Creation of the list of layers
         self.layers = []
         self.kx = None
@@ -56,7 +57,11 @@ class MultiLayer():
             elif isinstance(_l,(list,tuple)):
                 mat,d = _l
                 assert isinstance(mat,str) & np.isscalar(d)
-                load_mat = load_material(mat)
+
+                if self.material_database is None:
+                    load_mat = load_material(mat)
+                else:
+                    load_mat = load_material(self.material_database, mat)
                 if isinstance(load_mat, Medium):
                     mat = load_mat
                     if mat.MODEL in ["fluid", "eqf"]:
@@ -157,7 +162,7 @@ class MultiLayer():
                     _layer.dofs = self.nb_PW+np.arange(4)
                     self.nb_PW += 4
             if isinstance(self.interfaces[-1], SemiInfinite):
-                self.nb_PW += 1 
+                self.nb_PW += 1
 
     def update_frequency(self, omega, kx):
         self.kx = kx

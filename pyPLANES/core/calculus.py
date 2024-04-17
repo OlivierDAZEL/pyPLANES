@@ -25,6 +25,8 @@
 import datetime
 from os import path, mkdir, rename
 
+import json
+import os
 import time
 import timeit
 import numpy as np
@@ -74,10 +76,6 @@ class Calculus():
 
     Methods
     -------
-    colorspace(c='rgb')
-        Represent the photo in the given colorspace.
-    gamma(n=1.0)
-        Change the photo's gamma exposure.
 
     """
     
@@ -106,27 +104,40 @@ class Calculus():
         # self.info_file_name = self.file_names + ".info.txt"
         # self.open_info_file()
         self.start_time = time.time()
-
-
-
+        
+        self.alive_bar = kwargs.get("alive_bar", None)
+        if self.alive_bar == None:
+            self.alive_bar = False
+            if ~self.verbose and (len(self.frequencies) != 1):
+                self.alive_bar = True
+        # Read if a material database is in the arguments
+        self.material_database = kwargs.get("material_database", None)
+        if self.material_database is not None:
+            # Check if the material database exists
+            if os.path.exists(self.material_database+".json"):
+                self.material_database = json.load(open(self.material_database+".json"))
+            else: # Import it if exists
+                raise IOError('Unable to locate file {}'.format(filename))
+                # Check if a generic materials.json database exists
+        elif os.path.exists("materials.json"):
+            self.material_database = json.load(open("materials.json"))
+        
     def resolution(self):
         """  Resolution of the problem """
-        if self.verbose == False:
-            if len(self.frequencies) == 1:
-                self.f = self.frequencies[0]
-                self.solve()
-                self.plot_solutions()
-            else:
-                with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
-                    for f in self.frequencies:
-                        bar()
-                        self.f = f 
-                        self.solve()
-                        self.plot_solutions()
+        if self.alive_bar:
+            with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
+                for f in self.frequencies:
+                    bar()
+                    self.f = f
+                    self.result.f.append(self.f)
+                    self.solve()
+                    self.plot_solutions()
         else:
-            print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
+            if self.verbose:
+                print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
             for f in self.frequencies:
-                self.f = f 
+                self.f = f
+                self.result.f.append(self.f)
                 self.solve()
                 self.plot_solutions()
 
@@ -161,8 +172,6 @@ class Calculus():
         """ Resolution of the linear system"""
         if self.verbose:
             print("Resolution of the linear system")
-
-        self.result.f.append(self.f)
         omega = 2*pi*self.f
         self.update_frequency(omega)
         self.create_linear_system(omega)

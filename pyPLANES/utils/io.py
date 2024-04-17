@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 # -*- coding:utf8 -*-
 #
 # utils_io.py
@@ -43,25 +42,41 @@ from pyPLANES.core.result import Result
 # def initialisation_out_files_plain(self):
 #     pass
 
-from pymls import from_yaml, Solver, Layer, backing
-from mediapack import Air, Fluid
+import json
+from pymls import Solver, Layer, backing
+from mediapack import from_yaml, from_database, Air, Fluid
 import importlib
 
 plot_color = ["r", "b", "m", "k", "g", "y", "k", "r--", "b--", "m--", "k--", "g--", "y--", "k--"]
 
-def load_material(mat):
-    if mat == "Air":
-        Air_mat = Air()
-        return Fluid(c=Air_mat.c,rho=Air_mat.rho)
-    elif os.path.isfile("materials/" + mat + ".yaml") : # mediapack case
-        return from_yaml("materials/" + mat + ".yaml")
-    elif os.path.isfile("materials/" + mat + ".py") : # python dedicated file
-        module = importlib.import_module("materials." + mat ) # Import the py 
-        return module.mat()
-    elif os.path.isfile("msh/" + mat + ".msh"): # Case of a metaporous
-        return None
-    else:
-        raise NameError("Invalid Material {}".format(mat))
+normalized_frequencies = np.array([50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000], dtype=float)
+
+reference_frequencies = np.array([100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150], dtype=float)
+
+reference_curve = np.array([33, 36, 39, 42, 45, 48, 51, 52, 53, 54, 55, 56, 56, 56, 56, 56], dtype=float)
+reference_C = np.array([-29, -26, -23, -21, -19, -17, -15, -13, -12, -11, -10, -9, -9, -9, -9, -9], dtype=float)
+reference_C_tr = np.array([-20, -20, -18, -16, -15, -14, -13, -12, -11, -9, -8, -9, -10, -11, -13, -15], dtype=float)
+
+
+def load_material(db, key=None):
+    if isinstance(db, dict):
+        return from_database(db, key)
+    elif isinstance(db, str):
+        # db is a stringe
+        if db == "Air":
+            Air_mat = Air()
+            return Fluid(c=Air_mat.c,rho=Air_mat.rho)
+        elif os.path.isfile("materials/" + db + ".yaml") : # A yaml file exist
+            return from_yaml("materials/" + db + ".yaml")
+        elif os.path.isfile("materials/" + db + ".py") : # python dedicated file
+            module = importlib.import_module("materials." + db ) # Import the py 
+            return module.mat()
+        elif os.path.isfile("msh/" + db + ".msh"): # Case of a msh file 
+            return None
+        else:
+            raise NameError("Invalid Material {}".format(db))
+
+
 
 def run_pymls(**kwargs):
     name_project = kwargs.get("name_project", "unnamed_project")
@@ -245,3 +260,28 @@ def export_paraview(self):
     vtk = pyvtk.VtkData(pyvtk.UnstructuredGrid(self.vtk_points,triangle=self.vtk_triangle), pyvtk.PointData(pyvtk.Scalars(pressure,name='Pressure')))
     vtk.tofile("vtk/"+self.name_project + "-{}".format(self.export_paraview))
     self.export_paraview +=1
+
+
+class Alphacell():
+    """
+    Base class for a Alpahcell result
+
+    Attributes
+    ----------
+    f : list 
+        Calculation frequencies
+
+
+    Methods
+    -------
+
+    """
+
+    def __init__(self, file):
+        alphacell = np.loadtxt(file+".rok", skiprows=6)
+        self.f = np.array(alphacell[:,0])
+        self.R0 = np.array(alphacell[:,2])+1j*np.array(alphacell[:,3])
+        self.T0 = []
+        self.Z_prime = np.array(alphacell[:,4])+1j*np.array(alphacell[:,5])
+        self.abs = np.array(alphacell[:,1])
+        self.TL = np.array(alphacell[:,14])

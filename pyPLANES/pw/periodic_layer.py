@@ -341,6 +341,7 @@ class PeriodicLayer(Mesh):
         n_y = 1.
         for _w, kx in enumerate(self.kx):
             dof_q  = slice(2*_w*n_w, 2*(_w+1)*n_w)
+            # dof_q = 2*_w+np.arange(n_w)
             dof_qm = slice(2*n_w*_w+n_w, 2*(_w+1)*n_w)
             dof_eq = slice(_w*n_w, (_w+1)*n_w)
             for _elem in _ent.elements:

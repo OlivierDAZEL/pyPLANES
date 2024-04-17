@@ -41,6 +41,7 @@ from pyPLANES.dgm.dgm_entities_volumic import FluidDgm
 
 
 def load_msh_file(self, **kwargs):
+    verbose = True
     name_mesh = kwargs["name_mesh"]
 
     self.dim = kwargs.get("dim", 2)
@@ -57,14 +58,27 @@ def load_msh_file(self, **kwargs):
                 self.MeshFormat = f.readline()
             if tag == "PhysicalNames":
                 physical_names(self, f)
+                if self.verbose:
+                    print("physical_names=", self.physical_names)
+
             if tag == "Entities":
                 entities(self, f)
+                if self.verbose:
+                    print("fem_entities")
+                    for i, ent in enumerate(self.entities):
+                        print(f"Entity#{i}")
+                        print(ent)
+                    print(self.entity_tag)
             # if tag == "PartitionedEntities":
             #     partition(self, f)
             if tag == "Nodes":
                 nodes(self, f)
+                if self.verbose:
+                    print(f"Number of Nodes = {len(self.vertices)}")
             if tag == "Elements":
                 elements(self, f)
+                if self.verbose:
+                    print(f"Number of elements = {len(self.elements)}")
             if tag == "Periodic":
                 periodic(self, f)
             _ = f.readline()
@@ -94,6 +108,7 @@ def physical_names(self, f):
         tag = int(_[1])
         key = " ".join(_[2:])[1:-1]
         self.physical_names[tag] = key
+
 
 def entities(self, f):
     ''' creation of the list of entities '''
@@ -284,8 +299,10 @@ def nodes(self, f):
 
 def elements(self, f):
     num_entity_blocks, num_elements, min_element_tag, max_element_tag = readl_int(f)
+    # create the list of elements/ All initiated to None
     self.elements =[None]*(max_element_tag+1)
     for __ in range(int(num_entity_blocks)):
+
         entity_dim, entity_tag, element_type, num_elements_in_block = readl_int(f)
         for _i in range(num_elements_in_block):
             element_tag, *node_tag = readl_int(f)
@@ -297,8 +314,13 @@ def elements(self, f):
                 if entity_dim != 2:
                     raise NameError("in import_msh_file, entity_dim!=2 for element_type =  {}".format(element_type))
                 vertices = [self.vertices[n] for n in node_tag]
+                print(node_tag)
             else:
                 raise NameError("{} is an incompatible type of element".format(element_type))
+            print("el", element_type)
+            print("et", entity_tag)
+            print(self.entity_tag[entity_tag])
+
             if isinstance(self.entities[self.entity_tag[entity_tag]], FemEntity):
                 self.elements[element_tag] = FemElement(element_type, element_tag, vertices)
                 self.entities[self.entity_tag[entity_tag]].elements.append(self.elements[element_tag])
