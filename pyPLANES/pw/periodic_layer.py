@@ -247,26 +247,8 @@ class PeriodicLayer(Mesh):
         self.create_transfert_matrix()
 
         m = self.nb_waves_in_medium*self.nb_waves
-
+        Om = self.TM@Om
         Xi = np.eye(m)
-      
-        lambda_, Phi = LA.eig(self.TM)
-        _index = np.argsort(np.abs(lambda_))[::-1]
-        lambda_ = lambda_[_index]
-  
-        Phi = Phi[:, _index]
-        Phi_inv = LA.inv(Phi)
-        
-        
-        _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
-        Lambda = np.diag(np.array(_list))
-        alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-        xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
-        _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
-        xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
-        Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
-        Om[:,:m-1] += Phi[:, :m-1]
-        Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
         return Om, Xi
 
     def update_Omegac(self, Om, omega):

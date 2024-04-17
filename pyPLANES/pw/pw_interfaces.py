@@ -648,8 +648,15 @@ class SemiInfinite(PwInterface):
         PwInterface.update_frequency(self, omega, kx)
         self.medium.update_frequency(omega)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
+        
+        
+        
+        
         self.k = self.medium.k
         self.kx = kx
+        self.k_air = omega/Air.c
+        k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
+        self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
         self.omega = omega
 
     def Omega(self, nb_bloch_waves=1):
@@ -712,9 +719,12 @@ class SemiInfinite(PwInterface):
             return out, np.eye(2*max([nb_bloch_waves,1]))
 
     def Omegac(self, nb_bloch_waves=1):
-        Om = [np.array([self.lam[2*_w]/(self.medium.rho*self.omega**2),1]).reshape(2,1) for _w in range(nb_bloch_waves)]
-        Om = block_diag(*Om)
-        Om = np.kron(np.eye(nb_bloch_waves),self.carac_top.Q)@Om
+        
+        print([-1j*(self.ky[_w]/self.k_air)/(self.omega*Air.Z) for _w in range(self.nb_waves)])
+        Omega_0 = [np.array([-1j*(self.ky[_w]/self.k_air)/(self.omega*Air.Z),1]).reshape(2,1) for _w in range(self.nb_waves)]
+        # Om = [np.array([self.lam[2*_w]/(self.medium.rho*self.omega**2),1]).reshape(2,1) for _w in range(nb_bloch_waves)]
+        Om = block_diag(*Omega_0)
+        Om = np.kron(np.eye(self.nb_waves),self.carac_top.Q)@Om
 
         return self.update_Omegac(Om)
 

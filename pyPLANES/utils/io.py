@@ -47,7 +47,7 @@ from pymls import from_yaml, Solver, Layer, backing
 from mediapack import Air, Fluid
 import importlib
 
-plot_color = ["r", "b", "m", "k", "g", "y"]
+plot_color = ["r", "b", "m", "k", "g", "y", "k", "r--", "b--", "m--", "k--", "g--", "y--", "k--"]
 
 def load_material(mat):
     if mat == "Air":
