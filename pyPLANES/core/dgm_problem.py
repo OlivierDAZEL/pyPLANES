@@ -30,6 +30,8 @@ import numpy as np
 from pyPLANES.core.mesh import Mesh
 from pyPLANES.core.calculus import Calculus
 
+from pyPLANES.gmsh.mesh import GmshMesh
+
 from pyPLANES.dgm.dgm_entities_surfacic import *
 from pyPLANES.dgm.dgm_entities_volumic import *
 
@@ -39,7 +41,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 from pyPLANES.dgm.dgm_preprocess import dgm_preprocess
 # from pyPLANES.utils.io import plot_fem_solution
 
-class DgmProblem(Mesh, Calculus):
+class DgmProblemBase(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         Mesh.__init__(self, **kwargs)
@@ -134,3 +136,8 @@ class DgmProblem(Mesh, Calculus):
             mail = " mailx -s \"DGM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
             os.system(mail)
 
+
+class DgmProblem(DgmProblemBase, GmshMesh):
+    def __init__(self, **kwargs):
+        DgmProblemBase.__init__(self, **kwargs)
+        GmshMesh.__init__(self, **kwargs)

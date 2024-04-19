@@ -23,12 +23,18 @@
 #
 
 
-from pyPLANES.gmsh.tools.load_msh_file import load_msh_file
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
 
 class Mesh():
-    def __init__(self, **kwargs):
+    def __init__(self, dim=2, name_mesh=None, material_directory="", verbose=False, **kwargs):
+        self.dim = dim
+        self.name_mesh = name_mesh
+        self.materials_directory = material_directory
+        self.verbose = verbose
+
+        self.materials = kwargs.get("materials", dict())
+
         self.entities = [] # List of all GMSH Entities
         self.fem_entities = [] # List of FEM Entities
         self.pwfem_entities = [] # List of Plane Wave FEM Entities
@@ -39,10 +45,15 @@ class Mesh():
         self.faces = []
         self.bubbles = []
         self.nb_edges = self.nb_faces = self.nb_bubbles = 0
-        self.materials_directory = kwargs.get("materials_directory", "")
         self.reference_elements = dict() # dictionary of reference_elements
-        load_msh_file(self, **kwargs)
 
+        if self.name_mesh is not None:
+            if not self.name_mesh.endswith('.msh'):
+                self.msh_file = "msh/" + self.name_mesh + ".msh"
+            self.load_msh_file()
+
+    def load_msh_file(self):
+        raise NotImplementedError("This method should be implemented in a child class")
 
     def display_mesh(self):
         for _el in self.elements[1:]:
