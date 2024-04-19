@@ -87,7 +87,6 @@ class PeriodicLayerBase(Mesh):
         periodic_dofs_identification(self)
 
         self.characteristics = [None, None] # Will be completed in PeriodicPwProblem.__init__()
-        
 
     def update_frequency(self, omega, kx):
         self.F_i, self.F_v = [], []
