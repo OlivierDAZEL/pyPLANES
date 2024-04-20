@@ -8,7 +8,6 @@ from pyPLANES.gmsh.templates.layers import one_layer
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.core.periodic_pw_problem import PeriodicPwProblem
 from pyPLANES.core.fem_problem import FemProblem
-from pyPLANES.core.eigen_problem import EigenProblem
 from pyPLANES.core.result import Results
 from mediapack import Air
 

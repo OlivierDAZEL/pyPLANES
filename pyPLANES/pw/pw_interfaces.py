@@ -720,7 +720,6 @@ class SemiInfinite(PwInterface):
 
     def Omegac(self, nb_bloch_waves=1):
         
-        print([-1j*(self.ky[_w]/self.k_air)/(self.omega*Air.Z) for _w in range(self.nb_waves)])
         Omega_0 = [np.array([-1j*(self.ky[_w]/self.k_air)/(self.omega*Air.Z),1]).reshape(2,1) for _w in range(self.nb_waves)]
         # Om = [np.array([self.lam[2*_w]/(self.medium.rho*self.omega**2),1]).reshape(2,1) for _w in range(nb_bloch_waves)]
         Om = block_diag(*Omega_0)

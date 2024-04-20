@@ -93,6 +93,7 @@ class PwProblem(Calculus, MultiLayer):
         MultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
+
         Calculus.create_linear_system(self, omega)
         if self.method in ["Recursive Method", "TMM"]:
             if self.termination == "transmission":
