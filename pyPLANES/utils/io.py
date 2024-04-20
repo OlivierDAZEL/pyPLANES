@@ -38,7 +38,6 @@ from pyPLANES.fem.fem_entities_surfacic import *
 from pyPLANES.fem.fem_entities_volumic import *
 
 from pyPLANES.core.result import Result
-
 # def initialisation_out_files_plain(self):
 #     pass
 
@@ -140,7 +139,7 @@ def print_model_entities(self):
 def print_reference_elements(self):
     print(self.reference_elements)
 
-def plot_fem_solution(self, kx=0.):
+def plot_fem_solution(self, kx=[0.]):
     if self.plot[5]: # Determination of the maximum value of the pressure
         p_max = 0
         p_min = 1e308

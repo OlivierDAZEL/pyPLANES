@@ -1,0 +1,1 @@
+{"Method": "Recursive Method", "R": [1.0000000000000002], "real(R0)": [0.45706110886581536], "imag(R0)": [-0.8894352943088955], "Server": "ods-macbook-pro.home", "Solver": "PeriodicPwProblem", "abs": [-2.220446049250313e-16], "f": [30.0], "h": null, "n_dof": 526, "order": 2}

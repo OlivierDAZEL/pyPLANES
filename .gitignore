@@ -143,6 +143,7 @@ html/
 tests/*
 !tests/solutions/
 !tests/iags/
+!tests/examples/
 # !tests/benchmark_multilayer/
 ### Output files
 *.vtk

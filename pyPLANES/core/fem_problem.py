@@ -46,6 +46,7 @@ from mediapack import Air
 class FemProblem(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
+
         self.result.Solver = type(self).__name__
         self.condensation = kwargs.get("condensation", True)
         self.order = kwargs.get("order", 2)
@@ -79,6 +80,7 @@ class FemProblem(Mesh, Calculus):
             self.update_system(*_ent.update_system(omega))
             # if _ent.dim == 2:
             #     self.update_Q(*_ent.update_Q())
+
     def update_frequency(self, omega):
             Calculus.update_frequency(self, omega)
             self.F_i, self.F_v = [], []
@@ -121,7 +123,7 @@ class FemProblem(Mesh, Calculus):
 
     def solve(self):
         Calculus.solve(self)
-        
+     
         # self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
         self.linear_system_2_numpy()
@@ -196,6 +198,7 @@ class FemProblem(Mesh, Calculus):
             L2 = X.T@(Q@X)
             self.result.R0.append(R)
             self.result.n_dof.append(self.nb_dof_master)
+ 
         return X
 
 
