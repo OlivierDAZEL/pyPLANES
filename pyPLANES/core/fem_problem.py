@@ -41,9 +41,11 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 from pyPLANES.fem.fem_preprocess import fem_preprocess
 from pyPLANES.utils.io import plot_fem_solution, export_paraview
 
+from pyPLANES.gmsh.mesh import GmshMesh
+
 from mediapack import Air
 
-class FemProblem(Mesh, Calculus):
+class FemBase(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
 
@@ -66,7 +68,6 @@ class FemProblem(Mesh, Calculus):
         self.result.order = self.order
         self.result.n_dof = []
         self.result.D_lambda = []
-
 
     def create_linear_system(self, omega):
         # Initialisation of the lists
@@ -94,7 +95,6 @@ class FemProblem(Mesh, Calculus):
         self.Q_i.extend(_A_i)
         self.Q_j.extend(_A_j)
         self.Q_v.extend(_A_v)
-
 
     def update_system(self, _A_i, _A_j, _A_v, _F_i, _F_v, _T_i=None, _T_j=None, _T_v=None):
         self.A_i.extend(_A_i)
@@ -209,3 +209,8 @@ class FemProblem(Mesh, Calculus):
         #     mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
         #     os.system(mail)
 
+
+class FemProblem(FemBase, GmshMesh):
+    def __init__(self, **kwargs):
+        FemBase.__init__(self, **kwargs)
+        GmshMesh.__init__(self, **kwargs)

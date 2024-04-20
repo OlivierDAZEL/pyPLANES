@@ -31,6 +31,8 @@ import numpy as np
 from pyPLANES.core.mesh import Mesh
 from pyPLANES.core.calculus import Calculus
 
+from pyPLANES.gmsh.mesh import GmshMesh
+
 from pyPLANES.fem.fem_entities_surfacic import *
 from pyPLANES.fem.fem_entities_volumic import *
 # from pyPLANES.fem.fem_entities_pw import IncidentPwFem, TransmissionPwFem
@@ -44,7 +46,7 @@ from pyPLANES.fem.dofs import periodic_dofs_identification
 from pyPLANES.fem.fem_entities_pw import PwFem
 from pyPLANES.fem.utils_fem import dof_p_element, dof_up_element
 
-class PeriodicLayer(Mesh):
+class PeriodicLayerBase(Mesh):
     def __init__(self, **kwargs):
         self.condensation = kwargs.get("condensation", True)
         Mesh.__init__(self, **kwargs)
@@ -85,7 +87,6 @@ class PeriodicLayer(Mesh):
         periodic_dofs_identification(self)
 
         self.characteristics = [None, None] # Will be completed in PeriodicPwProblem.__init__()
-        
 
     def update_frequency(self, omega, kx):
         self.F_i, self.F_v = [], []
@@ -485,3 +486,9 @@ class PeriodicLayer(Mesh):
             for i_dim in range(4):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]  
         plot_fem_solution(self, self.kx)
+
+class PeriodicLayer(PeriodicLayerBase, GmshMesh):
+    def __init__(self, **kwargs):
+        self.condensation = kwargs.get("condensation", True)
+        GmshMesh.__init__(self, **kwargs)
+        PeriodicLayerBase.__init__(self, **kwargs)

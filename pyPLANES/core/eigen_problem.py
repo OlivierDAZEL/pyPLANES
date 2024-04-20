@@ -35,6 +35,8 @@ from pyPLANES.core.calculus import Calculus
 from pyPLANES.fem.fem_entities_surfacic import *
 from pyPLANES.fem.fem_entities_volumic import *
 
+from pyPLANES.gmsh.gmsh import GmshMesh
+
 from scipy.sparse.linalg.dsolve import linsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
@@ -43,7 +45,7 @@ from pyPLANES.utils.io import plot_fem_solution, export_paraview
 
 from mediapack import Air
 
-class EigenProblem(Mesh, Calculus):
+class EigenProblemBase(Mesh, Calculus):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         Mesh.__init__(self, **kwargs)
@@ -163,3 +165,8 @@ class EigenProblem(Mesh, Calculus):
             mail = " mailx -s \"FEM pyPLANES Calculation of " + self.name_project + " over on \"" + self.name_server + " olivier.dazel@univ-lemans.fr < " + self.info_file.name
             os.system(mail)
 
+
+class EigenProblem(EigenProblemBase, GmshMesh):
+    def __init__(self, **kwargs):
+        GmshMesh.__init__(self, **kwargs)
+        EigenProblemBase.__init__(self, **kwargs)
