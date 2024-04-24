@@ -135,7 +135,6 @@ doc/
 *.pdf
 
 # pyPLANES
-materials/
 synch2KTH.py
 *_out.txt
 _info.txt

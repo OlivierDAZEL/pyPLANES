@@ -1,0 +1,9 @@
+---
+medium_type: elastic
+rho_1: 9.2
+nu: 0.285
+E: 3.155e5
+eta: 0.032
+loss_type: structural
+
+

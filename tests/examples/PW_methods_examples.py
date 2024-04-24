@@ -67,5 +67,5 @@ characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=thet
 characteristic_method.resolution()
 
 if any(plot_solution):
-    # plt.legend()
+    plt.legend()
     plt.show() 
