@@ -34,38 +34,40 @@ from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.core.result import Results, Result, Test
 
 
-name_project="PW_comparisons"
+name_project="absorption_melanine_frequency"
 plot_solution = [True, True, True, False, False, False]
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 60.00000
 
-d = 2.e-2
-frequency = 5e3
+d = 5.e-2
+frequency = np.linspace(10,5e3,200)
 
-nb_layers = 1
-case = ["layer", "sandwich"][0]
-method_FEM = ["jap", "characteristics"][1]
-termination = ["rigid", "transmission"][1]
-material = ["Air", "Wwood", "melamine"][2]
+termination = "rigid"
+material = "melamine"
 
 
-if case == "layer":
-    ml = [(material, d)]*nb_layers
-if case == "sandwich":
-    ml = [("rubber",0.2e-3), ["melamine" , d], ("rubber",0.2e-3)]
+ml = [(material, d)]
 
-
-global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
+global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()
 
 
-recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,save_append="a", print_result=True)
+recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, termination=termination, method="JAP", verbose=verbose, print_result=True)
 recursive_method.resolution()
 
-characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose,save_append="a", print_result=True)
+characteristic_method = PwProblem(ml=ml, name_project=name_project+"_carac", theta_d=theta_d, frequencies=frequency,termination=termination, method="characteristics", verbose=verbose, print_result=True)
 characteristic_method.resolution()
 
-if any(plot_solution):
-    plt.legend()
-    plt.show() 
+
+GM = Result(_in="out/" + name_project + "_GM")
+JAP = Result(_in="out/" + name_project + "_JAP")
+carac = Result(_in="out/" + name_project + "_carac")
+
+plt.figure()
+plt.plot(GM.f,GM.abs,"b")
+plt.plot(JAP.f,JAP.abs,"b.")
+plt.plot(carac.f,carac.abs,"b+")
+
+
+plt.show()

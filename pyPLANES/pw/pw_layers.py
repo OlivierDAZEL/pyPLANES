@@ -244,7 +244,7 @@ class PwGeneric():
 
     def update_Omegac(self, Om, omega, method="Recursive Method"):
         """
-        Update the information matrix Omega
+        Update the information matrix Omega for characteristic method
 
         Parameters
         ----------
@@ -263,21 +263,8 @@ class PwGeneric():
         
         Phi = np.kron(np.eye(self.nb_waves),self.carac.Q)@self.SV
         lambda_ = self.lam
-        # print("Pwlayer")
-        # print(np.exp(lambda_*1e-2))
-        # print("Phi Pwlayer")
         
         Phi_inv = LA.inv(Phi)
-        # direction = -1
-        # print("TM Pw")
-        # TM = Phi.dot(np.diag(np.exp(direction*self.lam*self.d))).dot(Phi_inv)
-        
-        # if self.nb_waves_in_medium == 3:
-        #     for i in range(6):
-        #         for j in range(6):
-        #             print(f"TM({i},{j})={TM[i,j]}")
-        # Om = TM@Om
-        # Xi = np.eye(Om.shape[1])
         
         m = self.nb_waves_in_medium*self.nb_waves
         _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]

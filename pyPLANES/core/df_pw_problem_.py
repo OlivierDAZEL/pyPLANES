@@ -66,10 +66,7 @@ class DfPwProblem(PwProblem):
                 f_list = 0*theta_list
                 for i,theta in enumerate(theta_list):
                     f_list[i] = func(theta)
-                plt.figure()
-                plt.plot(theta_list, 1e3*f_list,"m",label= r"f($\theta)$")
-                plt.xlabel(f"Incident ange (rad)")
-                plt.ylabel("Transmission coeffficient (x$10^3$)")
+
 
 
 
@@ -152,29 +149,6 @@ class DfPwProblem(PwProblem):
 
         theta_list = np.linspace(0,pi/2-0.01,200)
         
-        plt.plot(theta_list, 1e3*quad_int.poly_r(theta_list),"r--",label="polynomial, fine")
-        plt.plot(theta_list, 1e3*quad_int.poly_c(theta_list),"b--",label="polynomial, coarse")
-        plt.plot(quad_int.x_r, 1e3*quad_int.f_r,"r.")
-        plt.plot(quad_int.x_c, 1e3*quad_int.f_c,"b.")
-        
-        plt.legend()
-
-        plt.savefig("IN24_func.pdf")
-        
-        
-        
-        plt.figure()
-        plt.bar(np.arange(1,7),100*quad_int.error_list)
-        plt.xlabel("Interval")
-        plt.ylabel("Percentage of error")
-        plt.savefig("IN24_error.pdf")
-
-        
-        
-        plt.show()
-        kljhkjhk
-
-
 
         while np.sum(subdivision.error) > tol:
             nb_it +=1
@@ -185,9 +159,6 @@ class DfPwProblem(PwProblem):
             # print(f"I_r={subdivision.I_r}")
             print(f"error={subdivision.error}")
             print(f"error={subdivision.error_list}")
-            if nb_it == 5:
-                plt.plot(subdivision.error_list)
-                plt.show()                
         Tau = subdivision.I_r
         return Tau/0.5
 

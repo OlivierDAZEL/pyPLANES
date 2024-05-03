@@ -61,7 +61,7 @@ def load_material(db, key=None):
     if isinstance(db, dict):
         return from_database(db, key)
     elif isinstance(db, str):
-        # db is a stringe
+        # db is a string
         if db == "Air":
             Air_mat = Air()
             return Fluid(c=Air_mat.c,rho=Air_mat.rho)
