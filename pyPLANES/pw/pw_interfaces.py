@@ -77,7 +77,6 @@ class PwInterface():
 
         d_0 = [self.layers[0].d]*self.n_0+[0]*self.n_0
         d_1 = [0]*self.n_1 +[-self.layers[1].d]*self.n_1
-
         delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
         delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
 

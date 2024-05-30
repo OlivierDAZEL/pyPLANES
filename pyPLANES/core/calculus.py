@@ -104,7 +104,6 @@ class Calculus():
         # self.info_file_name = self.file_names + ".info.txt"
         # self.open_info_file()
         self.start_time = time.time()
-        
         self.alive_bar = kwargs.get("alive_bar", None)
         if self.alive_bar == None:
             self.alive_bar = False

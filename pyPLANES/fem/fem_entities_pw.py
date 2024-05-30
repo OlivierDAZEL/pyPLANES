@@ -56,6 +56,6 @@ class PwFem(FemEntity):
         return out
 
     def determine_typ_and_waves(self):
-        if isinstance (self.neighbouring_surfaces[0], FluidFem):
+        if isinstance (self.up[0], FluidFem):
             self.typ = "fluid"
 

@@ -58,6 +58,9 @@ reference_C_tr = np.array([-20, -20, -18, -16, -15, -14, -13, -12, -11, -9, -8, 
 
 
 def load_material(db, key=None):
+    if key in ["Air", "air"]:
+        Air_mat = Air()
+        return Fluid(c=Air_mat.c,rho=Air_mat.rho)
     if isinstance(db, dict):
         return from_database(db, key)
     elif isinstance(db, str):

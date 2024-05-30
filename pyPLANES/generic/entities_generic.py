@@ -35,56 +35,61 @@ class GmshEntity():
     def __init__(self, **kwargs):
         self.dim = kwargs["dim"]
         self.tag = kwargs["tag"]
-        self.physical_tags = kwargs["physical_tags"]
+        self.physicalTags = kwargs["physicalTags"]
         entities = kwargs["entities"]
-        if "condition" not in list(self.physical_tags.keys()):
-            self.physical_tags["condition"] = None
-        if "model" not in list(self.physical_tags.keys()):
-            self.physical_tags["model"] = None
-        if self.dim == 0:
-            self.neighbouring_curves = []
-            self.x = kwargs["x"]
-            self.y = kwargs["y"]
-            self.z = kwargs["z"]
-            self.coord = np.array([self.x, self.y, self.z])
-            self.neighbours = []
-        elif self.dim == 1:
-            self.neighbouring_surfaces = []
-            self.bounding_points = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_points"]]
-            self.center = np.array([0., 0., 0.])
-            for p in self.bounding_points:
-                self.center += [p.x, p.y, p.z]
-            self.center /= len(self.bounding_points)
-            for _e in self.bounding_points:
-                _e.neighbouring_curves.append(self)
-        elif self.dim == 2:
-            self.neighbouring_surfaces = [] # Neighbouring 2D entities, will be completed in preprocess
-            self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
-            for _e in self.bounding_curves:
-                _e.neighbouring_surfaces.append(self)
-            self.center = np.array([0., 0., 0.])
-            for c in self.bounding_curves:
-                self.center += c.center
-            self.center /= len(self.bounding_curves)
+        self.up = kwargs["up"]
+        self.down = kwargs["down"]
+        
+        
+        # entities = kwargs["entities"]
+        # if "condition" not in list(self.physical_tags.keys()):
+        #     self.physical_tags["condition"] = None
+        # if "model" not in list(self.physical_tags.keys()):
+        #     self.physical_tags["model"] = None
+        # if self.dim == 0:
+        #     self.neighbouring_curves = []
+        #     self.x = kwargs["x"]
+        #     self.y = kwargs["y"]
+        #     self.z = kwargs["z"]
+        #     self.coord = np.array([self.x, self.y, self.z])
+        #     self.neighbours = []
+        # elif self.dim == 1:
+        #     self.neighbouring_surfaces = []
+        #     self.bounding_points = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_points"]]
+        #     self.center = np.array([0., 0., 0.])
+        #     for p in self.bounding_points:
+        #         self.center += [p.x, p.y, p.z]
+        #     self.center /= len(self.bounding_points)
+        #     for _e in self.bounding_points:
+        #         _e.neighbouring_curves.append(self)
+        # elif self.dim == 2:
+        #     self.neighbouring_surfaces = [] # Neighbouring 2D entities, will be completed in preprocess
+        #     self.bounding_curves = [next((e for e in entities if e.tag == abs(t)), None) for t in kwargs["bounding_curves"]]
+        #     for _e in self.bounding_curves:
+        #         _e.neighbouring_surfaces.append(self)
+        #     self.center = np.array([0., 0., 0.])
+        #     for c in self.bounding_curves:
+        #         self.center += c.center
+        #     self.center /= len(self.bounding_curves)
 
     def __str__(self):
         out = "Entity / tag={} / dim= {}\n".format(self.tag, self.dim)
-        out += "Physical tags={}\n".format(self.physical_tags)
-        if self.dim == 0:
-            out += "Belongs to curves "
-            for _c in self.neighbouring_curves:
-                out += "{} ({}) ".format(_c.tag, _c.physical_tags["condition"])
-            out += "\n"
-        if self.dim == 1:
-            out += "Related points "
-            for _b in self.bounding_points:
-                out += "{} ({}) ".format(_b.tag,_b.physical_tags["condition"])
-            out += "\n"
-        if self.dim == 2:
-            out += "Related curves "
-            for _c in self.bounding_curves:
-                out += "{} ({}) ".format(_c.tag,_c.physical_tags["condition"])
-            out += "\n"
+        # out += "Physical tags={}\n".format(self.physical_tags)
+        # if self.dim == 0:
+        #     out += "Belongs to curves "
+        #     for _c in self.neighbouring_curves:
+        #         out += "{} ({}) ".format(_c.tag, _c.physical_tags["condition"])
+        #     out += "\n"
+        # if self.dim == 1:
+        #     out += "Related points "
+        #     for _b in self.bounding_points:
+        #         out += "{} ({}) ".format(_b.tag,_b.physical_tags["condition"])
+        #     out += "\n"
+        # if self.dim == 2:
+        #     out += "Related curves "
+        #     for _c in self.bounding_curves:
+        #         out += "{} ({}) ".format(_c.tag,_c.physical_tags["condition"])
+        #     out += "\n"
         return out
 
 class FemEntity(GmshEntity):

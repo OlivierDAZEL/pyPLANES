@@ -89,7 +89,8 @@ class PwProblem(Calculus, MultiLayer):
         self.k_air = omega/Air.c
         self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])
         self.ky = self.k_air*np.array([np.cos(self.theta_d*np.pi/180)])
-
+        # self.ky = np.sqrt(self.k_air**2-self.kx**2)
+        # print(self.kx**2+self.ky**2)
         MultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
@@ -170,9 +171,9 @@ class PwProblem(Calculus, MultiLayer):
                     sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
                 else:
                     sigma = 1/np.cos(self.theta_d*pi/180)
-                
-                self.tau_c = self.X[-1]
-                self.win = np.cos(self.theta_d*pi/180)*sigma
+
+                # self.tau_c = self.X[-1]
+                # self.win = np.cos(self.theta_d*pi/180)*sigma
 
                 self.result.tau.append((np.abs(self.X[-1])**2)*np.cos(self.theta_d*pi/180)*sigma)
                 self.result.abs[-1] -= np.abs(self.result.T0[-1])**2

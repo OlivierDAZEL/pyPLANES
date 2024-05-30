@@ -43,7 +43,8 @@ from pyPLANES.pw.utils_TM import ZOD_terms
 class ImposedDisplacementDgm(DgmEntity):
     def __init__(self, **kwargs):
         DgmEntity.__init__(self, **kwargs)
-    
+        if self.verbose:
+            print(self)
     def __str__(self):
         out = "Imposed Displacement"
         return out

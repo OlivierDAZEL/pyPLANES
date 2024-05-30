@@ -43,7 +43,9 @@ from pyPLANES.pw.utils_TM import ZOD_terms
 class ImposedDisplacementFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-    
+        if self.verbose:
+            print("Creation of")
+            print(self)
     def __str__(self):
         out = "Imposed Displacement"
         return out
@@ -76,7 +78,9 @@ class ImposedDisplacementFem(FemEntity):
 class ImposedPwFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-    
+        if self.verbose:
+            print(self)
+            
     def __str__(self):
         out = "Imposed Pw"
         return out
@@ -113,7 +117,8 @@ class ImposedPwFem(FemEntity):
 class RobinAirFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-    
+        if self.verbose:
+            print(self)
     def __str__(self):
         out = "Robin Air Displacement"
         return out
@@ -148,7 +153,8 @@ class InterfaceFem(FemEntity):
         self.neighbour = False # Neighbouring interface
         self.nodes = None # Bounding nodes
         self.delta = None # vector of geometrical shift with the other interface
-
+        if self.verbose:
+            print(self)
     def __str__(self):
         out = "Interface" + FemEntity.__str__(self)
         out += "Neighbour Entity tag={}\n".format(self.neighbour.tag)
@@ -216,6 +222,8 @@ class FluidStructureFem(FemEntity):
         FemEntity.__init__(self, **kwargs)
         self.fluid_neighbour = None
         self.struc_neighbour = None
+        if self.verbose:
+            print(self)
 
     def elementary_matrices(self, _el):
         # Elementary matrices
@@ -264,7 +272,9 @@ class FluidStructureFem(FemEntity):
 class RigidWallFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-
+        if self.verbose:
+            print(self)
+            
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "RigidWall" + FemEntity.__str__(self)
@@ -273,7 +283,8 @@ class RigidWallFem(FemEntity):
 class PeriodicityFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-
+        self.ismaster = None
+            
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Periodicity" + FemEntity.__str__(self)
@@ -284,5 +295,4 @@ class PeriodicityFem(FemEntity):
             return [], [], [], [], [], [], [], []
         else:
             return [], [], [], [], [], []
-
 

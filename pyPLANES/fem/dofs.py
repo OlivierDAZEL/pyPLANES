@@ -28,7 +28,7 @@ from pyPLANES.fem.fem_entities_volumic import *
 
 def activate_dofs(self,start=0):
     # Activate dofs 
-    for _en in self.entities[1:]:
+    for _en in self.entities.values():
         if _en.dim == 2:
             if isinstance(_en, FluidFem):
                 for _el in _en.elements:
@@ -76,7 +76,7 @@ def activate_dofs(self,start=0):
         for _ in self.faces: _.dofs[1] = [0]*len(_.dofs[1])
         for _ in self.bubbles: _.dofs[1] = [0]*len(_.dofs[1])
 
-    for _en in self.entities[1:]:
+    for _en in self.entities.values():
         if isinstance(_en, RigidWallFem):
             for _el in _en.elements:
                 for _v in _el.vertices:
@@ -141,8 +141,6 @@ def periodic_dofs_identification(self):
     # Determination of the correspondance between edges (we did not divide by two for the average of the position)
     y_left =  [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_left]
     y_right = [(_e.vertices[0].coord[1]+_e.vertices[1].coord[1]) for _e in edges_right]
-
-
     corr_edges = [ next(i for i, _ in enumerate(y_right) if np.isclose(_, _yl, 1e-8)) for _yl in y_left] # corr_edges = [y_right.index(_y) for _y in y_left]
 
 

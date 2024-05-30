@@ -60,7 +60,7 @@ def checkup_of_the_model(self):
 def check_pwfem(self):
     for _e in self.pwfem_entities:
         if isinstance(_e, PwFem):
-            for s in _e.neighbouring_surfaces:
+            for s in _e.up:
                 if isinstance(s, (Air, FluidFem)):
                     _e.nb_dof_per_node = 1
                     _e.medium = s.mat
@@ -100,53 +100,55 @@ def check_pwfem(self):
         raise NameError("self.medium[0] != self.medium[1]")
 
 def check_neighbours_1D_entity(self):
-    for _e in self.entities:
-        if _e.dim == 1: # 1D entities
-            if len(_e.neighbouring_surfaces) > 1:
-                if isinstance(_e, (PwFem, RigidWallFem, PeriodicityFem)):
-                    raise ValueError("Error in checkup_of_the_model: 1D entity is linked to more than one surface")    
+    pass
+    # for _e in self.entities:
+    #     if _e.dim == 1: # 1D entities
+    #         if len(_e.neighbouring_surfaces) > 1:
+    #             if isinstance(_e, (PwFem, RigidWallFem, PeriodicityFem)):
+    #                 raise ValueError("Error in checkup_of_the_model: 1D entity is linked to more than one surface")    
 
 def check_IFS(self):
-    unfinished = True
-    while unfinished:
-        unfinished = False
-        for _e in self.entities:
-            if _e.dim == 1: # 1D entities
-                if len(_e.neighbouring_surfaces) > 1:
-                    if isinstance(_e, FluidStructureFem):
-                        if len(_e.neighbouring_surfaces) != 2:
-                            raise NameError("For FluidStructureFem, the number of neighbours should be 2")
-                        else:
-                            if isinstance(_e.neighbouring_surfaces[0], FluidFem) and isinstance(_e.neighbouring_surfaces[1], ElasticFem):
-                                _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]
-                            elif isinstance(_e.neighbouring_surfaces[0], ElasticFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
-                                _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
-                            elif isinstance(_e.neighbouring_surfaces[0], FluidFem) and isinstance(_e.neighbouring_surfaces[1], PemFem):
-                                if _e.neighbouring_surfaces[1].formulation98 == True:
-                                    raise NameError("IFS Fluid 98 Error")
-                                else:
-                                    _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]   
-                            elif isinstance(_e.neighbouring_surfaces[0], PemFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
-                                if _e.neighbouring_surfaces[0].formulation98 == True:
-                                    raise NameError("IFS Fluid 98 Error")
-                                else:
-                                    _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
-                            else:
-                                raise NameError("FluidStructureFem does not relate a fluid and elastic struture")
+    pass
+    # unfinished = True
+    # while unfinished:
+    #     unfinished = False
+    #     for _e in self.entities:
+    #         if _e.dim == 1: # 1D entities
+    #             if len(_e.neighbouring_surfaces) > 1:
+    #                 if isinstance(_e, FluidStructureFem):
+    #                     if len(_e.neighbouring_surfaces) != 2:
+    #                         raise NameError("For FluidStructureFem, the number of neighbours should be 2")
+    #                     else:
+    #                         if isinstance(_e.neighbouring_surfaces[0], FluidFem) and isinstance(_e.neighbouring_surfaces[1], ElasticFem):
+    #                             _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]
+    #                         elif isinstance(_e.neighbouring_surfaces[0], ElasticFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
+    #                             _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
+    #                         elif isinstance(_e.neighbouring_surfaces[0], FluidFem) and isinstance(_e.neighbouring_surfaces[1], PemFem):
+    #                             if _e.neighbouring_surfaces[1].formulation98 == True:
+    #                                 raise NameError("IFS Fluid 98 Error")
+    #                             else:
+    #                                 _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[0], _e.neighbouring_surfaces[1]   
+    #                         elif isinstance(_e.neighbouring_surfaces[0], PemFem) and isinstance(_e.neighbouring_surfaces[1], FluidFem):
+    #                             if _e.neighbouring_surfaces[0].formulation98 == True:
+    #                                 raise NameError("IFS Fluid 98 Error")
+    #                             else:
+    #                                 _e.fluid_neighbour, _e.struc_neighbour = _e.neighbouring_surfaces[1], _e.neighbouring_surfaces[0]
+    #                         else:
+    #                             raise NameError("FluidStructureFem does not relate a fluid and elastic struture")
 
-                            for _elem in _e.elements:
-                                vert = [_elem.vertices[0].tag, _elem.vertices[1].tag] # Vertices of the FSI element
-                                # Determination of the neighbouring element in neighbouring_surfaces[0]
-                                _iter = iter(_e.fluid_neighbour.elements)
-                                while True:
-                                    _el = next(_iter)
-                                    vert_2D = [_el.vertices[0].tag, _el.vertices[1].tag, _el.vertices[2].tag]
-                                    _ = len(set(vert).intersection(vert_2D)) # Number of common vertices
-                                    if _ == 2: # Case of two common vertices
-                                            _elem.elem2d = _el
-                                            _elem.normal_fluid = normal_to_element(_elem, _el)
-                                            _elem.normal_struc = -_elem.normal_fluid
-                                            break
+    #                         for _elem in _e.elements:
+    #                             vert = [_elem.vertices[0].tag, _elem.vertices[1].tag] # Vertices of the FSI element
+    #                             # Determination of the neighbouring element in neighbouring_surfaces[0]
+    #                             _iter = iter(_e.fluid_neighbour.elements)
+    #                             while True:
+    #                                 _el = next(_iter)
+    #                                 vert_2D = [_el.vertices[0].tag, _el.vertices[1].tag, _el.vertices[2].tag]
+    #                                 _ = len(set(vert).intersection(vert_2D)) # Number of common vertices
+    #                                 if _ == 2: # Case of two common vertices
+    #                                         _elem.elem2d = _el
+    #                                         _elem.normal_fluid = normal_to_element(_elem, _el)
+    #                                         _elem.normal_struc = -_elem.normal_fluid
+    #                                         break
 
 def check_pem_formulation(self):
     for _e in self.entities:

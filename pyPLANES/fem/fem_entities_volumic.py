@@ -41,9 +41,11 @@ from pyPLANES.fem.utils_fem import dof_p_linear_system_to_condense, dof_p_linear
 class FluidFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-        self.mat = kwargs.get("mat", "Air")
+        self.mat = self.physicalTags["mat"]
         self.H_i, self.H_j, self.H_v = [], [], []
         self.Q_i, self.Q_j, self.Q_v = [], [], []
+        if self.verbose:
+            print(self)
 
     def __str__(self):
         out = "Fluid" + FemEntity.__str__(self)
@@ -140,9 +142,10 @@ class FluidFem(FemEntity):
 class PemFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-        self.mat = kwargs["mat"]
+        self.mat = self.physicalTags["mat"]
         self.condensation = kwargs.get("condensation", True)
         self.formulation98 = None
+
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Pem" + FemEntity.__str__(self)
@@ -229,9 +232,8 @@ class PemFem(FemEntity):
 class ElasticFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-        self.mat = kwargs["mat"]
+        self.mat = self.physicalTags["mat"]
         self.condensation = kwargs.get("condensation", True)
-
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Elastic" + FemEntity.__str__(self)
@@ -298,7 +300,8 @@ class PMLFem(FemEntity):
         self.mat = kwargs.get("mat", "Air")
         self.H_i, self.H_j, self.H_v = [], [], []
         self.Q_i, self.Q_j, self.Q_v = [], [], []
-
+        if self.verbose:
+            print(self)
     def __str__(self):
         out = "Fluid" + FemEntity.__str__(self)
         return out

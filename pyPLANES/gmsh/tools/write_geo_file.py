@@ -152,6 +152,14 @@ class Gmsh():
         self.list_points.append(p)
         return p
 
+    def duplicate_point(self, point, x, y):
+        self.nb_tags += 1
+        p = self.Point(self.f, self.nb_tags, point.x+x, point.y+y, point.lc)
+        # self.file.write("Point({})= {{{}, {}, {}, {}}};\n".format(self.nb_tags, x, y, 0.0, lc))
+        self.list_points.append(p)
+        return p
+
+
     def new_line(self, _1, _2):
         self.nb_tags += 1
         l = self.Line(self.f, self.nb_tags, _1, _2)
@@ -235,6 +243,12 @@ class Gmsh():
             sys.exit()
         else:
             self.f.write("Periodic " + obj1.typ + " {{{}}} = {{{}}} Translate {{{},{},{}}};\n".format(obj1.tag, obj2.tag, Delta[0],Delta[1],Delta[2]))
+            
+            
+    def generate_points_from_dict(self, d,lcar):
+        dp = {}
+        for key in d.keys():
+            self.new_point(d[key][0],d[key][1],lcar)
 
     # def new_circle(self,)
 

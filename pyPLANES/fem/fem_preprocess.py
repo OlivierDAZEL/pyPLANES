@@ -97,7 +97,7 @@ def assign_reference_element(self):
             _el.reference_element = self.reference_elements[reference_element_key]
 
 def reference_element(key, order):
-    if isinstance(key, int):
+    if isinstance(key, np.int32):
         if key in [2, 9]:
             out = Kt(order)
         elif key in [1, 8]:

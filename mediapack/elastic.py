@@ -55,6 +55,7 @@ class Elastic(Medium):
 
         super().__init__(**params)
 
+
     def _compute_missing(self):
         if self.law is None:
             self.law = "structural"

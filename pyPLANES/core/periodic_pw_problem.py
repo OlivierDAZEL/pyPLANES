@@ -71,13 +71,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.result.Solver = type(self).__name__
         self.result.Method = self.method
         
-
         # Out files
-
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
 
         self.add_excitation_and_termination(self.termination)
-        
         
         for i_l, _layer in enumerate(self.layers):
             if isinstance(_layer, PeriodicLayer):

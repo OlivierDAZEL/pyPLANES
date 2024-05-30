@@ -65,6 +65,16 @@ class Medium(object):
             self.__class__.MODEL
         )
 
+    def __eq__(self, other): 
+        if not isinstance(other, Medium):
+            return False
+        test = True
+        for p in self.EXPECTED_PARAMS:
+            test = test and getattr(self,p[0]) == getattr(other,p[0])
+        return test
+
+
+
     def as_dict(self):
         return {k: self.__getattribute__(k) for k, _ in self.EXPECTED_PARAMS+self.OPT_PARAMS if hasattr(self, k) and self.__getattribute__(k) is not None}
 
