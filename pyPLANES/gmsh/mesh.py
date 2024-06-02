@@ -69,59 +69,59 @@ class GmshMesh(Mesh):
                 nodes = np.array(elemNodeTags[i_typ]).reshape((len(tags),3))
                 for i, tag in enumerate(tags):
                     self.elements[tag] = FemElement(typ, tag, [self.vertices[j] for j in nodes[i,:]])
-        # Entities
+        # Entities (import them all first)
         entities = gmsh.model.getEntities()
-        print(entities)
         self.entities = dict()
         for ie, e in enumerate(entities):
             dim, tag = e
-            # nodeTags, nodeCoords, nodeParams = gmsh.model.mesh.getNodes(dim, tag)
-            elemTypes, elemTags, elemNodeTags = gmsh.model.mesh.getElements(dim, tag)
-            # type_entity = gmsh.model.getType(dim, tag)
-            # name = gmsh.model.getEntityName(dim, tag)
-            up, down = gmsh.model.getAdjacencies(dim, tag)
+
             physicalTags = [gmsh.model.getPhysicalName(dim, p) for p in gmsh.model.getPhysicalGroupsForEntity(dim, tag)]
-            # convert physicalTags to a dict
+            # conversion of physicalTags to a dict
             list_physicalTags =  [_.split("=") for _ in physicalTags]
             keys = [_[0] for _ in list_physicalTags]
             values = [_[1] for _ in list_physicalTags]
             physicalTags = dict(zip(keys, values))  
+            # end of conversion of physicalTags to a dict
+            
             # Determine the entity constructor
             if dim ==0:
                 entity_constructor = GmshEntity
             elif dim == 1:
                 if len(physicalTags) !=0:
-                    if physicalTags["model"] == "FEM":
-                        if (physicalTags["condition"]=="bottom") or (physicalTags["condition"]=="top"):
+                    if (physicalTags["condition"]=="bottom") or (physicalTags["condition"]=="top"):
                             entity_constructor= PwFem
-                        if physicalTags["condition"]=="Periodicity":
+                    elif physicalTags["condition"]=="Periodicity":
                             entity_constructor= PeriodicityFem
-                    else:
-                        entity_constructor= GmshEntity
+                else:
+                    entity_constructor= GmshEntity
             elif dim == 2:
-                if physicalTags["model"] == "FEM":
-                    mat = load_material(physicalTags["mat"])
-                    if mat.MEDIUM_TYPE in ["eqf", "fluid"]:
-                        entity_constructor = FluidFem
-                    elif mat.MEDIUM_TYPE in ["elastic"]:
-                        entity_constructor = ElasticFem
-                    elif mat.MEDIUM_TYPE in ["pem"]:
-                        entity_constructor = PemFem
-                    else:
-                        raise NameError("invalid material")
-            _ent = entity_constructor(dim=dim, tag=tag, physicalTags=physicalTags, entities=self.entities, up=up, down=down)
-            # Affect elements to entities
-            if len(elemTags) !=0:
+                mat = load_material(physicalTags["mat"])
+                if mat.MEDIUM_TYPE in ["eqf", "fluid"]:
+                    entity_constructor = FluidFem
+                elif mat.MEDIUM_TYPE in ["elastic"]:
+                    entity_constructor = ElasticFem
+                elif mat.MEDIUM_TYPE in ["pem"]:
+                    entity_constructor = PemFem
+                else:
+                    raise NameError("invalid material")
+            
+            _ent = entity_constructor(dim=dim, tag=tag, physicalTags=physicalTags, entities=self.entities, updown=gmsh.model.getAdjacencies(dim, tag))
+            
+            # Affect elements to fem entities
+            if isinstance(_ent, FemEntity):
+                elemTypes, elemTags, elemNodeTags = gmsh.model.mesh.getElements(dim, tag)
                 for e in elemTags[0]:
                     _ent.elements.append(self.elements[e])
             
-            # Add entity to lists
+          # Add entity to lists
             self.entities[(dim,tag)] = _ent
             if isinstance(_ent, FemEntity):
                 if isinstance(_ent, PwFem):
                     self.pwfem_entities.append(_ent)
                 else:
                     self.fem_entities.append(_ent)
+
+  
         # periodicity
         for e in self.fem_entities:
             if isinstance(e, PeriodicityFem):
@@ -134,22 +134,48 @@ class GmshMesh(Mesh):
                     else:
                         self.vertices_left = nodeTags
                         self.vertices_right = nodeMasterTags
-            else:
-                self.period = 1.02
-        self.period = np.abs(self.period)
-        for e in self.entities.values():
-            if isinstance(e, PwFem):
-                e.period = self.period
+        if hasattr(self, 'period'):
+            self.period = np.abs(self.period)
+            for e in self.entities.values():
+                if isinstance(e, PwFem):
+                    e.period = self.period
+
         # updates entities 
+        # replace up and down variables by entities instead of GMSH tags
         for e in self.entities.values():
-            # replace up and down variables by entities instead of numbers
             e.up = [self.entities[(e.dim+1, tag)] for tag in e.up] 
             e.down = [self.entities[(e.dim-1, tag)] for tag in e.down]
             if hasattr(e, "mat"):
                 e.mat = load_material(e.mat)
 
+
+        
+
         gmsh.clear()
         gmsh.finalize()
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
             
     #     if self.verbose:
     #         print(f"Reading {self.msh_file}")

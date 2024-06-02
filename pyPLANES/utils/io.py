@@ -157,7 +157,8 @@ def plot_fem_solution(self, kx=[0.]):
 
     if any(self.plot[3:]):
         x, y, u_x, u_y, pr = [], [], [], [], []
-    for _en in self.entities:
+
+    for _en in self.entities.values():
         if isinstance(_en, FluidFem):
             if any(self.plot[2::3]): # Plot of pressure  == True
                 for ie, _elem in enumerate(_en.elements):
@@ -201,7 +202,6 @@ def plot_fem_solution(self, kx=[0.]):
                         triang = mtri.Triangulation(x_elem, y_elem)
                         plt.figure("Pressure map")
                         plt.tricontourf(triang, np.abs(p_elem), cmap=cm.jet, levels=np.linspace(p_min, p_max,40))
-
         elif isinstance(_en, ElasticFem):
             if any(self.plot): # Plot of pressure  == True
                 for _elem in _en.elements:

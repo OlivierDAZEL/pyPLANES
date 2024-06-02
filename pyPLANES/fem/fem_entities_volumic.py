@@ -44,8 +44,7 @@ class FluidFem(FemEntity):
         self.mat = self.physicalTags["mat"]
         self.H_i, self.H_j, self.H_v = [], [], []
         self.Q_i, self.Q_j, self.Q_v = [], [], []
-        if self.verbose:
-            print(self)
+
 
     def __str__(self):
         out = "Fluid" + FemEntity.__str__(self)

@@ -37,8 +37,8 @@ class GmshEntity():
         self.tag = kwargs["tag"]
         self.physicalTags = kwargs["physicalTags"]
         entities = kwargs["entities"]
-        self.up = kwargs["up"]
-        self.down = kwargs["down"]
+        self.up, self.down = kwargs["updown"]
+
         
         
         # entities = kwargs["entities"]

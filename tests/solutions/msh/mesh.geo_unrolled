@@ -1,0 +1,15 @@
+cl__1 = 0.004;
+Point(1) = {0, 0, 0, cl__1};
+Point(2) = {0.02, 0, 0, cl__1};
+Point(3) = {0.02, 0.02, 0, cl__1};
+Point(4) = {0, 0.02, 0, cl__1};
+Line(1) = {1, 2};
+Line(2) = {2, 3};
+Line(3) = {3, 4};
+Line(4) = {4, 1};
+Curve Loop(1) = {1, 2, 3, 4};
+Plane Surface(1) = {1};
+Physical Curve("condition=bottom") = {1};
+Physical Curve("condition=top") = {3};
+Physical Curve("condition=Periodicity") = {2, 4};
+Physical Surface("mat=melamine") = {1};

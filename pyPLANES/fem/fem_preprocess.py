@@ -63,7 +63,7 @@ def fem_preprocess(self):
     affect_dofs_to_elements(self)
     if self.verbose:
         print("Identification of periodic dofs" + "\t"*6 + "["+ colored("OK", "green")  +"]")
-    # periodic_dofs_identification(self)
+
     if self.verbose:
         print("Checkup of the model")
     checkup_of_the_model(self)

@@ -80,11 +80,14 @@ class PeriodicLayerBase(Mesh):
                 _ent.method_dof = dof_p_element
             elif _ent.typ in ["Biot98", "Biot01"]:
                 _ent.method_dof = dof_up_element  
+                
         # The bottom interface is the first of self.pwfem_entities
-        if self.pwfem_entities[0].ny == 1:
+        if self.pwfem_entities[0].physicalTags["condition"] == "top":
             self.pwfem_entities.reverse()
-
-        periodic_dofs_identification(self)
+        # Its normal is -1
+        self.pwfem_entities[0].ny =-1.
+        if len(self.pwfem_entities) !=0:
+            periodic_dofs_identification(self)
 
         self.characteristics = [None, None] # Will be completed in PeriodicPwProblem.__init__()
 
@@ -240,6 +243,7 @@ class PeriodicLayerBase(Mesh):
         self.M_1 = M_1
         self.M_2 = M_2
         self.TM = -LA.solve(M_1, M_2)
+        # print(self.TM)
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         self.Omega_minus = Om # To plot the solution
@@ -440,7 +444,6 @@ class PeriodicLayerBase(Mesh):
         Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
         return Om, Xi
 
-
     def update_system(self, _A_i, _A_j, _A_v, _F_i, _F_v, _T_i=None, _T_j=None, _T_v=None):
         self.A_i.extend(_A_i)
         self.A_j.extend(_A_j)
@@ -465,6 +468,7 @@ class PeriodicLayerBase(Mesh):
 
     def plot_solution(self, S_b, S_t):
 
+
         X = self.R_b@S_b +self.R_t@S_t
         X = np.insert(X, 0, 0)
         # Concatenation of the slave dofs at the end of the vector
@@ -484,7 +488,7 @@ class PeriodicLayerBase(Mesh):
                 _fc.sol[i_dim] = X[_fc.dofs[i_dim]]
         for _bb in self.bubbles:
             for i_dim in range(4):
-                _bb.sol[i_dim] = X[_bb.dofs[i_dim]]  
+                _bb.sol[i_dim] = X[_bb.dofs[i_dim]]
         plot_fem_solution(self, self.kx)
 
 class PeriodicLayer(PeriodicLayerBase, GmshMesh):
