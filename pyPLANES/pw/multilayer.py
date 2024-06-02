@@ -116,7 +116,7 @@ class MultiLayer():
             out += self.interfaces[i_l+1].__str__()+"\n"
         return out 
 
-    def add_excitation_and_termination(self, method, termination):
+    def add_excitation_and_termination(self, termination):
         # Interface associated to the termination
         if termination in ["trans", "transmission","Transmission"]:
             self.interfaces.append(SemiInfinite(self.layers[-1]))
@@ -128,39 +128,21 @@ class MultiLayer():
             elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
         
-        if method in ["Recursive Method", "TMM", "characteristics"]:
-            incident_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
-            if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
-            elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-                self.interfaces.insert(0,FluidPemInterface(incident_layer, self.layers[0]))
-            elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-                self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
+        incident_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
+        if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
+            self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
+        elif self.layers[0].medium.MEDIUM_TYPE == "pem":
+            self.interfaces.insert(0,FluidPemInterface(incident_layer, self.layers[0]))
+        elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
+            self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
             # # Addition of a fictious Air-Layer for the interface.
             # self.interfaces[0].layers[0] = incident_layer
-        
-        else:
-            Air_mat = Air()
-            mat = Fluid(c=Air_mat.c,rho=Air_mat.rho)
-            self.layers.insert(0,FluidLayer(mat, 1.e-2, x_0=-1.e-2))
-            if self.layers[1].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-                self.interfaces.insert(0,FluidFluidInterface(self.layers[0] ,self.layers[1]))
-            elif self.layers[1].medium.MEDIUM_TYPE == "pem":
-                self.interfaces.insert(0,FluidPemInterface(self.layers[0], self.layers[1]))
-            elif self.layers[1].medium.MEDIUM_TYPE == "elastic":
-                self.interfaces.insert(0,FluidElasticInterface(self.layers[0],self.layers[1]))
-            # Count of the number of plane waves for the global method
+        if self.method == "Global Method":
+            self.layers.insert(0, incident_layer)
             self.nb_PW = 0
             for _layer in self.layers:
-                if _layer.medium.MODEL in ["fluid", "eqf"]:
-                    _layer.dofs = self.nb_PW+np.arange(2)
-                    self.nb_PW += 2
-                elif _layer.medium.MODEL == "pem":
-                    _layer.dofs = self.nb_PW+np.arange(6)
-                    self.nb_PW += 6
-                elif _layer.medium.MODEL == "elastic":
-                    _layer.dofs = self.nb_PW+np.arange(4)
-                    self.nb_PW += 4
+                _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium)
+                self.nb_PW += 2*_layer.nb_waves_in_medium                
             if isinstance(self.interfaces[-1], SemiInfinite):
                 self.nb_PW += 1
 

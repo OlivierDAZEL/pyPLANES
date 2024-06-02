@@ -44,7 +44,7 @@ class PeriodicMultiLayer():
     def __init__(self, ml, method_TM="JAP", **kwargs):
         # Creation of the list of layers
         
-       
+        self.method = kwargs.get("method","Global Method")
         self.method_TM = method_TM
         self.layers = []
         self.interfaces = []
@@ -147,15 +147,25 @@ class PeriodicMultiLayer():
         else: 
             medium_type = self.layers[0].medium.MEDIUM_TYPE
 
-        # Addition of a fictious Air-Layer for the interface.
+        # Addition of a fictious Air-Layer for the incident interface.
         incident_layer=FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
-
         if medium_type in ["fluid", "eqf"]:
             self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
         elif medium_type == "pem":
             self.interfaces.insert(0,FluidPemInterface(incident_layer, self.layers[0]))
         elif medium_type == "elastic":
             self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
+        if self.method == "Global Method":
+            self.layers.insert(0, incident_layer)
+            nb_waves = 1+2*self.nb_bloch_waves
+            self.nb_PW =0
+            for _layer in self.layers:
+                if not isinstance(_layer, PeriodicLayer):
+                    _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium)
+                    self.nb_PW += 2*_layer.nb_waves_in_medium*nb_waves
+            if isinstance(self.interfaces[-1], SemiInfinite):
+                self.nb_PW += self.nb_waves
+
 
     def update_frequency(self, omega, kx):
         for _l in self.layers:

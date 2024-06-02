@@ -46,7 +46,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.condensation = kwargs.get("condensation", True)
         Calculus.__init__(self, **kwargs)
         self.theta_d = kwargs.get("theta_d", 0.0)
-        self.method = kwargs.get("method", "global")
+        self.method = kwargs.get("method", "Global Method")
+        
+        print(self.method)
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -58,9 +60,11 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         elif self.method.lower() in ["characteristics", "characteristic", "carac"]:
             self.method = "characteristics"
         elif self.method.lower() in ["global", "characteristic", "carac"]:
-            self.method = "global"
+            self.method = "Global Method"
         else: 
             raise NameError("Invalid method name: " + self.method)
+        
+        print(self.method)
         self.method_TM = kwargs.get("method_TM", False)
         
         if self.method_TM in ["cheb_1", "cheb_2"]:
@@ -73,19 +77,23 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.result.Solver = type(self).__name__
         self.result.Method = self.method
         
+
         # Read periodic multilayer
-        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot, condensation=self.condensation)
+        PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
 
         self.add_excitation_and_termination(self.termination)
         
-        for i_l, _layer in enumerate(self.layers):
-            if isinstance(_layer, PeriodicLayer):
-                _layer.characteristics[0] = self.interfaces[i_l].carac_top
-                _layer.characteristics[1] = self.interfaces[i_l+1].carac_bottom
+        if self.method == "characteristics":
+            for i_l, _layer in enumerate(self.layers):
+                if isinstance(_layer, PeriodicLayer):
+                    _layer.characteristics[0] = self.interfaces[i_l].carac_top
+                    _layer.characteristics[1] = self.interfaces[i_l+1].carac_bottom
+
         
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
+
 
     def preprocess(self):
         Calculus.preprocess(self)
@@ -158,12 +166,15 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
-                    
+        elif self.method == "Global Method":
+            self.A_w = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
+        else:
+            raise NameError("Unknow method")
     def solve(self):
 
         Calculus.solve(self)
-        if self.method == "global":
-            n
+        if self.method == "Global Method":
+            njklljkljk
         else:
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             E_0 = np.array([-alpha, 1]).reshape((2,1))

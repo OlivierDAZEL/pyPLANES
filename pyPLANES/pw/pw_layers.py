@@ -318,7 +318,7 @@ class PwLayer(PwGeneric):
         self.interfaces = [None, None]
         self.nb_waves_in_medium = None
         self.nb_fields_SV = None
-        self.nb_waves = None
+        self.nb_waves_in_medium = None
         self.kx = None
         
     def __str__(self):

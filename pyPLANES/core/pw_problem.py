@@ -78,11 +78,12 @@ class PwProblem(Calculus, MultiLayer):
             for l in self.layers:
                 l.order_chebychev = self.order_chebychev 
         self.termination = kwargs.get("termination", "rigid")
-        self.add_excitation_and_termination(self.method, self.termination)
+        self.add_excitation_and_termination(self.termination)
 
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
+
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
@@ -129,8 +130,6 @@ class PwProblem(Calculus, MultiLayer):
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
-
-                    
         elif self.method == "Global Method":
             self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
             i_eq = 0
@@ -140,7 +139,8 @@ class PwProblem(Calculus, MultiLayer):
                     i_eq = _int.update_M_global(self.A,i_eq)
             self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             self.A = np.delete(self.A, 0, axis=1)
-
+        else:
+            raise NameError("Unknow method")
     def solve(self):
         Calculus.solve(self)
         if self.method in ["Recursive Method", "TMM", "characteristics"]:

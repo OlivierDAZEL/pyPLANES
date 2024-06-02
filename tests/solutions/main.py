@@ -1,6 +1,5 @@
 import sys
 sys.path.insert(0, "../..")
-import pickle
 
 from mediapack import Air
 import numpy as np
@@ -29,7 +28,7 @@ frequency = 3e1
 
 name_project="solution"
 case = ["layer", "sandwich"][0]
-method_FEM = ["jap", "characteristics", "global"][2]
+method_FEM = ["jap", "characteristics", "global"][0]
 termination = ["rigid", "transmission"][0]
 material = ["Air", "Wwood", "melamine"][2]
 
@@ -45,24 +44,24 @@ if case == "sandwich":
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()
 
-# recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,save_append="a", print_result=True)
-# recursive_method.resolution()
+recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
+recursive_method.resolution()
 
-# characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose,save_append="a", print_result=True)
-# characteristic_method.resolution()
+characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
+characteristic_method.resolution()
 
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
 
 
-# rTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method="characteristics")
-# rTMM_method.resolution()
+rTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method="characteristics")
+rTMM_method.resolution()
 
 print(f"R GM ={global_method.result.R0}")
-# print(f"R RM ={recursive_method.result.R0}")
-# print(f"R CM ={characteristic_method.result.R0}")
+print(f"R RM ={recursive_method.result.R0}")
+print(f"R CM ={characteristic_method.result.R0}")
 print(f"R FEM={eTMM_method.result.R0}")
-# print(f"R CFE={rTMM_method.result.R0}")
+print(f"R CFE={rTMM_method.result.R0}")
 
 # print(f"xxxxxxxxxxxx")
 # print(f"\t\tER RM={np.abs(recursive_method.result.R0[0]-global_method.result.R0[0])}")
