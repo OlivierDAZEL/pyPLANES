@@ -48,7 +48,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
         
-        print(self.method)
+
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -64,7 +64,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         else: 
             raise NameError("Invalid method name: " + self.method)
         
-        print(self.method)
+
         self.method_TM = kwargs.get("method_TM", False)
         
         if self.method_TM in ["cheb_1", "cheb_2"]:
@@ -80,6 +80,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
         # Read periodic multilayer
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
+
+
 
         self.add_excitation_and_termination(self.termination)
         
@@ -130,12 +132,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
-                    # print("_l.Xi=\n{}".format(_l.Xi))
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
-                    # print("tau=\n{}.".format(next_interface.Tau))
                     self.back_prop = self.back_prop@next_interface.Tau
-                # print("backprop=\n{}".format(self.back_prop))
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omega(self.nb_waves)
                 for i, _l in enumerate(self.layers[::-1]):
@@ -145,36 +144,59 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         elif self.method == "characteristics":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac(self.nb_waves)
-                # print("Omega_end=\n", self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     # print(i)
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
-                    # print("after_layer")
-                    # print(_l.Omega_plus)
                     self.back_prop = self.back_prop@_l.Xi
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
-                    # print("after_interface")
-                    # print(self.Omega)
                     self.back_prop = self.back_prop@next_interface.Tau
             else: # Rigid backing
                 self.Omega = self.interfaces[-1].Omegac(self.nb_waves)
-                # print(self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
         elif self.method == "Global Method":
-            self.A_w = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
+            if hasattr(self.result, "n_dof"):
+                nb_dof_FEM = self.result.n_dof
+            else:
+                nb_dof_FEM = 0
+            
+            
+            self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
+
+            i_eq = 0
+            for _int in self.interfaces:
+                if self.method == "Global Method":
+                    i_eq = _int.update_M_global(self.A,i_eq)
+            self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
+            for i in range(self.nb_waves):
+                self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
         else:
             raise NameError("Unknow method")
+        
     def solve(self):
-
         Calculus.solve(self)
         if self.method == "Global Method":
-            njklljkljk
+            # plt.spy(self.A)
+            # plt.show()
+            self.X = LA.solve(self.A, self.F)
+                
+            R = self.X[:self.nb_waves]
+            self.result.R0.append(R[0])
+            self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
+
+            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+            if self.termination == "transmission":
+                self.result.T0.append(self.X[-1])
+                if self.window:
+                    self.window.update_frequency(2*pi*self.f)
+                    sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
+                else:
+                    sigma = 1/np.cos(self.theta_d*pi/180)
         else:
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             E_0 = np.array([-alpha, 1]).reshape((2,1))

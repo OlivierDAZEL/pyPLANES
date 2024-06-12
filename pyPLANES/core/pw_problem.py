@@ -37,9 +37,6 @@ from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
 class PwProblem(Calculus, MultiLayer):
-    """
-        Plane Wave Problem Class
-    """
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         self.result.Solver = type(self).__name__
@@ -49,7 +46,6 @@ class PwProblem(Calculus, MultiLayer):
         self.window = kwargs.get("window", False)
         if self.window is not False:
             self.window = Window(self.window[0], self.window[1])
-        
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -64,12 +60,10 @@ class PwProblem(Calculus, MultiLayer):
                 self.theta_d = 1e-12
         else: 
             self.method = "Global Method"
-            
         self.method_TM = kwargs.get("method_TM", "diag")
         if self.method_TM in ["cheb_1"]:
             self.order_chebychev = kwargs.get("order_chebychev", 20)
-        
-        
+            
         assert "ml" in kwargs
         ml = kwargs.get("ml")
 
@@ -83,7 +77,6 @@ class PwProblem(Calculus, MultiLayer):
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
-
 
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)

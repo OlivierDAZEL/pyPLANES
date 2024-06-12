@@ -1,1 +1,1 @@
-{"Method": null, "real(R0)": [0.9971102337050153], "imag(R0)": [-0.03148738441097822], "Server": "ods-macbook-pro.home", "Solver": "PwProblem", "real(Z_prime)": [4.78065330670493], "imag(Z_prime)": [-62.986980341873284], "abs": [0.0047797264636854075], "f": [30.0], "h": null}
+{"Method": null, "real(R0)": [0.9760670163656677], "imag(R0)": [-0.21746995094270705], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "real(Z_prime)": [-1.6393285700735307e-15], "imag(Z_prime)": [-9.086620969010413], "abs": [0.0], "f": [30.0], "h": null}

@@ -521,15 +521,6 @@ class PemLayer(PwLayer):
             plt.plot(self.x[1]+x_f, np.abs(pr), 'r+')
             plt.plot(self.x[1]+x_f, np.imag(pr), 'm+')
 
-
-
-
-
-
-
-
-
-
 class ElasticLayer(PwLayer):
 
     def __init__(self, mat, d, **kwargs):

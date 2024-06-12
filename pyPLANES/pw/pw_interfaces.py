@@ -38,9 +38,10 @@ class PwInterface():
     """
     Interface for Plane Wave Solver
     """
-    def __init__(self, layer1=None, layer2=None):
+    def __init__(self, layer1=None, layer2=None, method="characteristics"):
         self.layers = [layer1, layer2]
-        self.n_0, self_n_1 = None, None 
+        self.n_0 = None
+        self_n_1 = None 
         self.number_relations = None
         self.pw_method = None
         self.C_bottom, self.C_top = None, None
@@ -58,6 +59,7 @@ class PwInterface():
                 self.carac_top.typ = self.layers[1].pwfem_entities[1].typ
         else:
             self.carac_top = None
+        self.nb_waves = None
 
     def update_frequency(self, omega, kx=[0]):
         self.nb_waves = len(kx)
@@ -70,22 +72,36 @@ class PwInterface():
             self.carac_top.update_frequency(omega)
 
 
+
     def update_M_global(self, M, i_eq):
+        periodic_layer = [isinstance(l, PeriodicLayer) for l in self.layers]
+        if any(periodic_layer):
+            if periodic_layer[0]: # Layer 0 is periodic
+                mat = self.layers[0].medium[1]
+            else: # Layer 1 is periodic
+                mkl
+                mat = self.layers[1].medium[1]
+        else:
+            # Only homogeneous layers
 
-        SV_0 = self.layers[0].SV
-        SV_1 = self.layers[1].SV
+            SV_0 = self.layers[0].SV
+            SV_1 = self.layers[1].SV
 
-        d_0 = [self.layers[0].d]*self.n_0+[0]*self.n_0
-        d_1 = [0]*self.n_1 +[-self.layers[1].d]*self.n_1
-        delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
-        delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
+            d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
+            d_1 = ([0]*self.n_1 +[-self.layers[1].d]*self.n_1)*self.nb_waves
 
-        index_rel = slice(i_eq, i_eq+self.number_relations)
-        M [index_rel, self.layers[0].dofs] = self.C_bottom@(SV_0@delta_0)
-        M [index_rel, self.layers[1].dofs] = self.C_top@(SV_1@delta_1)
+            delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
+            delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
 
-        i_eq += self.number_relations
-        return i_eq
+
+            index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+            M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
+            M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1@delta_1)
+
+            i_eq += self.number_relations*self.nb_waves
+            
+            
+            return i_eq
 
     def update_Omega(self, Om):
 
@@ -436,24 +452,40 @@ class PemElasticInterface(PwInterface):
         out = "\t PEM-Elastic interface"
         return out
 
-class FluidRigidBacking(PwInterface):
+class RigidBacking(PwInterface):
+    def __init__(self, layer1=None, layer2=None, method="characteristics"):
+        super().__init__(layer1,layer2, method)
+        self.method = method
+        self.C = None
+
+    def update_M_global(self, M, i_eq):
+
+        C = np.kron(np.eye(self.nb_waves), self.C)
+
+
+        d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
+        delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
+        lines = slice(i_eq, i_eq+self.nb_waves)
+        M[lines, self.layers[0].dofs] = C@(self.layers[0].SV@delta_0)
+        
+        i_eq += self.n_0*self.nb_waves
+        return i_eq
+
+
+class FluidRigidBacking(RigidBacking):
     """
     Rigid backing for a fluid layer
     """
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
-        super().__init__(layer1,layer2)
-        self.method = method
+        super().__init__(layer1,layer2, method)
+        self.C = np.array([[1,0]]).reshape(1,2)
+        self.n_0 = 1
 
 
     def __str__(self):
         out = "\t Rigid backing"
         return out
 
-    def update_M_global(self, M, i_eq):
-        M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[0, 0]*np.exp(self.layers[0].lam[0]*self.layers[0].d)
-        M[i_eq, self.layers[0].dofs[1]] = self.layers[0].SV[0, 1]
-        i_eq += 1
-        return i_eq
 
     def Omegac(self, nb_bloch_waves=0):
         out = np.array([1.,1.]).reshape(2,1)
@@ -475,6 +507,7 @@ class PemBacking(PwInterface):
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
         super().__init__(layer1,layer2)
         self.method = method
+        
     def __str__(self):
         out = "\t PEM Rigid backing"
         return out

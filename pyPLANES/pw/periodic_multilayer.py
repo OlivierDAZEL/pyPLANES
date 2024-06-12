@@ -53,8 +53,10 @@ class PeriodicMultiLayer():
         self.plot = kwargs.get("plot", [False*6])
         self.condensation = kwargs.get("condensation", True)
         self.period = False # If period is false: homogeneous layer
+        self.nb_waves = None
         _x = 0
-
+        periodic_layer = False
+        
         for _l in ml:
             if isinstance(_l, PwGeneric):
                 if _l.method_TM != self.method_TM:
@@ -76,12 +78,21 @@ class PeriodicMultiLayer():
                         self.layers.append(ElasticLayer(mat, d, x_0=_x, method_TM=self.method_TM))
                     _x += d
                 elif os.path.isfile("msh/" + _l[0] + ".msh"):
-                    self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
-                    self.result.n_dof = self.layers[-1].nb_dof_master
-                    self.period = self.layers[-1].period
-                    _x += self.layers[-1].d
+                    if periodic_layer:
+                        raise NameError ("Only a periodic layer is supported"
+                                         )
+                    else: 
+                        self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
+                        self.result.n_dof = self.layers[-1].nb_dof_master
+                        self.period = self.layers[-1].period
+                        _x += self.layers[-1].d
+                        periodic_layer = True
             else:
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
+        if self.period == False:
+            self.period = 1.
+
+
 
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):
@@ -137,6 +148,8 @@ class PeriodicMultiLayer():
             else: 
                 medium_type = self.layers[-1].medium.MEDIUM_TYPE
             if medium_type in ["fluid", "eqf"]:
+                # print(self.layers[-1])
+                
                 self.interfaces.append(FluidRigidBacking(self.layers[-1]))
             elif medium_type == "pem":
                 self.interfaces.append(PemBacking(self.layers[-1]))
@@ -157,12 +170,14 @@ class PeriodicMultiLayer():
             self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
         if self.method == "Global Method":
             self.layers.insert(0, incident_layer)
-            nb_waves = 1+2*self.nb_bloch_waves
+            self.nb_waves = 1+2*self.nb_bloch_waves
             self.nb_PW =0
             for _layer in self.layers:
-                if not isinstance(_layer, PeriodicLayer):
-                    _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium)
-                    self.nb_PW += 2*_layer.nb_waves_in_medium*nb_waves
+                if isinstance(_layer, PeriodicLayer):
+                    self.nb_PW += _layer.nb_dof_master
+                else:
+                    _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                    self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
             if isinstance(self.interfaces[-1], SemiInfinite):
                 self.nb_PW += self.nb_waves
 
