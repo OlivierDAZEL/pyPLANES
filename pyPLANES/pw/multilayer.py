@@ -144,6 +144,7 @@ class MultiLayer():
                 _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium)
                 self.nb_PW += 2*_layer.nb_waves_in_medium                
             if isinstance(self.interfaces[-1], SemiInfinite):
+                self.interfaces[-1].dofs = [self.nb_PW]
                 self.nb_PW += 1
 
     def update_frequency(self, omega, kx):

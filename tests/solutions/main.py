@@ -16,12 +16,12 @@ plot_solution = [True, True, True, False, False, False]
 # plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
-theta_d = 0.00000
+theta_d = 50.00000
 nb_layers = 1
 L = 2.e-2
 d = 20.e-2
 lcar = d
-nb_bloch_waves = 1
+nb_bloch_waves = 5
 order = 2
 
 frequency = 3e1
@@ -29,8 +29,8 @@ frequency = 3e1
 name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "characteristics", "global"][2]
-termination = ["rigid", "transmission"][0]
-material = ["Air", "Wwood", "melamine"][0]
+termination = ["rigid", "transmission"][1]
+material = ["Air", "Wwood", "melamine"][2]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -49,7 +49,6 @@ recursive_method.resolution()
 
 characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
 characteristic_method.resolution()
-
 
 eTMM_method = PeriodicPwProblem(ml=ml, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()

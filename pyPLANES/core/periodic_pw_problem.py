@@ -82,7 +82,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
 
 
-
         self.add_excitation_and_termination(self.termination)
         
         if self.method == "characteristics":
@@ -186,17 +185,16 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.X = LA.solve(self.A, self.F)
                 
             R = self.X[:self.nb_waves]
+            print("R=",R[0])
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":
-                self.result.T0.append(self.X[-1])
-                if self.window:
-                    self.window.update_frequency(2*pi*self.f)
-                    sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
-                else:
-                    sigma = 1/np.cos(self.theta_d*pi/180)
+                T =self.X[-self.nb_waves:]
+                print("T=",np.abs(T))
+                self.result.T0.append(T[0])
+                self.result.T.append(np.sum(np.real(self.ky)*np.abs(T)**2)/np.real(self.ky[0]))
         else:
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             E_0 = np.array([-alpha, 1]).reshape((2,1))

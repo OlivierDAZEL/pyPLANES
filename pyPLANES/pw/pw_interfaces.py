@@ -71,8 +71,6 @@ class PwInterface():
         if self.carac_top is not None:
             self.carac_top.update_frequency(omega)
 
-
-
     def update_M_global(self, M, i_eq):
         periodic_layer = [isinstance(l, PeriodicLayer) for l in self.layers]
         if any(periodic_layer):
@@ -83,13 +81,10 @@ class PwInterface():
                 mat = self.layers[1].medium[1]
         else:
             # Only homogeneous layers
-
             SV_0 = self.layers[0].SV
             SV_1 = self.layers[1].SV
-
             d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
             d_1 = ([0]*self.n_1 +[-self.layers[1].d]*self.n_1)*self.nb_waves
-
             delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
             delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
 
@@ -97,7 +92,6 @@ class PwInterface():
             index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
             M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
             M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1@delta_1)
-
             i_eq += self.number_relations*self.nb_waves
             
             
@@ -459,15 +453,10 @@ class RigidBacking(PwInterface):
         self.C = None
 
     def update_M_global(self, M, i_eq):
-
-        C = np.kron(np.eye(self.nb_waves), self.C)
-
-
         d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
         delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
-        lines = slice(i_eq, i_eq+self.nb_waves)
-        M[lines, self.layers[0].dofs] = C@(self.layers[0].SV@delta_0)
-        
+        lines = slice(i_eq, i_eq+self.nb_waves*self.n_0)
+        M[lines, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C)@(self.layers[0].SV@delta_0)        
         i_eq += self.n_0*self.nb_waves
         return i_eq
 
@@ -481,11 +470,9 @@ class FluidRigidBacking(RigidBacking):
         self.C = np.array([[1,0]]).reshape(1,2)
         self.n_0 = 1
 
-
     def __str__(self):
         out = "\t Rigid backing"
         return out
-
 
     def Omegac(self, nb_bloch_waves=0):
         out = np.array([1.,1.]).reshape(2,1)
@@ -493,70 +480,35 @@ class FluidRigidBacking(RigidBacking):
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
 
-
     def Omega(self, nb_bloch_waves=0):
         out = np.array([0,1]).reshape(2,1)
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
 
-class PemBacking(PwInterface):
+class PemBacking(RigidBacking):
     """
     Rigid backing for a pem layer
     """
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
-        super().__init__(layer1,layer2)
+        super().__init__(layer1,layer2, method)
         self.method = method
+
+        self.C = np.zeros((3,6))
+        self.C[0, 1] = 1.
+        self.C[1, 2] = 1.
+        self.C[2, 5] = 1.
+        self.n_0 = 3
         
     def __str__(self):
         out = "\t PEM Rigid backing"
         return out
 
-    def update_M_global(self, M, i_eq):
-        delta = np.exp(self.layers[0].lam*self.layers[0].d)
-        SV = self.layers[0].SV
-
-        M[i_eq, self.layers[0].dofs[0]] = SV[1, 0]*delta[0]
-        M[i_eq, self.layers[0].dofs[1]] = SV[1, 1]*delta[1]
-        M[i_eq, self.layers[0].dofs[2]] = SV[1, 2]*delta[2]
-        M[i_eq, self.layers[0].dofs[3]] = SV[1, 3]
-        M[i_eq, self.layers[0].dofs[4]] = SV[1, 4]
-        M[i_eq, self.layers[0].dofs[5]] = SV[1, 5]
-        i_eq += 1
-        M[i_eq, self.layers[0].dofs[0]] = SV[2, 0]*delta[0]
-        M[i_eq, self.layers[0].dofs[1]] = SV[2, 1]*delta[1]
-        M[i_eq, self.layers[0].dofs[2]] = SV[2, 2]*delta[2]
-        M[i_eq, self.layers[0].dofs[3]] = SV[2, 3]
-        M[i_eq, self.layers[0].dofs[4]] = SV[2, 4]
-        M[i_eq, self.layers[0].dofs[5]] = SV[2, 5]
-        i_eq += 1
-        M[i_eq, self.layers[0].dofs[0]] = SV[5, 0]*delta[0]
-        M[i_eq, self.layers[0].dofs[1]] = SV[5, 1]*delta[1]
-        M[i_eq, self.layers[0].dofs[2]] = SV[5, 2]*delta[2]
-        M[i_eq, self.layers[0].dofs[3]] = SV[5, 3]
-        M[i_eq, self.layers[0].dofs[4]] = SV[5, 4]
-        M[i_eq, self.layers[0].dofs[5]] = SV[5, 5]
-        i_eq += 1
-        return i_eq
-
     def Omegac(self, nb_bloch_waves=1):
-        # C = np.zeros((3,6), dtype=complex)
-        # if self.carac_bottom.typ == None:
-        #     C[0,1] = 1.
-        #     C[1,2] = 1.
-        #     C[2,5] = 1.
-        # elif self.carac_bottom.typ in ["Biot01", "Biot98"]:
-        #     # P={0: {sigma}_{xy}^t, 1: {sigma}_{yy}^t, 2: w_y=0 3 u_x^s=0  4:u_y^s=0, 5: p}
-        #     C[0,2] = 1.
-        #     C[1,3] = 1.
-        #     C[2,4] = 1.
-        # else: 
-        #     raise NameError("invalid typ")
         
         out = np.zeros((6, 3), dtype=complex)
         out[:3,:] = np.eye(3)
         out[3:,:] = np.eye(3) #-LA.inv(C@self.carac_bottom.P_minus)@C@self.carac_bottom.P_plus
-
         if nb_bloch_waves !=0:
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
@@ -570,14 +522,19 @@ class PemBacking(PwInterface):
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
 
-class ElasticBacking(PwInterface):
+class ElasticBacking(RigidBacking):
 
     """
     Rigid backing for an elastic layer
     """
-    def __init__(self, layer1=None, layer2=None, method="characteristics" ):
-        super().__init__(layer1,layer2)
+    def __init__(self, layer1=None, layer2=None, method="characteristics"):
+        super().__init__(layer1,layer2, method)
         self.method = method
+
+        self.C = np.zeros((2,4))
+        self.C[0, 1] = 1.
+        self.C[1, 3] = 1.
+        self.n_0 = 2
         
     def __str__(self):
         out = "\t Elastic Rigid backing"
@@ -599,20 +556,6 @@ class ElasticBacking(PwInterface):
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
 
-    def update_M_global(self, M, i_eq):
-        delta = np.exp(self.layers[0].lam*self.layers[0].d)
-        SV = self.layers[0].SV
-        M[i_eq, self.layers[0].dofs[0]] = SV[1, 0]*delta[0]
-        M[i_eq, self.layers[0].dofs[1]] = SV[1, 1]*delta[1]
-        M[i_eq, self.layers[0].dofs[2]] = SV[1, 2]
-        M[i_eq, self.layers[0].dofs[3]] = SV[1, 3]
-        i_eq += 1
-        M[i_eq, self.layers[0].dofs[0]] = SV[3, 0]*delta[0]
-        M[i_eq, self.layers[0].dofs[1]] = SV[3, 1]*delta[1]
-        M[i_eq, self.layers[0].dofs[2]] = SV[3, 2]
-        M[i_eq, self.layers[0].dofs[3]] = SV[3, 3]
-        i_eq += 1
-        return i_eq
 
 class SemiInfinite(PwInterface):
     """
@@ -637,7 +580,6 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-
             self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
@@ -680,9 +622,6 @@ class SemiInfinite(PwInterface):
         PwInterface.update_frequency(self, omega, kx)
         self.medium.update_frequency(omega)
         self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
-        
-        
-        
         
         self.k = self.medium.k
         self.kx = kx
@@ -761,72 +700,16 @@ class SemiInfinite(PwInterface):
 
 
     def update_M_global(self, M, i_eq):
-        if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
-            delta_0 = np.exp(self.layers[0].lam[0]*self.layers[0].d)
-            M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[0, 0]*delta_0
-            M[i_eq, self.layers[0].dofs[1]] = self.layers[0].SV[0, 1]
-            M[i_eq, -1] = -self.SV[0, 0]
-            i_eq += 1
-            M[i_eq, self.layers[0].dofs[0]] = self.layers[0].SV[1, 0]*delta_0
-            M[i_eq, self.layers[0].dofs[1]] = self.layers[0].SV[1, 1]
-            M[i_eq, -1] = -self.SV[1, 0]
-            i_eq += 1
-        elif self.layers[0].medium.MEDIUM_TYPE == "pem":
-            delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
-            SV_1 = self.layers[0].SV
-            M[i_eq, self.layers[0].dofs[0]] = -SV_1[2, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = -SV_1[2, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = -SV_1[2, 2]*delta_0[2]
-            M[i_eq, self.layers[0].dofs[3]] = -SV_1[2, 3]
-            M[i_eq, self.layers[0].dofs[4]] = -SV_1[2, 4]
-            M[i_eq, self.layers[0].dofs[5]] = -SV_1[2, 5]
-            M[i_eq, -1] = self.SV[0, 0]
-            i_eq += 1
-            M[i_eq, self.layers[0].dofs[0]] = -SV_1[4, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = -SV_1[4, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = -SV_1[4, 2]*delta_0[2]
-            M[i_eq, self.layers[0].dofs[3]] = -SV_1[4, 3]
-            M[i_eq, self.layers[0].dofs[4]] = -SV_1[4, 4]
-            M[i_eq, self.layers[0].dofs[5]] = -SV_1[4, 5]
-            M[i_eq, -1] = self.SV[1, 0]
-            i_eq += 1
-            M[i_eq, self.layers[0].dofs[0]] = SV_1[0, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = SV_1[0, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = SV_1[0, 2]*delta_0[2]
-            M[i_eq, self.layers[0].dofs[3]] = SV_1[0, 3]
-            M[i_eq, self.layers[0].dofs[4]] = SV_1[0, 4]
-            M[i_eq, self.layers[0].dofs[5]] = SV_1[0, 5]
-            i_eq += 1
-            M[i_eq, self.layers[0].dofs[0]] = SV_1[3, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = SV_1[3, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = SV_1[3, 2]*delta_0[2]
-            M[i_eq, self.layers[0].dofs[3]] = SV_1[3, 3]
-            M[i_eq, self.layers[0].dofs[4]] = SV_1[3, 4]
-            M[i_eq, self.layers[0].dofs[5]] = SV_1[3, 5]
-            i_eq += 1
-        elif self.layers[0].medium.MEDIUM_TYPE == "elastic":
-            delta_0 = np.exp(self.layers[0].lam*self.layers[0].d)
-            SV_1 = self.layers[0].SV
-            # Continuity of u_y
-            M[i_eq, self.layers[0].dofs[0]] = -SV_1[1, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = -SV_1[1, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = -SV_1[1, 2]
-            M[i_eq, self.layers[0].dofs[3]] = -SV_1[1, 3]
-            M[i_eq, -1] = self.SV[0, 0]
-            i_eq += 1
-            # sigma_yy = -p
-            M[i_eq, self.layers[0].dofs[0]] = SV_1[2, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = SV_1[2, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = SV_1[2, 2]
-            M[i_eq, self.layers[0].dofs[3]] = SV_1[2, 3]
-            M[i_eq, -1] = self.SV[1, 0]
-            i_eq += 1
-            # sigma_xy = 0
-            M[i_eq, self.layers[0].dofs[0]] = -SV_1[0, 0]*delta_0[0]
-            M[i_eq, self.layers[0].dofs[1]] = -SV_1[0, 1]*delta_0[1]
-            M[i_eq, self.layers[0].dofs[2]] = -SV_1[0, 2]
-            M[i_eq, self.layers[0].dofs[3]] = -SV_1[0, 3]
-            i_eq += 1
+        
 
+        SV_0 = self.layers[0].SV
+        SV_1 = self.SV[:,::2] # Just the outgoing waves 
+        d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
+        delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))     
+
+        index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+        M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
+        M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
+        i_eq += self.number_relations*self.nb_waves
 
         return i_eq

@@ -30,9 +30,18 @@ def PEM_waves_TMM(mat, kx):
     n_w = len(kx)
     Phi = np.zeros((6*n_w, 6*n_w), dtype=complex)
     lam = np.zeros(6*n_w, dtype=complex)
-    ky_1 = np.sqrt(mat.delta_1**2-kx**2)
-    ky_2 = np.sqrt(mat.delta_2**2-kx**2)
-    ky_3 = np.sqrt(mat.delta_3**2-kx**2)
+    # ky_1 = np.sqrt(mat.delta_1**2-kx**2)
+    # ky_2 = np.sqrt(mat.delta_2**2-kx**2)
+    # ky_3 = np.sqrt(mat.delta_3**2-kx**2)
+    
+    lam_1 = np.sqrt(-mat.delta_1**2+kx**2)
+    lam_2 = np.sqrt(-mat.delta_2**2+kx**2)
+    lam_3 = np.sqrt(-mat.delta_3**2+kx**2)
+
+    ky_1 = -1j*lam_1
+    ky_2 = -1j*lam_2
+    ky_3 = -1j*lam_3
+
 
     for _w, _kx in enumerate(kx):
         ky = np.array([ky_1[_w], ky_2[_w], ky_3[_w]], dtype=complex)
@@ -65,8 +74,14 @@ def elastic_waves_TMM(mat, kx):
     Phi = np.zeros((4*n_w,4*n_w), dtype=complex)
     lam = np.zeros(4*n_w, dtype=complex)
 
-    ky_p = np.sqrt(mat.delta_p**2-kx**2)
-    ky_s = np.sqrt(mat.delta_s**2-kx**2)
+    # ky_p = np.sqrt(mat.delta_p**2-kx**2)
+    # ky_s = np.sqrt(mat.delta_s**2-kx**2)
+
+    lam_p = np.sqrt(-mat.delta_p**2+kx**2)
+    lam_s = np.sqrt(-mat.delta_s**2+kx**2)
+    ky_p = -1j*lam_p
+    ky_s = -1j*lam_s
+
 
     for _w, _kx in enumerate(kx):
 
@@ -101,12 +116,18 @@ def fluid_waves_TMM(mat, kx):
     """
     if mat.MEDIUM_TYPE == 'eqf':
         K = mat.K_eq_til
-        ky = np.sqrt(mat.k**2-kx**2+0j)
+        # ky = np.sqrt(mat.k**2-kx**2+0j)
+        lamda = np.sqrt(-mat.k**2+kx**2+0j)
+        ky = -1j*lamda
     elif mat.MEDIUM_TYPE == 'fluid':
         K = mat.K
-        ky = np.sqrt(mat.k**2-kx**2+0j)
+        # ky = np.sqrt(mat.k**2-kx**2+0j)
+        lamda = np.sqrt(-mat.k**2+kx**2+0j)
+        ky = -1j*lamda
     else:
         raise ValueError('Provided material is not a fluid')
+
+
 
     if isinstance(kx, np.ndarray):
         n_w = len(kx)

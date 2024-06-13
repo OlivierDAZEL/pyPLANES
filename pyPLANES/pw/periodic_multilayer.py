@@ -148,8 +148,6 @@ class PeriodicMultiLayer():
             else: 
                 medium_type = self.layers[-1].medium.MEDIUM_TYPE
             if medium_type in ["fluid", "eqf"]:
-                # print(self.layers[-1])
-                
                 self.interfaces.append(FluidRigidBacking(self.layers[-1]))
             elif medium_type == "pem":
                 self.interfaces.append(PemBacking(self.layers[-1]))
@@ -179,7 +177,9 @@ class PeriodicMultiLayer():
                     _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
                     self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
             if isinstance(self.interfaces[-1], SemiInfinite):
+                self.interfaces[-1].dofs = slice(self.nb_PW, self.nb_PW+self.nb_waves)
                 self.nb_PW += self.nb_waves
+                
 
 
     def update_frequency(self, omega, kx):
