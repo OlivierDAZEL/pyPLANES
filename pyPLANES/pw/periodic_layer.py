@@ -154,9 +154,9 @@ class PeriodicLayerBase(Mesh):
         D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.n_dof, self.n_dof)).tocsr()        
 
         self.A_i, self.A_j, self.A_v = [], [], []
+        RR = [] # Initialisation of the list of the R will be [R_b R_t]
         DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
         DD_xi = [] # Initialisation of the list of the R will be [D_bi D_ti]
-        DD_ix = [] # Initialisation of the list of the R will be [D_ib D_it]
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
             D_xx = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
@@ -227,14 +227,28 @@ class PeriodicLayerBase(Mesh):
                     D_val[_i] /= self.delta_periodicity*self.orientation_periodic_dofs[i_left]
 
             # Creation of the D_ix, minus sign <- transposition +normal 
-            D_ix.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
+            D_ix = coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))
+            # R_t and R_b
+            RR.append(-linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))) ##
 
+        if any(self.plot):
+            self.R_t = RR[1]
+            self.R_b = RR[0]
+            
+        _s = _ent.nb_dof_per_node*self.nb_waves
+        M_b = np.zeros((2*_s, 2*_s), dtype=complex)
+        M_t = np.zeros((2*_s, 2*_s), dtype=complex)
+
+        M_b[:_s,:] = DD_xi[1]@RR[0]# [D_ti][R_b]
+        M_b[_s:,:] = DD[0]+DD_xi[0]@RR[0]# [D_bb]+[D_bi][R_b]
+
+        M_t[:_s,:] = DD[1]+DD_xi[1]@RR[1]# [D_tt]+[D_ti][R_t]
+        M_t[_s:,:] = DD_xi[0]@RR[1]# [D_bi][R_t]
+
+        self.M_b = M_b
+        self.M_t = M_t
 
    
-        
-        
-        
-
     def create_transfert_matrix(self):
         self.create_bulk_matrices()
         self.apply_periodicity_on_Dii()
@@ -383,12 +397,10 @@ class PeriodicLayerBase(Mesh):
 
     def update_Omegac(self, Om, omega):
         self.create_bulk_matrices()
-
         self.add_stabilisation_terms()
-
         self.apply_periodicity_on_Dii()
-
         self.linear_system_2_numpy()
+        
         index_A = np.where(((self.A_i*self.A_j) != 0) )
         D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.n_dof, self.n_dof)).tocsr()        
 

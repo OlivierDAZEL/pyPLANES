@@ -159,18 +159,17 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
         elif self.method == "Global Method":
-            if hasattr(self.result, "n_dof"):
-                nb_dof_FEM = self.result.n_dof
-            else:
-                nb_dof_FEM = 0
-            
-            
             self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
-
             i_eq = 0
             for _int in self.interfaces:
                 if self.method == "Global Method":
                     i_eq = _int.update_M_global(self.A,i_eq)
+            for _l in self.layers:
+                if isinstance(_l, PeriodicLayer):
+                    _l.create_global_method_matrices()
+                    index_rel = slice(i_eq, i_eq+2*_l.nb_waves_in_medium*self.nb_waves)
+                    self.A[index_rel, _l.dofs_bottom] = _l.M_b
+                    self.A[index_rel, _l.dofs_top] = _l.M_t
             self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             for i in range(self.nb_waves):
                 self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
@@ -180,8 +179,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def solve(self):
         Calculus.solve(self)
         if self.method == "Global Method":
-            # plt.spy(self.A)
-            # plt.show()
+            plt.figure()
+            plt.spy(self.A)
+            plt.show()
             self.X = LA.solve(self.A, self.F)
                 
             R = self.X[:self.nb_waves]

@@ -75,10 +75,18 @@ class PwInterface():
         periodic_layer = [isinstance(l, PeriodicLayer) for l in self.layers]
         if any(periodic_layer):
             if periodic_layer[0]: # Layer 0 is periodic
-                mat = self.layers[0].medium[1]
+                pass
             else: # Layer 1 is periodic
-                mkl
-                mat = self.layers[1].medium[1]
+                SV_0 = self.layers[0].SV
+                d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
+                delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
+                index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+                print("index_rel", index_rel)
+                print("self.layers[0].dofs", self.layers[0].dofs)
+                print("self.layers[1].dofs", self.layers[1].dofs_bottom)
+                M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
+                M [index_rel, self.layers[1].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_top)
+                i_eq += self.number_relations*self.nb_waves
         else:
             # Only homogeneous layers
             SV_0 = self.layers[0].SV
@@ -87,15 +95,11 @@ class PwInterface():
             d_1 = ([0]*self.n_1 +[-self.layers[1].d]*self.n_1)*self.nb_waves
             delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
             delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
-
-
             index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
             M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
             M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1@delta_1)
             i_eq += self.number_relations*self.nb_waves
-            
-            
-            return i_eq
+        return i_eq
 
     def update_Omega(self, Om):
 
@@ -451,13 +455,19 @@ class RigidBacking(PwInterface):
         super().__init__(layer1,layer2, method)
         self.method = method
         self.C = None
+        self.number_relations = None
 
     def update_M_global(self, M, i_eq):
-        d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
-        delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
-        lines = slice(i_eq, i_eq+self.nb_waves*self.n_0)
-        M[lines, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C)@(self.layers[0].SV@delta_0)        
-        i_eq += self.n_0*self.nb_waves
+        if isinstance(self.layers[0], PeriodicLayer):
+            index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+            M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C)
+            i_eq += self.number_relations*self.nb_waves
+        else:
+            d_0 = ([self.layers[0].d]*self.number_relations+[0]*self.number_relations)*self.nb_waves
+            delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
+            lines = slice(i_eq, i_eq+self.nb_waves*self.number_relations)
+            M[lines, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C)@(self.layers[0].SV@delta_0)        
+            i_eq += self.number_relations*self.nb_waves
         return i_eq
 
 
@@ -468,7 +478,7 @@ class FluidRigidBacking(RigidBacking):
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
         super().__init__(layer1,layer2, method)
         self.C = np.array([[1,0]]).reshape(1,2)
-        self.n_0 = 1
+        self.number_relations = 1
 
     def __str__(self):
         out = "\t Rigid backing"
@@ -498,7 +508,7 @@ class PemBacking(RigidBacking):
         self.C[0, 1] = 1.
         self.C[1, 2] = 1.
         self.C[2, 5] = 1.
-        self.n_0 = 3
+        self.number_relations = 3
         
     def __str__(self):
         out = "\t PEM Rigid backing"
@@ -534,7 +544,7 @@ class ElasticBacking(RigidBacking):
         self.C = np.zeros((2,4))
         self.C[0, 1] = 1.
         self.C[1, 3] = 1.
-        self.n_0 = 2
+        self.number_relations = 2
         
     def __str__(self):
         out = "\t Elastic Rigid backing"
@@ -556,7 +566,6 @@ class ElasticBacking(RigidBacking):
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
 
-
 class SemiInfinite(PwInterface):
     """
     Semi-infinite boundary
@@ -566,6 +575,7 @@ class SemiInfinite(PwInterface):
         self.medium = load_material("Air")
         PwInterface.__init__(self, layer1, transmission_layer)
         self.SV = None
+        self.dofs = None
         # Determine the type of the last layer
 
         self.typ =None
@@ -698,18 +708,19 @@ class SemiInfinite(PwInterface):
 
         return self.update_Omegac(Om)
 
-
     def update_M_global(self, M, i_eq):
-        
-
-        SV_0 = self.layers[0].SV
-        SV_1 = self.SV[:,::2] # Just the outgoing waves 
-        d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
-        delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))     
-
+        SV_1 = self.SV[:,::2] # Just the outgoing waves
         index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
-        M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
-        M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
-        i_eq += self.number_relations*self.nb_waves
+        if isinstance(self.layers[0], PeriodicLayer):
+            M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_bottom)
+            M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
+        else:
+            SV_0 = self.layers[0].SV
+            d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
+            delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))     
 
+            index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+            M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
+            M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
+        i_eq += self.number_relations*self.nb_waves
         return i_eq

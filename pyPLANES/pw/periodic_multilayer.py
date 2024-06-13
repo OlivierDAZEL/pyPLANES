@@ -172,7 +172,10 @@ class PeriodicMultiLayer():
             self.nb_PW =0
             for _layer in self.layers:
                 if isinstance(_layer, PeriodicLayer):
-                    self.nb_PW += _layer.nb_dof_master
+                    _layer.dofs_bottom = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                    self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
+                    _layer.dofs_top = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                    self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
                 else:
                     _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
                     self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
@@ -180,7 +183,12 @@ class PeriodicMultiLayer():
                 self.interfaces[-1].dofs = slice(self.nb_PW, self.nb_PW+self.nb_waves)
                 self.nb_PW += self.nb_waves
                 
-
+        print(self.nb_PW)
+        for i, _l in enumerate(self.layers):
+            if isinstance(_l, PeriodicLayer):
+                print(f"dof({i})={_l.dofs_bottom} // {_l.dofs_top}")
+            else:
+                print(f"dof({i})={_l.dofs}")
 
     def update_frequency(self, omega, kx):
         for _l in self.layers:
