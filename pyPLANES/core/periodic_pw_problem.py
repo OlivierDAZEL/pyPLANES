@@ -6,10 +6,9 @@
 # This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
 #
-# Copyright (c) 2020
+# Copyright (c) 2024
 # 	Olivier Dazel <olivier.dazel@univ-lemans.fr>
-# 	Mathieu Gaborit <gaborit@kth.se>
-# 	Peter Göransson <pege@kth.se>
+# 	Mathieu Gaborit <gaborit@univ-lemans.fr>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +47,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
         
-
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -59,7 +57,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 self.theta_d = 1e-12
         elif self.method.lower() in ["characteristics", "characteristic", "carac"]:
             self.method = "characteristics"
-        elif self.method.lower() in ["global", "characteristic", "carac"]:
+        elif self.method.lower() in ["global", "global method"]:
             self.method = "Global Method"
         else: 
             raise NameError("Invalid method name: " + self.method)
@@ -80,7 +78,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
         # Read periodic multilayer
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
-
 
         self.add_excitation_and_termination(self.termination)
         if self.method == "characteristics":
@@ -175,12 +172,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def solve(self):
         Calculus.solve(self)
         if self.method == "Global Method":
-            plt.figure()
-            plt.spy(self.A)
-            plt.show()
+            # plt.figure()
+            # plt.spy(self.A)
+            # plt.show()
             self.X = LA.solve(self.A, self.F)
                 
             R = self.X[:self.nb_waves]
+            # print(f"R={R}")
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
@@ -226,7 +224,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 abs -= self.result.T[-1]
             self.result.abs.append(abs)
 
-                    
     def plot_solution(self):
         if self.method == "Recursive Method":
             if not(isinstance(self.X_0_minus,np.ndarray)):

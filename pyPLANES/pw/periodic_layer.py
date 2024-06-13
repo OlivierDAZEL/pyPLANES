@@ -157,6 +157,8 @@ class PeriodicLayerBase(Mesh):
         RR = [] # Initialisation of the list of the R will be [R_b R_t]
         DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
         DD_xi = [] # Initialisation of the list of the R will be [D_bi D_ti]
+        DD_ix = [] # Initialisation of the list of the R will be [D_ib D_it]
+
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
             D_xx = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
@@ -227,23 +229,23 @@ class PeriodicLayerBase(Mesh):
                     D_val[_i] /= self.delta_periodicity*self.orientation_periodic_dofs[i_left]
 
             # Creation of the D_ix, minus sign <- transposition +normal 
-            D_ix = coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))
-            # R_t and R_b
-            RR.append(-linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))) ##
+            DD_ix.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
+        
+        D_ix = np.hstack([D_i.todense() for D_i in DD_ix])
+        RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof, 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
-        if any(self.plot):
-            self.R_t = RR[1]
-            self.R_b = RR[0]
-            
+        R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
+        R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
+
         _s = _ent.nb_dof_per_node*self.nb_waves
         M_b = np.zeros((2*_s, 2*_s), dtype=complex)
         M_t = np.zeros((2*_s, 2*_s), dtype=complex)
 
-        M_b[:_s,:] = DD_xi[1]@RR[0]# [D_ti][R_b]
-        M_b[_s:,:] = DD[0]+DD_xi[0]@RR[0]# [D_bb]+[D_bi][R_b]
+        M_b[:_s,:] = DD_xi[1]@R_b# [D_ti][R_b]
+        M_b[_s:,:] = DD[0]+DD_xi[0]@R_b# [D_bb]+[D_bi][R_b]
 
-        M_t[:_s,:] = DD[1]+DD_xi[1]@RR[1]# [D_tt]+[D_ti][R_t]
-        M_t[_s:,:] = DD_xi[0]@RR[1]# [D_bi][R_t]
+        M_t[:_s,:] = DD[1]+DD_xi[1]@R_t# [D_tt]+[D_ti][R_t]
+        M_t[_s:,:] = DD_xi[0]@R_t# [D_bi][R_t]
 
         self.M_b = M_b
         self.M_t = M_t
@@ -261,6 +263,7 @@ class PeriodicLayerBase(Mesh):
         RR = [] # Initialisation of the list of the R will be [R_b R_t]
         DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
         DD_xi = [] # Initialisation of the list of the R will be [D_bi D_ti]
+        DD_ix = [] # Initialisation of the list of the R will be [D_ib D_it]
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
             D_xx = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
@@ -331,27 +334,29 @@ class PeriodicLayerBase(Mesh):
                     D_val[_i] /= self.delta_periodicity*self.orientation_periodic_dofs[i_left]
 
             # Creation of the D_ix, minus sign <- transposition +normal 
-            D_ix = coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))
+            DD_ix.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
             # R_t and R_b
-            RR.append(-linsolve.spsolve(D_ii, D_ix.todense()).reshape((self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves))) ##
+        
+        D_ix = np.hstack([D_i.todense() for D_i in DD_ix])
+        RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof, 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
-        if any(self.plot):
-            self.R_t = RR[1]
-            self.R_b = RR[0]
-            
+        R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
+        R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
+
         _s = _ent.nb_dof_per_node*self.nb_waves
-        M_1 = np.zeros((2*_s, 2*_s), dtype=complex)
-        M_2 = np.zeros((2*_s, 2*_s), dtype=complex)
+        M_b = np.zeros((2*_s, 2*_s), dtype=complex)
+        M_t = np.zeros((2*_s, 2*_s), dtype=complex)
 
-        M_1[:_s,:] = DD_xi[1]@RR[0]# [D_ti][R_b]
-        M_1[_s:,:] = DD[0]+DD_xi[0]@RR[0]# [D_bb]+[D_bi][R_b]
+        M_b[:_s,:] = DD_xi[1]@R_b# [D_ti][R_b]
+        M_b[_s:,:] = DD[0]+DD_xi[0]@R_b# [D_bb]+[D_bi][R_b]
 
-        M_2[:_s,:] = DD[1]+DD_xi[1]@RR[1]# [D_tt]+[D_ti][R_t]
-        M_2[_s:,:] = DD_xi[0]@RR[1]# [D_bi][R_t]
+        M_t[:_s,:] = DD[1]+DD_xi[1]@R_t# [D_tt]+[D_ti][R_t]
+        M_t[_s:,:] = DD_xi[0]@R_t# [D_bi][R_t]
 
-        self.M_1 = M_1
-        self.M_2 = M_2
-        self.TM = -LA.solve(M_1, M_2)
+        self.M_b = M_b
+        self.M_t = M_t
+
+        self.TM = -LA.solve(M_b, M_t)
         # print(self.TM)
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
