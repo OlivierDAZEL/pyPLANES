@@ -21,7 +21,7 @@ nb_layers = 1
 L = 2.e-2
 d = 2.e-2
 lcar = d
-nb_bloch_waves = 0
+nb_bloch_waves = 4
 order = 2
 
 frequency = 3e1
@@ -30,7 +30,7 @@ name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "characteristics", "global"][2]
 termination = ["rigid", "transmission"][1]
-material = ["Air", "Wwood", "melamine"][1]
+material = ["Air", "Wwood", "melamine"][2]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers

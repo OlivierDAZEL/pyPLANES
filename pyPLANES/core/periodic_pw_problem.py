@@ -83,14 +83,11 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
 
         self.add_excitation_and_termination(self.termination)
-        
         if self.method == "characteristics":
             for i_l, _layer in enumerate(self.layers):
                 if isinstance(_layer, PeriodicLayer):
                     _layer.characteristics[0] = self.interfaces[i_l].carac_top
                     _layer.characteristics[1] = self.interfaces[i_l+1].carac_bottom
-
-        
         # Calculus variable (for pylint)
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
@@ -144,7 +141,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac(self.nb_waves)
                 for i, _l in enumerate(self.layers[::-1]):
-                    # print(i)
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
@@ -185,14 +181,12 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.X = LA.solve(self.A, self.F)
                 
             R = self.X[:self.nb_waves]
-            print("R=",R[0])
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":
                 T =self.X[-self.nb_waves:]
-                print("T=",np.abs(T))
                 self.result.T0.append(T[0])
                 self.result.T.append(np.sum(np.real(self.ky)*np.abs(T)**2)/np.real(self.ky[0]))
         else:

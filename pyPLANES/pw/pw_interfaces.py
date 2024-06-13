@@ -81,9 +81,6 @@ class PwInterface():
                 d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
                 delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
                 index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
-                print("index_rel", index_rel)
-                print("self.layers[0].dofs", self.layers[0].dofs)
-                print("self.layers[1].dofs", self.layers[1].dofs_bottom)
                 M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
                 M [index_rel, self.layers[1].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_top)
                 i_eq += self.number_relations*self.nb_waves
@@ -470,6 +467,12 @@ class RigidBacking(PwInterface):
             i_eq += self.number_relations*self.nb_waves
         return i_eq
 
+    def Omega(self, nb_bloch_waves=0):
+        pass
+
+    def Omegac(self, nb_bloch_waves=0):
+        pass 
+    
 
 class FluidRigidBacking(RigidBacking):
     """
@@ -503,7 +506,7 @@ class PemBacking(RigidBacking):
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
         super().__init__(layer1,layer2, method)
         self.method = method
-
+        
         self.C = np.zeros((3,6))
         self.C[0, 1] = 1.
         self.C[1, 2] = 1.
@@ -577,7 +580,9 @@ class SemiInfinite(PwInterface):
         self.SV = None
         self.dofs = None
         # Determine the type of the last layer
+        self.determine_type()
 
+    def determine_type(self):
         self.typ =None
         if isinstance(self.layers[0], PwLayer):
             t = self.layers[0].medium.MEDIUM_TYPE
@@ -597,7 +602,6 @@ class SemiInfinite(PwInterface):
             self.n_0 = 3
             self.n_1 = 1
             self.pw_method = PEM_waves_TMM
-
             self.number_relations = 4
             self.C_bottom = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
             self.C_top = np.array([[1,0],[0,1], [0,0], [0, 0]])
@@ -605,6 +609,8 @@ class SemiInfinite(PwInterface):
             if isinstance(self.layers[0], PeriodicLayer):
                 if self.layers[0].pwfem_entities[0].typ == "Biot01":
                     typ = "Biot01"
+                    self.C_bottom = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
+                    self.C_top = np.array([[1,0],[0,1], [0,1], [0, 0]])
                     self.C_bottomc = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
                     self.C_topc = np.array([[1,0],[0,1], [0,1], [0, 0]])
                 else:
@@ -619,7 +625,10 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-            self.pw_method = elastic_waves_TMM
+            
+            
+            
+
         else:
             raise NameError("Invalid type")
 

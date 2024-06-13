@@ -12,4 +12,4 @@ Plane Surface(1) = {1};
 Physical Curve("condition=bottom") = {1};
 Physical Curve("condition=top") = {3};
 Physical Curve("condition=Periodicity") = {2, 4};
-Physical Surface("mat=Wwood") = {1};
+Physical Surface("mat=melamine") = {1};
