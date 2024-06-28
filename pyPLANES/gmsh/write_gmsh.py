@@ -68,7 +68,7 @@ class GmshModelpyPLANES():
     def __init__(self, dic_vertices, lcar=1):
         self.dic_vertices = dic_vertices
         self.lcar = lcar
-        self.list_curves = [] # list of curves, each one of them is a tuple with the vertices  
+        self.list_curves = [] # list of curves, each one of them is a tuple with the vertices
         self.list_surfaces = [] # list of curves, each one of them is a GmshSurface instance
         self.list_conditions = [] # list of curves, each one of them is a GmshPhysicalcondition instance
         self.list_periodicity = [] # list of curves, each one of them is a GmshPeriodicitycondition instance
@@ -181,5 +181,6 @@ class GmshModelpyPLANES():
         # Write mesh data:
         gmsh.write(f"msh/{name_file}.geo_unrolled")
         gmsh.write(f"msh/{name_file}.msh")
+        # gmsh.write(f"msh/{name_file}.pdf")
         gmsh.finalize()
 

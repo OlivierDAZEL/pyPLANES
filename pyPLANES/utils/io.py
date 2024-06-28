@@ -44,6 +44,7 @@ from pyPLANES.core.result import Result
 import json
 from pymls import Solver, Layer, backing
 from mediapack import from_yaml, from_database, Air, Fluid
+from mediapack import from_yaml, Air, Fluid
 import importlib
 
 plot_color = ["r", "b", "m", "k", "g", "y", "k", "r--", "b--", "m--", "k--", "g--", "y--", "k--"]

@@ -102,9 +102,8 @@ class FemEntity(GmshEntity):
     def __str__(self):
         # out = GmshEntity.__str__(self)
         out = "Fem" + GmshEntity.__str__(self)
-        # out += "order:{}\n".format(self.order)
-        # related_elements = [_el.tag for _el in self.elements]
-        # out  += "related elements={}\n".format(related_elements)
+        related_elements = [_el.tag for _el in self.elements]
+        out  += "related elements={}\n".format(related_elements)
         return out
 
     def print_elements(self):

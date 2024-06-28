@@ -89,7 +89,7 @@ def check_pwfem(self):
 
     self.medium[0] = self.pwfem_entities[0].medium
     self.medium[1] = self.pwfem_entities[1].medium
-    if self.medium[0] == self.medium[1]:
+    if self.medium[0].MEDIUM_TYPE == self.medium[1].MEDIUM_TYPE:
         if self.medium[0].MEDIUM_TYPE in ["fluid", "eqf"]:
             self.nb_waves_in_medium = 1 
         elif self.medium[0].MEDIUM_TYPE == "pem":

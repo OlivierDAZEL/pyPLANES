@@ -22,7 +22,7 @@ from mediapack.fluid import Fluid
 
 
 __MEDIUMCLASSES_MAP = {
-    _.MEDIUM_TYPE: _ for _ in [EqFluidJCA, EqFluidJCAL, Elastic, PEM, Fluid, Screen]
+    _.MEDIUM_TYPE: _ for _ in [EqFluidJCA, Elastic, PEM, Fluid, Screen]
 }
 
 
