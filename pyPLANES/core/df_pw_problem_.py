@@ -166,10 +166,10 @@ class DfPwProblem(PwProblem):
         print(f"I_c={integral.I_c}")
         print(f"I_r={integral.I_r}")
         print(f"error={integral.error}")
-        print(f"error={integral.error_list}")
+        print(f"error={integral.interval_list[0].error_list}")
 
-        quad_int = integral.interval_list[0]
-        theta_list = np.linspace(0,pi/2-0.01,200)
+        # quad_int = integral.interval_list[0]
+        # theta_list = np.linspace(0,pi/2-0.01,200)
 
         while np.sum(integral.error) > tol:
             nb_it +=1

@@ -42,3 +42,14 @@ def import_gauss_kronrod(order):
     # Coefficients of the antiderivative polynomial 
     Mat_r = np.dot(d_r, np.linalg.inv(np.vander(xi_r)))
     return  xi_c, xi_powers_c, w_c, xi_r, xi_powers_r, w_r, Mat_c, Mat_r
+
+
+def plot_gauss_kronrod(order):
+    # GK scheme
+    import matplotlib.pyplot as plt
+    
+    sc = gauss_kronrod[f"{order}"]
+    plt.plot(sc["xi_r"], 0*np.array(sc["w_r"]), 'r+', label="Coarse")
+    plt.plot(sc["xi_c"], 0*np.array(sc["w_c"]), 'o', label="Coarse")
+    plt.plot([-1,1], [0,0], 'go')
+    plt.show()
