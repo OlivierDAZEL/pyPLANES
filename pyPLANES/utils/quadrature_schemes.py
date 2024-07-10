@@ -5,18 +5,8 @@ gauss_kronrod = {"1": {"name": "Gauss_Kronrod_1-3", "xi_c": [0.0], "w_c": [2.0],
 
 def import_gauss_kronrod(order):
     # GK scheme
-    sc = gauss_kronrod[f"{order}"]
-    # Coarse and refined nodes and weights
-    xi_c, w_c = np.array(sc["xi_c"]), np.array(sc["w_c"])
 
     
-    xi_r, w_r = np.array(sc["xi_r"]), np.array(sc["w_r"])
-    
-    # print(xi_c)
-    # print(w_c)
-    # print(xi_r)
-    # print(w_r)
-    # print(sc["indices_c"])
     ww_c = 0*w_r
     for i, w in enumerate(w_c):
         ww_c[sc["indices_c"][i]] = w
@@ -30,18 +20,22 @@ def import_gauss_kronrod(order):
     xi_powers_c = [np.array([xi**(order_c-i) for i in range(order_c+1)]) for xi in xi_c_interval]
     xi_powers_r = [np.array([xi**(order_r-i) for i in range(order_r+1)]) for xi in xi_c_interval]
 
+
+    mat_c = np.linalg.inv(np.vander(xi_c))
+    mat_r = np.linalg.inv(np.vander(xi_r))
+
     ## Coarse scheme
     # Power integration diagonal matrix 
     d_c = np.vstack([np.diag([1/(order_c-i) for i in range(order_c)]),np.zeros((1,order_c))])
     # Coefficients of the antiderivative polynomial 
-    Mat_c = np.dot(d_c, np.linalg.inv(np.vander(xi_c)))
+    Mat_c = np.dot(d_c, mat_c)
 
     ## Refined scheme
     # Power integration diagonal matrix 
     d_r = np.vstack([np.diag([1/(order_r-i) for i in range(order_r)]),np.zeros((1,order_r))])
     # Coefficients of the antiderivative polynomial 
-    Mat_r = np.dot(d_r, np.linalg.inv(np.vander(xi_r)))
-    return  xi_c, xi_powers_c, w_c, xi_r, xi_powers_r, w_r, Mat_c, Mat_r
+    Mat_r = np.dot(d_r, mat_r)
+    return  xi_c, xi_powers_c, w_c, xi_r, xi_powers_r, w_r, Mat_c, Mat_r, mat_c, mat_r
 
 
 def plot_gauss_kronrod(order):
@@ -53,3 +47,70 @@ def plot_gauss_kronrod(order):
     plt.plot(sc["xi_c"], 0*np.array(sc["w_c"]), 'o', label="Coarse")
     plt.plot([-1,1], [0,0], 'go')
     plt.show()
+
+def import_clenshaw_curtis(order):
+    # GK scheme
+
+    order_c, order_r = len(xi_c), len(xi_r)
+    # Nodes + boundaries
+    xi_c_interval =  xi_c
+    # Powers (for polynomial evaluation)
+    xi_powers_c = [np.array([xi**(order_c-i) for i in range(order_c+1)]) for xi in xi_c_interval]
+    xi_powers_r = [np.array([xi**(order_r-i) for i in range(order_r+1)]) for xi in xi_c_interval]
+
+
+    mat_c = np.linalg.inv(np.vander(xi_c))
+    mat_r = np.linalg.inv(np.vander(xi_r))
+
+    ## Coarse scheme
+    # Power integration diagonal matrix 
+    d_c = np.vstack([np.diag([1/(order_c-i) for i in range(order_c)]),np.zeros((1,order_c))])
+    # Coefficients of the antiderivative polynomial 
+    Mat_c = np.dot(d_c, mat_c)
+
+    ## Refined scheme
+    # Power integration diagonal matrix 
+    d_r = np.vstack([np.diag([1/(order_r-i) for i in range(order_r)]),np.zeros((1,order_r))])
+    # Coefficients of the antiderivative polynomial 
+    Mat_r = np.dot(d_r, mat_r)
+    return  xi_c, xi_powers_c, w_c, xi_r, xi_powers_r, w_r, Mat_c, Mat_r, mat_c, mat_r
+
+def import_scheme(typ, order):
+    if typ == "CC":
+        xi_c = np.cos([np.pi*k/(order) for k in range(order+1)])[::-1]
+        w_c = None
+        xi_r = np.cos([np.pi*k/(2*order) for k in range(2*order+1)])[::-1]
+        w_r = None
+    
+    elif typ == "GK":
+        sc = gauss_kronrod[f"{order}"]
+        # Coarse and refined nodes and weights
+        xi_c, w_c = np.array(sc["xi_c"]), np.array(sc["w_c"])
+        xi_r, w_r = np.array(sc["xi_r"]), np.array(sc["w_r"])
+    else:
+        print(f"Unknown scheme {typ}")
+        raise NotImplementedError()
+    
+    order_c, order_r = len(xi_c), len(xi_r)
+    # Nodes + boundaries
+    xi_c_interval =  xi_c
+    # Powers (for polynomial evaluation)
+    xi_powers_c = [np.array([xi**(order_c-i) for i in range(order_c+1)]) for xi in xi_c_interval]
+    xi_powers_r = [np.array([xi**(order_r-i) for i in range(order_r+1)]) for xi in xi_c_interval]
+
+
+    mat_c = np.linalg.inv(np.vander(xi_c))
+    mat_r = np.linalg.inv(np.vander(xi_r))
+
+    ## Coarse scheme
+    # Power integration diagonal matrix 
+    d_c = np.vstack([np.diag([1/(order_c-i) for i in range(order_c)]),np.zeros((1,order_c))])
+    # Coefficients of the antiderivative polynomial 
+    Mat_c = np.dot(d_c, mat_c)
+
+    ## Refined scheme
+    # Power integration diagonal matrix 
+    d_r = np.vstack([np.diag([1/(order_r-i) for i in range(order_r)]),np.zeros((1,order_r))])
+    # Coefficients of the antiderivative polynomial 
+    Mat_r = np.dot(d_r, mat_r)
+    return  xi_c, xi_powers_c, w_c, xi_r, xi_powers_r, w_r, Mat_c, Mat_r, mat_c, mat_r
