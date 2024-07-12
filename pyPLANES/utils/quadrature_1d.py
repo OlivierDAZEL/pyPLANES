@@ -170,8 +170,13 @@ class Interval():
         # self.error_list_0 = np.abs(np.array([poly_error(x_c[i+1])-poly_error(x_c[i]) for i in range(self.n_c+1)]))
         # self.error_list_0 /= np.sum(self.error_list_0)
         print(x_c)
-        self.error_list = np.abs(np.array([ (self.coeff_c@self.xi_power_c[i+1]-self.coeff_r@self.xi_power_r[i+1])-(self.coeff_c@self.xi_power_c[i]-self.coeff_r@self.xi_power_r[i])for i in range(self.n_c+1)]))
-        self.error_list /= np.sum(self.error_list)
+        if self.typ == "CC":
+            self.error_list = np.abs(np.array([ (self.coeff_c@self.xi_power_c[i+1]-self.coeff_r@self.xi_power_r[i+1])-(self.coeff_c@self.xi_power_c[i]-self.coeff_r@self.xi_power_r[i])for i in range(self.n_c+1)]))
+            self.error_list /= np.sum(self.error_list)
+        elif self.typ == "GK":
+            pass
+        else:
+            raise NameError("Unknown quadrature scheme")
 
         # self.x_plot =np.linspace(self.a, self.b, 500)
         # self.xi_plot = 2*(self.x_plot-self.x_A)/(self.Delta)-1

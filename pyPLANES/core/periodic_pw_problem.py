@@ -152,6 +152,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
         elif self.method == "Global Method":
+            cbvbvccvb
             self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
             i_eq = 0
             for _int in self.interfaces:

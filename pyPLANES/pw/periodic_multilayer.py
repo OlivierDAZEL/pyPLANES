@@ -49,6 +49,7 @@ class PeriodicMultiLayer():
         self.layers = []
         self.interfaces = []
         self.theta_d = kwargs.get("theta_d", 0.0)
+        self.k_x = kwargs.get("k_x", None)
         self.order = kwargs.get("order", 2)
         self.plot = kwargs.get("plot", [False*6])
         self.condensation = kwargs.get("condensation", True)
@@ -91,8 +92,6 @@ class PeriodicMultiLayer():
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
         if self.period == False:
             self.period = 1.
-
-
 
         # Creation of the list of interfaces
         for i_l, _layer in enumerate(self.layers[:-1]):

@@ -6,10 +6,9 @@
 # This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
 #
-# Copyright (c) 2020
+# Copyright (c) 2024
 # 	Olivier Dazel <olivier.dazel@univ-lemans.fr>
-# 	Mathieu Gaborit <gaborit@kth.se>
-# 	Peter Göransson <pege@kth.se>
+# 	Mathieu Gaborit <gaborit@univ-lemans.fr>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,51 +20,53 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
-from termcolor import colored
+
 import numpy as np
 import numpy.linalg as LA
 
 from numpy import pi
 
 import matplotlib.pyplot as plt
-
 from mediapack import Air, Fluid
-
-# from pyPLANES.utils.io import initialisation_out_files_plain
 from pyPLANES.core.calculus import Calculus
-from pyPLANES.pw.periodic_layer import PeriodicLayer
 
+from pyPLANES.pw.periodic_multilayer import PeriodicMultiLayer
 from pyPLANES.pw.pw_layers import *
 from pyPLANES.pw.pw_interfaces import *
 
 
-class DispersionProblem(Calculus, PeriodicLayer):
+class DispersionPwProblem(Calculus, PeriodicMultiLayer):
     """
-        eTMM Problem
+        Periodic recursive Problem
     """ 
     def __init__(self, **kwargs):
-        assert "name_mesh" in kwargs
-        name_mesh = kwargs.get("name_mesh")
+        assert "ml" in kwargs
+        ml = kwargs.get("ml")
         self.condensation = kwargs.get("condensation", True)
         Calculus.__init__(self, **kwargs)
-        self.theta_d = kwargs.get("theta_d", 0.0)
-        if self.theta_d == 0:
-            self.theta_d = 1e-15 
+        self.k_x = kwargs.get("k_x", 0.0)
+        self.method = kwargs.get("method", "Global Method")
+
+        self.termination = kwargs.get("termination", "transmission")
+
         self.order = kwargs.get("order", 2)
-        self.nb_bloch_waves = kwargs.get("nb_bloch_waves", False)
+        self.nb_bloch_waves = kwargs.get("nb_bloch_waves", 0)
+        self.result.order = self.order
+        self.result.Solver = type(self).__name__
+        self.result.Method = self.method
+        
+        # Read periodic multilayer
+        PeriodicMultiLayer.__init__(self, ml, k_x=self.k_x, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
 
-        self.Result.order = self.order
-        self.Result.Solver = type(self).__name__
-        self.Result.k =[]
-
-        # Out files
-        self.out_file_method = "dispersion"
-        if isinstance(name_mesh, str):
-            PeriodicLayer.__init__(self, name_mesh=name_mesh, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation)
-            self.Result.period = self.period
-        elif isinstance(name_mesh, list):
+        self.add_excitation_and_termination(self.termination)
+        if self.method == "characteristics":
+            for i_l, _layer in enumerate(self.layers):
+                if isinstance(_layer, PeriodicLayer):
+                    _layer.characteristics[0] = self.interfaces[i_l].carac_top
+                    _layer.characteristics[1] = self.interfaces[i_l+1].carac_bottom
         # Calculus variable (for pylint)
-            self.kx, self.ky, self.k = None, None, None
+        self.kx, self.ky, self.k = None, None, None
+        self.R, self.T = None, None
 
 
     def preprocess(self):
@@ -92,47 +93,144 @@ class DispersionProblem(Calculus, PeriodicLayer):
             self.nb_waves = 1
             self.kx = np.array([k_x])
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
-        # print("ky={}".format(k_y))
-        self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary to have the good sign
-        # print(self.ky)
-        PeriodicLayer.update_frequency(self, omega, self.kx)
+        self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
+        PeriodicMultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
-        pass
-
-
+        Calculus.create_linear_system(self, omega)
+        if self.method in ["Recursive Method", "TMM"]:
+            if self.termination == "transmission":
+                self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
+                    self.back_prop = self.back_prop@_l.Xi
+                    self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+                    self.back_prop = self.back_prop@next_interface.Tau
+            else: # Rigid backing
+                self.Omega = self.interfaces[-1].Omega(self.nb_waves)
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_plus, _l.Xi = _l.update_Omega(self.Omega, omega, self.method)
+                    self.Omega, next_interface.Tau = next_interface.update_Omega(_l.Omega_plus)
+        elif self.method == "characteristics":
+            if self.termination == "transmission":
+                self.Omega, self.back_prop = self.interfaces[-1].Omegac(self.nb_waves)
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_minus = self.Omega
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
+                    self.back_prop = self.back_prop@_l.Xi
+                    self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+                    self.back_prop = self.back_prop@next_interface.Tau
+            else: # Rigid backing
+                self.Omega = self.interfaces[-1].Omegac(self.nb_waves)
+                for i, _l in enumerate(self.layers[::-1]):
+                    next_interface = self.interfaces[-i-2]
+                    _l.Omega_minus = self.Omega
+                    _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
+                    self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
+        elif self.method == "Global Method":
+            self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
+            i_eq = 0
+            for _int in self.interfaces:
+                if self.method == "Global Method":
+                    i_eq = _int.update_M_global(self.A,i_eq)
+            for _l in self.layers:
+                if isinstance(_l, PeriodicLayer):
+                    _l.create_global_method_matrices()
+                    index_rel = slice(i_eq, i_eq+2*_l.nb_waves_in_medium*self.nb_waves)
+                    self.A[index_rel, _l.dofs_bottom] = _l.M_b
+                    self.A[index_rel, _l.dofs_top] = _l.M_t
+            self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
+            for i in range(self.nb_waves):
+                self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
+        else:
+            raise NameError("Unknow method")
+        
     def solve(self):
         Calculus.solve(self)
-        print(self.TM.shape)
-        lam, v  = LA.eig(self.TM)
-        k = np.log(lam)/(1j*self.period)
-        k = k[np.argsort(np.real(k))] 
-        self.Result.k.append(k)
-        # print(k)
+        if self.method == "Global Method":
+            # plt.figure()
+            # plt.spy(self.A)
+            # plt.show()
+            self.X = LA.solve(self.A, self.F)
+                
+            R = self.X[:self.nb_waves]
+            # print(f"R={R}")
+            self.result.R0.append(R[0])
+            self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
-        # from mediapack import Air
-        # k_a = 2*np.pi*self.f/Air.c
-        # k_x = np.arange(-2, 3)*2*np.pi/self.period
-        # print(np.sqrt(k_a**2-k_x**2+0*1j))
-        # fdsffds
+            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+            if self.termination == "transmission":
+                T =self.X[-self.nb_waves:]
+                self.result.T0.append(T[0])
+                self.result.T.append(np.sum(np.real(self.ky)*np.abs(T)**2)/np.real(self.ky[0]))
+        else:
+            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+            E_0 = np.array([-alpha, 1]).reshape((2,1))
+            Omega_0 = [np.array([1j*(self.ky[_w]/self.k_air)/(2*pi*self.f*Air.Z),1]).reshape(2,1) for _w in range(self.nb_waves)]
+            Omega_0 = block_diag(*Omega_0)
 
+            if self.method == "characteristics":
+                self.Omega = np.kron(np.eye(self.nb_waves), self.interfaces[0].carac_bottom.P)@self.Omega
 
+            A, A_minus = Omega_0[:2, :1], self.Omega[:2, :1]
+            B, B_minus = Omega_0[:2, 1:], self.Omega[:2, 1:]
+            C, C_minus = Omega_0[2:, :1], self.Omega[2:, :1]
+            D, D_minus = Omega_0[2:, 1:], self.Omega[2:, 1:]
 
+            M_temp = np.hstack((D_minus, -D))
+            F_temp = np.hstack((-C_minus, C))
+            E = LA.solve(M_temp, F_temp)
+            
+            M_temp = np.hstack((A_minus, -A))+np.hstack((B_minus, -B))@E
+            X = LA.solve(M_temp, E_0)
+            R = E@X 
+            self.X_0_minus = np.append([X[0]], R[:self.nb_waves-1]) 
+            # R is second part of the solution vector
+            R = np.append([X[1]], R[self.nb_waves-1:])
 
+            self.result.R0.append(R[0])
+            self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
+            abs = 1-self.result.R[-1]
+            if self.termination == "transmission":
+                T = (self.back_prop@self.X_0_minus)
+                if self.method != "characteristics":
+                    T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].carac_bottom.n_w]     
+                self.result.T0.append(T[0])
+                self.result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
+                abs -= self.result.T[-1]
+            self.result.abs.append(abs)
 
     def plot_solution(self):
-        x_minus = self.X_0_minus # Information vector at incident interface  x^-
-        # print("x_minus={}".format(x_minus))
-        if not isinstance (x_minus, np.ndarray):
-            x_minus = np.array([x_minus])
-        for i, _l in enumerate(self.layers):
-            x_plus = self.interfaces[i].Tau @ x_minus # Transfert through the interface x^+
-            # print(x_plus)
-            if isinstance(_l, PeriodicLayer):
-                S_b = _l.Omega_plus @ x_plus
-                S_t = LA.solve(_l.TM, S_b)
-                _l.plot_solution(S_b, S_t)
-            else: # Homogeneous layer
-                q = LA.solve(_l.SV, _l.Omega_plus@x_plus)
-                _l.plot_solution_recursive(self.plot, q)
-            x_minus = LA.inv(_l.Xi)@x_plus # Transfert through the layer x^-_{+1}
+        if self.method == "Recursive Method":
+            if not(isinstance(self.X_0_minus,np.ndarray)):
+                X_minus = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
+            else:
+                X_minus=self.X_0_minus
+            for i, _l in enumerate(self.layers):
+                X_plus = self.interfaces[i].Tau @ X_minus # Transfert through the interface x^+
+                X_minus = _l.Xi@X_plus
+                if isinstance(_l, PeriodicLayer):
+                    S_b = _l.Omega_plus @ X_plus
+                    S_t = _l.Omega_minus @ X_minus
+                    _l.plot_solution(S_b, S_t)
+                else:   
+                    q = LA.solve(_l.SV, _l.Omega_plus@X_plus)
+                    _l.plot_solution_recursive(self.plot, q)
+        elif self.method == "characteristics":
+            if not(isinstance(self.X_0_minus,np.ndarray)):
+                q_minus = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
+            else:
+                q_minus=self.X_0_minus
+            for i, _l in enumerate(self.layers):
+                q_plus = self.interfaces[i].Tau @ q_minus # Transfert through the interface x^+
+                q_minus = _l.Xi@q_plus # Transfert through the layer x^-_{+1}
+                if isinstance(_l, PeriodicLayer):
+                    S_b = _l.Omega_plus @ q_plus
+                    S_t = _l.Omega_minus @ q_minus
+
+                    _l.plot_solution(S_b, S_t)
+                else:                
+                    _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q_minus)
