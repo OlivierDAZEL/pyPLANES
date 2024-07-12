@@ -125,7 +125,6 @@ class GmshMesh(Mesh):
         # periodicity
         for e in self.fem_entities:
             if isinstance(e, PeriodicityFem):
-                print(e)
                 masterTag, nodeTags, nodeMasterTags, tfo = gmsh.model.mesh.getPeriodicNodes(e.dim, e.tag, includeHighOrderNodes=False)
                 if len(nodeTags) != 0:
                     self.period = tfo[3]
@@ -135,8 +134,6 @@ class GmshMesh(Mesh):
                     else:
                         self.vertices_left = nodeTags
                         self.vertices_right = nodeMasterTags
-                    print(self.vertices_left)
-                    print(self.vertices_right)
         if hasattr(self, 'period'):
             self.period = np.abs(self.period)
             for e in self.entities.values():

@@ -150,7 +150,7 @@ class GmshModelpyPLANES():
             exec( f"vertice_{name_point} = gmsh.model.geo.addPoint({coord[0]},{coord[1]},0,{self.lcar})")
         # Creation of the curves
         for line in self.list_curves:
-            exec(f"line_{"".join(line)} = gmsh.model.geo.addLine(vertice_{line[0]},vertice_{line[1]})")
+            exec(f"line_{''.join(line)} = gmsh.model.geo.addLine(vertice_{line[0]},vertice_{line[1]})")
         # Creation of the surfaces
         for s in self.list_surfaces:
             exec(f"line_loop_{s.line_loop} = gmsh.model.geo.addCurveLoop({s.string_lineloop})")

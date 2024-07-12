@@ -55,6 +55,9 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
         self.result.Solver = type(self).__name__
         self.result.Method = self.method
         
+        
+        self.omega = 2*np.pi*self.frequencies[0]
+        self.update_frequency()
         # Read periodic multilayer
         PeriodicMultiLayer.__init__(self, ml, k_x=self.k_x, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
 
@@ -69,14 +72,17 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
         self.R, self.T = None, None
 
 
+
     def preprocess(self):
         Calculus.preprocess(self)
         self.info_file.write("Periodic Plane Wave solver // Recursive method\n")
 
-    def update_frequency(self, omega):
-        Calculus.update_frequency(self, omega)
-        self.k_air = omega/Air.c
-        k_x = self.k_air*np.sin(self.theta_d*np.pi/180.)
+    def update_frequency(self):
+        Calculus.update_frequency(self, self.omega)
+        self.k_air = self.omega/Air.c
+
+
+    def update_kx(self, k_x):
         if self.period:
             if self.nb_bloch_waves is not False:
                 nb_bloch_waves = self.nb_bloch_waves
@@ -94,10 +100,15 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
             self.kx = np.array([k_x])
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
-        PeriodicMultiLayer.update_frequency(self, omega, self.kx)
+        PeriodicMultiLayer.update_frequency(self, self.omega, self.kx)
 
-    def create_linear_system(self, omega):
-        Calculus.create_linear_system(self, omega)
+
+
+
+
+
+    def create_linear_system(self):
+        Calculus.create_linear_system(self, self.omega)
         if self.method in ["Recursive Method", "TMM"]:
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
@@ -130,11 +141,11 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
                     _l.Omega_minus = self.Omega
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
-        elif self.method == "Global Method":
+        elif self.method in ["Global Method", "global"]:
             self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
             i_eq = 0
             for _int in self.interfaces:
-                if self.method == "Global Method":
+                if self.method in ["Global Method", "global"]:
                     i_eq = _int.update_M_global(self.A,i_eq)
             for _l in self.layers:
                 if isinstance(_l, PeriodicLayer):
@@ -148,6 +159,11 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
         else:
             raise NameError("Unknow method")
         
+    def get_matrix(self, kx):
+        self.update_kx(kx)
+        self.create_linear_system()
+        return self.A
+
     def solve(self):
         Calculus.solve(self)
         if self.method == "Global Method":
