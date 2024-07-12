@@ -45,6 +45,7 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
         self.condensation = kwargs.get("condensation", True)
         Calculus.__init__(self, **kwargs)
         self.k_x = kwargs.get("k_x", 0.0)
+        self.period = False
         self.method = kwargs.get("method", "Global Method")
 
         self.termination = kwargs.get("termination", "transmission")
@@ -55,11 +56,12 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
         self.result.Solver = type(self).__name__
         self.result.Method = self.method
         
-        
-        self.omega = 2*np.pi*self.frequencies[0]
-        self.update_frequency()
         # Read periodic multilayer
         PeriodicMultiLayer.__init__(self, ml, k_x=self.k_x, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
+        
+        self.omega = 2*np.pi*self.frequencies[0]
+        self.update_frequency(self.omega)
+
 
         self.add_excitation_and_termination(self.termination)
         if self.method == "characteristics":
@@ -71,18 +73,17 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
 
-
-
     def preprocess(self):
         Calculus.preprocess(self)
         self.info_file.write("Periodic Plane Wave solver // Recursive method\n")
 
-    def update_frequency(self):
+    def update_frequency(self, omega):
+        self.omega = omega
         Calculus.update_frequency(self, self.omega)
         self.k_air = self.omega/Air.c
+        self.update_k_x(self.k_x)
 
-
-    def update_kx(self, k_x):
+    def update_k_x(self, k_x):
         if self.period:
             if self.nb_bloch_waves is not False:
                 nb_bloch_waves = self.nb_bloch_waves
@@ -101,11 +102,6 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
             k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
         self.ky = np.real(k_y)-1j*np.imag(k_y) # ky is either real or imaginary // - is to impose the good sign
         PeriodicMultiLayer.update_frequency(self, self.omega, self.kx)
-
-
-
-
-
 
     def create_linear_system(self):
         Calculus.create_linear_system(self, self.omega)
@@ -160,7 +156,7 @@ class DispersionPwProblem(Calculus, PeriodicMultiLayer):
             raise NameError("Unknow method")
         
     def get_matrix(self, kx):
-        self.update_kx(kx)
+        self.update_k_x(kx)
         self.create_linear_system()
         return self.A
 
