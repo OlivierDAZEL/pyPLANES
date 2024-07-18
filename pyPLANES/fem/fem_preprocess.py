@@ -134,7 +134,6 @@ def create_vertices_edges_faces_bubbles_lists(self):
             # else:
             #     _el.edges_orientation = [1,1,1]
 
-
 def update_edges(self, _el, existing_edges, element_vertices):
     element_vertices_tag = [element_vertices[0].tag, element_vertices[1].tag]
     element_vertices_tag_sorted = sorted(element_vertices_tag)

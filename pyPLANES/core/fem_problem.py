@@ -29,7 +29,7 @@ import itertools
 
 import numpy as np
 
-from pyPLANES.core.mesh import Mesh
+
 from pyPLANES.core.calculus import Calculus
 
 from pyPLANES.fem.fem_entities_surfacic import *
@@ -41,6 +41,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 from pyPLANES.fem.fem_preprocess import fem_preprocess
 from pyPLANES.utils.io import plot_fem_solution, export_paraview
 
+from pyPLANES.core.mesh import Mesh
 from pyPLANES.gmsh.mesh import GmshMesh
 
 from mediapack import Air
@@ -62,14 +63,14 @@ class FemBase(Mesh, Calculus):
         if self.condensation:
             self.T_i, self.T_j, self.T_v = None, None, None
 
-        fem_preprocess(self)
-        if self.list_vr is not False:
-            self.result.R0 = []
+        self.result.R0 = []
         self.result.order = self.order
         self.result.n_dof = []
         self.result.D_lambda = []
 
+
     def create_linear_system(self, omega):
+        
         # Initialisation of the lists
         Calculus.create_linear_system(self, omega)
         self.F = csr_matrix((self.nb_dof_master, 1), dtype=complex)
@@ -123,7 +124,8 @@ class FemBase(Mesh, Calculus):
 
     def solve(self):
         Calculus.solve(self)
-     
+
+
         # self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         start = timeit.default_timer()
         self.linear_system_2_numpy()
@@ -147,12 +149,6 @@ class FemBase(Mesh, Calculus):
         index_Q = np.where(((self.Q_i*self.Q_j) != 0) )
         Q = coo_matrix((self.Q_v, (self.Q_i, self.Q_j)), shape=(self.nb_dof_FEM, self.nb_dof_FEM)).tocsr()
 
-        # import matplotlib.pyplot as plt 
-        # print(A.todense()[-1,:])
-        # plt.matshow(np.abs(A.todense()))
-        # plt.colorbar()
-        # plt.show()
-        # print(F)
         # Resolution of the sparse linear system
         if self.verbose:
             print("Resolution of the linear system")
@@ -182,25 +178,25 @@ class FemBase(Mesh, Calculus):
                 _bb.sol[i_dim] = X[_bb.dofs[i_dim]]       
         # if self.export_paraview is not False:
         #     export_paraview(self)
+        # if self.list_vr is not False:
+        #     l_x = [v.coord[0] for v in self.list_vr]
+        #     d = max(l_x)- min(l_x)
 
-        if self.list_vr is not False:
-            l_x = [v.coord[0] for v in self.list_vr]
-            d = max(l_x)- min(l_x)
 
-            ome = 2*np.pi*self.f
             # pr = X[1:self.nb_dof_master].dot(F)/d/(1j*ome/(Air.Z*ome**2))
+        for _ent in self.fem_entities:
+            if isinstance(_ent, (ImposedPwFem, ImposedDisplacementFem)):
+                ome = 2*np.pi*self.f
+                Z = _ent.impedance_on_entity(X, ome)
+                R= (Z-Air.Z)/(Z+Air.Z)
 
-            for _ent in self.entities:
-                if isinstance(_ent, (ImposedPwFem, ImposedDisplacementFem)):
-                    Z = _ent.impedance_on_entity(X, ome)
-            R= (Z-Air.Z)/(Z+Air.Z)
-            k = ome/Air.c
-            L2 = X.T@(Q@X)
-            self.result.R0.append(R)
-            self.result.n_dof.append(self.nb_dof_master)
- 
+                # kl
+                # k = ome/Air.c
+                # L2 = X.T@(Q@X)
+                self.result.R0.append(R)
+
+        self.result.n_dof.append(self.nb_dof_master)
         return X
-
 
     def resolution(self):
         Calculus.resolution(self)
@@ -212,5 +208,10 @@ class FemBase(Mesh, Calculus):
 
 class FemProblem(FemBase, GmshMesh):
     def __init__(self, **kwargs):
-        FemBase.__init__(self, **kwargs)
+        self.condensation = kwargs.get("condensation", True)
         GmshMesh.__init__(self, **kwargs)
+        FemBase.__init__(self, **kwargs)
+        fem_preprocess(self)
+
+
+

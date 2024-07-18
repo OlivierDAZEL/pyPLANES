@@ -205,7 +205,6 @@ class Test():
         elif indicator == "R0":
             indicator_ref = np.imag(ref.R0)
             indicator_res = np.imag(res.R0)
-        print(indicator)
 
 
         self.error = LA.norm(indicator_ref-indicator_res)/len(indicator_ref)

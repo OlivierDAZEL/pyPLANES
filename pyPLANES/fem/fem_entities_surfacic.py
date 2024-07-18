@@ -43,9 +43,7 @@ from pyPLANES.pw.utils_TM import ZOD_terms
 class ImposedDisplacementFem(FemEntity):
     def __init__(self, **kwargs):
         FemEntity.__init__(self, **kwargs)
-        if self.verbose:
-            print("Creation of")
-            print(self)
+
     def __str__(self):
         out = "Imposed Displacement"
         return out
@@ -200,7 +198,6 @@ class InterfaceFem(FemEntity):
                     dof_ux_n = dof_ux_linear_system_master(_eln)
                     dof_uy_n = dof_uy_linear_system_master(_eln)
                     dof_p_n = dof_p_linear_system_master(_eln)
-                    print(dof_p_n)
                     A_i.extend(list(chain.from_iterable([[_d]*len(dof_p) for _d in dof_p])))
                     A_j.extend(list(dof_p)*len(dof_p))
                     A_v.extend(wmfm[0,0]*v)

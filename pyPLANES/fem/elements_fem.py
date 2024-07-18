@@ -168,7 +168,6 @@ class FemElement(GenericElement):
             JJ = lagrange_on_Ka(1, xi_1)[1]
             return np.abs(LA.norm(self.coord@JJ))
         elif self.typ == 8: # Line3
-            # print("xi_1={}".format(xi_1))
             n_ = self.coord@lagrange_on_Ka(2, xi_1)[1]
 
             n_ = np.array([n_[1], -n_[0]])
@@ -186,7 +185,6 @@ class FemElement(GenericElement):
             JJ = lagrange_on_Ka(1, xi_1)[1]
             return np.abs(LA.norm(self.coord@JJ))
         elif self.typ == 8: # Line3
-            # print("xi_1={}".format(xi_1))
             JJ = lagrange_on_Ka(2, xi_1)[1]
             return np.abs(LA.norm(self.coord@JJ))
         elif self.typ == 2: # TR3
@@ -205,8 +203,8 @@ class FemElement(GenericElement):
             # out += "edge={} /orientation ={}\n".format(self.edges[0].tag, self.edges_orientation)
         elif self.typ == 2:
             out += "Vertices = [{},{},{}]\n".format(self.vertices[0].tag, self.vertices[1].tag, self.vertices[2].tag)
-            out += "edges =[{},{},{}]\n".format(self.edges[0].tag, self.edges[1].tag, self.edges[2].tag)
-            out += "edge orientation ={}\n".format(self.edges_orientation)
+            # out += "edges =[{},{},{}]\n".format(self.edges[0].tag, self.edges[1].tag, self.edges[2].tag)
+            # out += "edge orientation ={}\n".format(self.edges_orientation)
         # out += "dofs={}".format(self.dofs)
         return out
 

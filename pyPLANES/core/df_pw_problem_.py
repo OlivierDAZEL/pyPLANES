@@ -34,7 +34,7 @@ from scipy import integrate
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.utils.io import reference_frequencies, reference_curve, reference_C, reference_C_tr
 from scipy.interpolate import lagrange
-from pyPLANES.utils.quadrature_1d import Integral
+from pyPLANES.quadrature.integral import Integral
 
 
 class DfPwProblem(PwProblem):
@@ -84,7 +84,7 @@ class DfPwProblem(PwProblem):
         else:
             tau = np.zeros(len(self.frequencies))
             D = 0.5 # Denominator in the TL 
-            tol = 1e-3
+            tol = 1e-5
             for i, f in enumerate(self.frequencies):
 
                 self.f = f
@@ -98,13 +98,14 @@ class DfPwProblem(PwProblem):
                 # def func(theta):
                 #     return theta
     
+                scipy = integrate.quad(func, 0, pi/2,full_output=1)
+                Tau_scipy = scipy[0]
+                print(f"I_scipy={Tau_scipy}")
+                infodict = scipy[2]
+                print(f"neval={infodict['neval']}")
 
                 Tau = self.diffuse_field_OD(func, tol)
                 print(f"Tau     IN= {Tau}")
-
-                # Tau_r,Tau_i = self.diffuse_field_cx(func, tol)
-                # print(f"Tau     cx={complex(Tau_r,Tau_i)}")
-
 
                 exit()
                 tau[i] = Tau
@@ -159,28 +160,36 @@ class DfPwProblem(PwProblem):
             print("initialization with GK3-15 by default")
         integral = Integral(func)
 
-        nb_it = 0
         # print(subdivision)
-        integral.update(func, nb_it)
-        print(integral)
+        integral.update(func)
         print(f"I_c={integral.I_c}")
         print(f"I_r={integral.I_r}")
         print(f"error={integral.error}")
-        print(f"error={integral.interval_list[0].error_list}")
+        integral.plot_polynomials()
+        integral.plot_error_on_intervals()
 
-        # quad_int = integral.interval_list[0]
-        # theta_list = np.linspace(0,pi/2-0.01,200)
-
-        while np.sum(integral.error) > tol:
-            nb_it +=1
+        for i in range(1):
             # print(f"it #{nb_it}")
-            integral.refine(nb_it)
-            integral.update(func,nb_it)
-            # print(f"I_c={subdivision.I_c}")
-            # print(f"I_r={subdivision.I_r}")
+            integral.refine()
+            integral.update(func)
+            integral.plot_polynomials()
+            integral.plot_error_on_intervals()
+            print(f"I_c={integral.I_c}")
+            print(f"I_r={integral.I_r}")
+            print(f"n={integral.number_of_nodes()}")
             # print(f"error={subdivision.error}")
             # print(f"error={subdivision.error_list}")
+        
+        
+        
+        plt.figure()
+        integral.intervals[-1].plot_polynomials()
+        
+        
+        plt.show()
+        
         Tau = integral.I_r
+        
         return Tau
 
 

@@ -84,19 +84,18 @@ class GmshModelpyPLANES():
         self.list_surfaces.append(s)
 
     def addCondition(self, curve, cond):
-        # print(f"{cond}")
         list_existing_conditions = [c.cond for c in self.list_conditions]
-        # print(list_existing_conditions)
         if cond in list_existing_conditions: # 
             # print("it exists")
+            # Corresponding condition
             c = self.list_conditions[list_existing_conditions.index(cond)]
             list_index_curves = self.index_of_curves(curve)
-            if isinstance(curve, list):
-                c.list_curves.extend(curve)
-                c.list_index_curves.extend(list_index_curves)
-            else:
-                c.list_curves.append(curve)
-                c.list_index_curves.append(list_index_curves)
+            # if isinstance(curve, list):
+            c.list_curves.extend(curve)
+            c.list_index_curves.extend(list_index_curves)
+            # else:
+            #     c.list_curves.append(curve)
+            #     c.list_index_curves.append(list_index_curves)
         else: # creation of a new condition
             # print("it does not exists")
             c =GmshPhysicalCondition(curve, cond)
@@ -130,6 +129,8 @@ class GmshModelpyPLANES():
         Output list of indices
         """
         list_index_curves = [] # output list 
+        if isinstance(list_curves, str):
+            list_curves = [list_curves]
         list_curves = [set(l) for l in list_curves] # list of model curve as sets (to skip order)
         model_list_curves = [set(l) for l in self.list_curves]
         for c in list_curves:
@@ -139,7 +140,7 @@ class GmshModelpyPLANES():
                 else:
                     raise NameError(f"condition on a line {c} which does not exist")
             else:
-                raise NameError("Invalid entity name")
+                raise NameError(f"Invalid entity name {c}")
         return list_index_curves
 
     def create_msh_file(self, name_file):

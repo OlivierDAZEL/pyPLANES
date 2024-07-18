@@ -78,6 +78,6 @@ print(f"R CM ={characteristic_method.result.R0}")
 #     print(f"\t\tET RM={np.abs(recursive_method.result.T0[0]-global_method.result.T0[0])}")
 #     print(f"\t\tET CM={np.abs(characteristic_method.result.T0[0]-global_method.result.T0[0])}")
 
-# if any(plot_solution):
-#     # plt.legend()
-#     plt.show() 
+if any(plot_solution):
+    # plt.legend()
+    plt.show() 

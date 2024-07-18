@@ -74,8 +74,19 @@ class PwInterface():
     def update_M_global(self, M, i_eq):
         periodic_layer = [isinstance(l, PeriodicLayer) for l in self.layers]
         if any(periodic_layer):
-            if periodic_layer[0]: # Layer 0 is periodic
-                pass
+            if all(periodic_layer):
+                index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+                M [index_rel, self.layers[0].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_bottom)
+                M [index_rel, self.layers[1].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_top)
+                i_eq += self.number_relations*self.nb_waves
+            elif periodic_layer[0]: # Layer 0 is periodic
+                SV_1 = self.layers[1].SV
+                d_1 = ([0]*self.n_1+[self.layers[1].d]*self.n_1)*self.nb_waves
+                delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
+                index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+                M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_bottom)
+                M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_0@delta_0)
+                i_eq += self.number_relations*self.nb_waves
             else: # Layer 1 is periodic
                 SV_0 = self.layers[0].SV
                 d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
@@ -182,7 +193,6 @@ class FluidPemInterface(PwInterface):
         self.n_0 = 1
         self.n_1 = 3
         self.number_relations = 4
-        # 0: u_y-u_y^t 1: p-p=0 2: hat{sigma}_{xy}=0 3 hat{sigma}_{xy}=0
         # 0: u_y-u_y^t 1: p-p=0 2: hat{sigma}_{xy}=0 3 hat{sigma}_{xy}=0
         self.C_bottom = np.array([[1,0],[0,1], [0,0], [0, 0]])
         self.C_top = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
@@ -727,7 +737,6 @@ class SemiInfinite(PwInterface):
             SV_0 = self.layers[0].SV
             d_0 = ([self.layers[0].d]*self.n_0+[0]*self.n_0)*self.nb_waves
             delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))     
-
             index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
             M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
             M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)

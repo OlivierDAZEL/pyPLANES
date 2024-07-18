@@ -33,6 +33,8 @@ def one_layer( **kwargs):
     order_geometry = kwargs.get("order_geometry", 1)
     mat = kwargs.get("mat", "Air")
     method = kwargs.get("method", "FEM")
+    BC = kwargs.get("BC", None)
+
 
     vertices = {}
     vertices["A"] = (0, 0)
@@ -42,8 +44,15 @@ def one_layer( **kwargs):
     
     GS = GmshModelpyPLANES(vertices, lcar)
     GS.addSurface(mat, "ABCD", mat)
-    GS.addCondition("BA", "condition=bottom")
-    GS.addCondition("CD", "condition=top")
-    GS.addPeriodicity("BC", "DA")
+    if BC is None:
+        GS.addCondition("BA", "condition=bottom")
+        GS.addCondition("CD", "condition=top")
+        GS.addPeriodicity("BC", "DA")
+    else:
+        GS.addCondition("AB", "condition="+BC[0])
+        GS.addCondition("BC", "condition="+BC[1])
+        GS.addCondition("CD", "condition="+BC[2])
+        GS.addCondition("DA", "condition="+BC[3])
+
     GS.create_msh_file(name_mesh)
 

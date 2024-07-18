@@ -33,7 +33,7 @@ from scipy import integrate
 
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.utils.io import reference_frequencies, reference_curve, reference_C, reference_C_tr
-from pyPLANES.utils.gauss_kronrod import gauss_kronrod
+# from pyPLANES.utils.gauss_kronrod import gauss_kronrod
 from scipy.interpolate import lagrange
 
 class DfPwProblem(PwProblem):
