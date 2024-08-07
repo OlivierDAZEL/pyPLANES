@@ -146,6 +146,7 @@ class GmshModelpyPLANES():
     def create_msh_file(self, name_file):
         # self.checkup()
         gmsh.initialize()
+        gmsh.option.setNumber("General.Terminal", 0)
         # Creation of the vertices
         for name_point, coord in self.dic_vertices.items():
             exec( f"vertice_{name_point} = gmsh.model.geo.addPoint({coord[0]},{coord[1]},0,{self.lcar})")

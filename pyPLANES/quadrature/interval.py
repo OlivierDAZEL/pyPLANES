@@ -35,6 +35,8 @@ from .reference_scheme import ReferenceScheme
 class Interval():
     def __init__(self, a, b, reference_scheme=None, f_a=None, f_b=None):
         # print(f"Interval [{a}, {b}]")
+        self.status = "unconverged"
+        self.RelTol = 1e-3
         self.a = self.A = a
         self.b = self.B = b
         self.f_a, self.f_b = f_a, f_b
@@ -53,7 +55,6 @@ class Interval():
         s = f"[{self.a} ; {self.b}]"
         return s
 
-
     def update_f_values(self, func):
         self.f_r = np.array([func(x) for x in self.x_r])
         self.f_c = self.f_r[::2]
@@ -68,7 +69,12 @@ class Interval():
         self.coeff_r = (self.matrix_Poly_r@self.f_r)
         
         # Computation of the integrals
-
+        print(self.reference_scheme.order)
+        print((self.matrix_Poly_c).shape)
+        print((self.matrix_Poly_c@self.f_c).shape)
+        print(self.coeff_c.shape)
+        print(self.coeff_r.shape)
+        print((self.reference_scheme.xib_powers-self.reference_scheme.xia_powers).shape)
         self.I_c = self.coeff_c@(self.reference_scheme.xib_powers-self.reference_scheme.xia_powers)
         self.I_r = self.coeff_r@(self.reference_scheme.xib_powers-self.reference_scheme.xia_powers)
         # self.error = np.abs((self.I_c-self.I_r)/self.I_r)
@@ -82,12 +88,30 @@ class Interval():
             raise NameError("Unknown quadrature scheme")
 
         if self.typ in ["CC", "PV"]:
+            values_list = np.array([self.coeff_r@self.reference_scheme.xi_powers[i+1]- self.coeff_r@self.reference_scheme.xi_powers[i] for i in range(self.reference_scheme.n_c-1)])
             self.error_list = np.array([ (self.coeff_c@self.reference_scheme.xi_powers[i+1]-self.coeff_r@self.reference_scheme.xi_powers[i+1])-(self.coeff_c@self.reference_scheme.xi_powers[i]-self.coeff_r@self.reference_scheme.xi_powers[i])for i in range(self.reference_scheme.n_c-1)])
+            
             self.error = np.sum(self.error_list)
+
+            self.relative_error_list = np.abs(self.error_list/np.abs(values_list))
+            
+            abs_error = np.abs(self.error_list)
+            self.repartition_error = abs_error/np.sum(abs_error)
+
+            
+            
+            
+        
         elif self.typ == "GK":
             raise NotImplementedError()
         else:
             raise NameError("Unknown quadrature scheme")
+        
+        # print(f"Error on interval [{self.a}, {self.b}] : {self.error}")
+        
+        
+        if np.abs(self.error/self.I_c) < self.RelTol:
+            self.is_converged = True
 
     def split(self,refined_schemes):
         index_max = np.argmax(np.abs(self.error_list))
@@ -203,7 +227,7 @@ class Interval():
 
     def plot_error_on_intervals(self, ax):
         if self.typ in ["CC","PV"]: 
-            error_list = self.error_list
+            error_list = self.error_list#/np.sum(self.error_list)
             for i, error in enumerate(error_list):
                 if error > 0:
                     facecolor = "blue"
@@ -212,12 +236,64 @@ class Interval():
                 ax.add_patch(Rectangle((self.x_c[i], 0), self.x_c[i+1]-self.x_c[i], abs(error), edgecolor = 'black', facecolor = facecolor, fill=True,lw=1))
         else:
             raise NameError("Unknown quadrature scheme")
-
+        
+    def plot_relative_error_on_intervals(self, ax):
+        if self.typ in ["CC","PV"]: 
+            error_list = self.relative_error_list
+            for i, error in enumerate(error_list):
+                if error > 0:
+                    facecolor = "blue"
+                else:
+                    facecolor = "red"
+                ax.add_patch(Rectangle((self.x_c[i], 0), self.x_c[i+1]-self.x_c[i], abs(error), edgecolor = 'black', facecolor = facecolor, fill=True,lw=1))
+        else:
+            raise NameError("Unknown quadrature scheme")        
+        
 
     def plot_grid(self,i):
         plt.plot(self.x_r,i*np.ones(self.reference_scheme.n_r),"b.")
         plt.plot(self.x_r[0],i,"r.")
         plt.plot(self.x_r[-1],i,"r.")
 
-
+    def adapt_intervals(self):
+        
+        index_max = np.argmax(self.repartition_error)
+        list_subintervals = []
+        # print(self.repartition_error[index_max])
+        if self.repartition_error[index_max] > 0.4: # The error is on a single subinterval
+            
+            if index_max ==0:
+                jkl
+                IOError("Error on the first interval")
+            elif index_max == len(self.error_list)-1:
+                indices = slice(1+2*index_max)
+                x, f = self.x_r[indices], self.f_r[indices]
+                reference_scheme = ReferenceScheme("PV", x=x, f=f)
+                list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
+                x, f = self.x_r[1+2*index_max:], self.f_r[1+2*index_max:]
+                reference_scheme = ReferenceScheme("PV", x=x, f=f)
+                list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
+            else: #error on an intermediate interval
+                indices = slice(1+2*index_max)
+                x, f = self.x_r[indices], self.f_r[indices]
+                reference_scheme = ReferenceScheme("PV", x=x, f=f)
+                list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
+                indices = slice(2*index_max, 2*index_max+3)
+                x, f = self.x_r[indices], self.f_r[indices]
+                reference_scheme = ReferenceScheme("CC", order=6)
+                reference_scheme = self.reference_scheme
+                list_subintervals.append(Interval(x[0], x[2], reference_scheme))
+                # list_subintervals.append(Interval(x[1], x[2], reference_scheme))
+                indices = slice(2*index_max+2, self.reference_scheme.n_r)
+                x, f = self.x_r[indices], self.f_r[indices]
+                reference_scheme = ReferenceScheme("PV", x=x, f=f)
+                list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
+        else:
+            print(self.reference_scheme.order ,"--")
+            
+            self.reference_scheme.refine()
+            print(self.reference_scheme.order ,"--")
+            print(self.reference_scheme.matrix_Poly_c.shape, "--")
+            list_subintervals.append(self)
+        return list_subintervals
 

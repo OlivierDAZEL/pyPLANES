@@ -24,7 +24,7 @@
 import numpy as np
 import numpy.linalg as LA
 import json
-
+from termcolor import colored
 from numpy import pi
 import matplotlib.pyplot as plt
 from mediapack import Air, Fluid
@@ -45,12 +45,9 @@ class DfPwProblem(PwProblem):
         PwProblem.__init__(self, **kwargs)
         self.neval = []
 
-
-
     def map_tau(self):
         """  Resolution of the problem """
         self.f = self.frequencies[0]
-        print(self.f)
         self.update_frequency(2*np.pi*self.f)
         n_r, n_i = 80, 81
         theta_r = np.linspace(0, np.pi/2-0.00001, n_r)
@@ -75,7 +72,6 @@ class DfPwProblem(PwProblem):
         # plt.colorbar()
         # plt.show()
 
-
     def resolution_kernel(self):
         """  Resolution of the problem """
         if self.alive_bar:
@@ -99,10 +95,8 @@ class DfPwProblem(PwProblem):
                 #     return theta
     
                 scipy = integrate.quad(func, 0, pi/2,full_output=1)
-                Tau_scipy = scipy[0]
-                print(f"I_scipy={Tau_scipy}")
-                infodict = scipy[2]
-                print(f"neval={infodict['neval']}")
+                Tau_scipy, infodict = scipy[0], scipy[2]
+                print(colored(f"I_scipy={Tau_scipy:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
 
                 Tau = self.diffuse_field_OD(func, tol)
                 print(f"Tau     IN= {Tau}")
@@ -161,29 +155,49 @@ class DfPwProblem(PwProblem):
         integral = Integral(func)
 
         # print(subdivision)
-        integral.update(func)
-        print(f"I_c={integral.I_c}")
-        print(f"I_r={integral.I_r}")
-        print(f"error={integral.error}")
+        integral.update()
+        # print(f"I_c={integral.I_c}")
+        print(colored(f"I_r={integral.I_r:.10E}","green"))
+        print(colored(f"error={integral.error:.10E}", "yellow"))
         integral.plot_polynomials()
         integral.plot_error_on_intervals()
-
+        integral.adapt_intervals()
+        
+        
+        nb_it = 0
         for i in range(1):
+            integral.nb_refinements +=1
             # print(f"it #{nb_it}")
-            integral.refine()
-            integral.update(func)
+            
+            print(integral.intervals)
+            integral.adapt_intervals()
+            
+            
+            print(integral.intervals)
+            
+            exit()
+            
+            # print(f"I_c={integral.I_c}")
+            print(colored(f"I_r={integral.I_r:.10E}","green"))
+            print(colored(f"error={integral.error:.10E}", "yellow"))
             integral.plot_polynomials()
             integral.plot_error_on_intervals()
-            print(f"I_c={integral.I_c}")
-            print(f"I_r={integral.I_r}")
-            print(f"n={integral.number_of_nodes()}")
+            # print(integral)
+
+            
+            integral.update()
+            # integral.plot_polynomials()
+            # integral.plot_error_on_intervals()
+            # print(f"I_c={integral.I_c}")
+            # print(f"I_r={integral.I_r}")
+            # print(f"n={integral.number_of_nodes()}")
             # print(f"error={subdivision.error}")
             # print(f"error={subdivision.error_list}")
         
         
         
-        plt.figure()
-        integral.intervals[-1].plot_polynomials()
+        # plt.figure()
+        # integral.intervals[-1].plot_polynomials()
         
         
         plt.show()

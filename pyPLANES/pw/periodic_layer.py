@@ -144,7 +144,6 @@ class PeriodicLayerBase(Mesh):
         for _ent in self.fem_entities:
             self.update_system(*_ent.update_system(self.omega))
 
-
     def create_global_method_matrices(self):
         self.create_bulk_matrices()
         self.apply_periodicity_on_Dii()
@@ -250,7 +249,6 @@ class PeriodicLayerBase(Mesh):
         self.M_b = M_b
         self.M_t = M_t
 
-   
     def create_transfert_matrix(self):
         self.create_bulk_matrices()
         self.apply_periodicity_on_Dii()

@@ -47,7 +47,9 @@ class GmshMesh(Mesh):
 
     def load_msh_file(self):
         gmsh.initialize()
+        gmsh.option.setNumber("General.Terminal", 0)
         gmsh.open(self.msh_file)
+
         # Nodes
         nodeTags, nodeCoords, nodeParams =gmsh.model.mesh.getNodes()
         nb_nodes = len(nodeTags)

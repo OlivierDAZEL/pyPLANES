@@ -71,7 +71,6 @@ class ReferenceScheme():
         self.xia_powers = self.xi_powers[0]
         self.xib_powers = self.xi_powers[-1]
 
-
         self.matrix_poly_c = np.linalg.inv(np.vander(self.xi_c,increasing=True))
         self.matrix_poly_r = np.linalg.inv(np.vander(self.xi_r,increasing=True))
 
@@ -87,6 +86,42 @@ class ReferenceScheme():
         # Coefficients of the antiderivative polynomial 
         self.matrix_Poly_r = np.dot(d_r, self.matrix_poly_r)
         
+    def refine(self):
+        if self.typ == "CC":
+            self.order *= 2
+            self.xi_c = np.cos([np.pi*k/(self.order) for k in range(self.order+1)])[::-1]
+            self.xi_r = np.cos([np.pi*k/(2*self.order) for k in range(2*self.order+1)])[::-1]
+            self.w_r = self.w_c = None
+            xi_c_interval =  self.xi_c
+            self.indices_c = np.array([i for i in range(0, 2*self.order+1, 2)])
+        else:
+            klj
+
+        self.n_c, self.n_r = len(self.xi_c), len(self.xi_r)
+
+        # Powers (for polynomial evaluation) at nodes 
+        self.xi_powers = [np.array([xi**i for i in range(self.n_r+1)]) for xi in xi_c_interval]
+        
+        self.xia_powers = self.xi_powers[0]
+        self.xib_powers = self.xi_powers[-1]
+
+        self.matrix_poly_c = np.linalg.inv(np.vander(self.xi_c,increasing=True))
+
+        self.matrix_poly_r = np.linalg.inv(np.vander(self.xi_r,increasing=True))
+
+        ## Coarse scheme
+        # Power integration diagonal matrix 
+        d_c = np.vstack([np.zeros((1,self.n_c)), np.diag([1/i for i in range(1,self.n_c+1)])])
+        # Coefficients of the antiderivative polynomial 
+        self.matrix_Poly_c = np.dot(d_c, self.matrix_poly_c)
+
+        ## Refined scheme
+        # Power integration diagonal matrix 
+        d_r = np.vstack([np.zeros((1,self.n_r)), np.diag([1/i for i in range(1, self.n_r+1)])])
+        # Coefficients of the antiderivative polynomial 
+        self.matrix_Poly_r = np.dot(d_r, self.matrix_poly_r)
+        
+        
         
 def ReferenceSchemes(typ):
     if typ == "CC":
@@ -98,8 +133,8 @@ def ReferenceSchemes(typ):
         raise NotImplementedError()
     return d
 
-class PreviousValues(ReferenceScheme):
-    def __init__(self, x, f):
-        self.x = x
-        self.f = f
-        self.typ = "PV"
+# class PreviousValues(ReferenceScheme):
+#     def __init__(self, x, f):
+#         self.x = x
+#         self.f = f
+#         self.typ = "PV"
