@@ -28,7 +28,7 @@ from numpy import pi
 from scipy.interpolate import lagrange
 from scipy import integrate
 from .quadrature_schemes import gauss_kronrod
-
+from termcolor import colored
 
 class ReferenceScheme():
     def __init__(self, typ, **kwargs):
@@ -85,7 +85,19 @@ class ReferenceScheme():
         d_r = np.vstack([np.zeros((1,self.n_r)), np.diag([1/i for i in range(1, self.n_r+1)])])
         # Coefficients of the antiderivative polynomial 
         self.matrix_Poly_r = np.dot(d_r, self.matrix_poly_r)
-        
+    
+    def __str__(self):
+        s = f"{self.typ} of order {self.order}"
+        return s
+
+class CC_autoadaptive(ReferenceScheme):
+    def __init__(self, **kwargs):
+        ReferenceScheme.__init__(self, "CC", **kwargs)
+
+    def __str__(self):
+        s = ReferenceScheme.__str__(self) + colored(" (auto-adaptive)", "yellow")
+        return s
+
     def refine(self):
         if self.typ == "CC":
             self.order *= 2
@@ -95,7 +107,7 @@ class ReferenceScheme():
             xi_c_interval =  self.xi_c
             self.indices_c = np.array([i for i in range(0, 2*self.order+1, 2)])
         else:
-            klj
+            raise NameError("Refinement not implemented for this type of scheme")
 
         self.n_c, self.n_r = len(self.xi_c), len(self.xi_r)
 

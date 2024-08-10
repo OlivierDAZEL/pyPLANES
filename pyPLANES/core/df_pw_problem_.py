@@ -149,58 +149,87 @@ class DfPwProblem(PwProblem):
         
     def diffuse_field_OD(self, func, tol):
         verbose = True
-        if verbose: 
-            print("diffuse_field_OD")
-            print("initialization with GK3-15 by default")
+        # if verbose: 
+        #     print("diffuse_field_OD")
+        #     print("initialization with GK3-15 by default")
         integral = Integral(func)
 
         # print(subdivision)
         integral.update()
         # print(f"I_c={integral.I_c}")
-        print(colored(f"I_r={integral.I_r:.10E}","green"))
-        print(colored(f"error={integral.error:.10E}", "yellow"))
+        # print(colored(f"I_r={integral.I_r:.10E}","green"))
+        # print(colored(f"error={integral.error:.10E}", "yellow"))
+
         integral.plot_polynomials()
         integral.plot_error_on_intervals()
+        plt.show()
+        exit()
+        
         integral.adapt_intervals()
         
+        exit()
+        # plt.show()        
         
-        nb_it = 0
-        for i in range(1):
-            integral.nb_refinements +=1
-            # print(f"it #{nb_it}")
+        # print(f"I_c={integral.I_c}")
+        # print(colored(f"I_r={integral.I_r:.10E}","green"))
+        # print(colored(f"error={integral.error:.10E}", "yellow"))
+        
+        # integral.plot_polynomials()
+        # integral.plot_error_on_intervals()
+
+        
+        integral.refine_intervals()
+
+        # integral.plot_polynomials()
+        # integral.plot_error_on_intervals()
+
+
+        print(f"I_c={integral.I_c}")
+        print(colored(f"I_r={integral.I_r:.10E}","green"))
+        print(colored(f"error={integral.error:.10E}", "yellow"))
+        
+        # integral.plot_grid()
+        plt.show()      
+
+        exit()
+
+        # nb_it = 0
+        # for i in range(1):
+        #     integral.nb_refinements +=1
+        #     # print(f"it #{nb_it}")
             
-            print(integral.intervals)
-            integral.adapt_intervals()
+        #     print(integral.intervals)
+        #     integral.adapt_intervals()
             
             
-            print(integral.intervals)
+        #     print(integral.intervals)
             
-            exit()
+        #     exit()
             
-            # print(f"I_c={integral.I_c}")
-            print(colored(f"I_r={integral.I_r:.10E}","green"))
-            print(colored(f"error={integral.error:.10E}", "yellow"))
-            integral.plot_polynomials()
-            integral.plot_error_on_intervals()
-            # print(integral)
+        #     # print(f"I_c={integral.I_c}")
+        #     print(colored(f"I_r={integral.I_r:.10E}","green"))
+        #     print(colored(f"error={integral.error:.10E}", "yellow"))
+        #     integral.plot_polynomials()
+        #     integral.plot_error_on_intervals()
+        #     # print(integral)
 
             
-            integral.update()
-            # integral.plot_polynomials()
-            # integral.plot_error_on_intervals()
-            # print(f"I_c={integral.I_c}")
-            # print(f"I_r={integral.I_r}")
-            # print(f"n={integral.number_of_nodes()}")
-            # print(f"error={subdivision.error}")
-            # print(f"error={subdivision.error_list}")
+        #     integral.update()
+        #     # integral.plot_polynomials()
+        #     # integral.plot_error_on_intervals()
+        #     # print(f"I_c={integral.I_c}")
+        #     # print(f"I_r={integral.I_r}")
+        #     # print(f"n={integral.number_of_nodes()}")
+        #     # print(f"error={subdivision.error}")
+        #     # print(f"error={subdivision.error_list}")
         
         
         
-        # plt.figure()
-        # integral.intervals[-1].plot_polynomials()
+        # # plt.figure()
+        # # integral.intervals[-1].plot_polynomials()
         
         
-        plt.show()
+        # plt.show()
         
         Tau = integral.I_r
         
