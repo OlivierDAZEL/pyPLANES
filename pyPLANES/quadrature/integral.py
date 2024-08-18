@@ -44,22 +44,44 @@ class Integral():
         self.typ = typ
         self.reference_schemes = ReferenceSchemes(typ)
         self.reference_scheme_for_adaptation = self.reference_schemes["3"]
-        
-        
-        self.intervals = [Interval(self.a, self.b, self.reference_scheme_for_adaptation)]
+        boundaries = kwargs.get("boundaries", False)
+        if boundaries is False:
+            self.intervals = [Interval(self.a, self.b, self.reference_scheme_for_adaptation)]
+        else:
+            self.intervals = []
+            for i, x in enumerate(boundaries[:-1]):
+                self.intervals.append(Interval(x, boundaries[i+1], CC_autoadaptive()))
+            for quad_int in self.intervals:
+                quad_int.status = "adapted"
+                
+            
         self.nb_refinements, self.nb_adaptations = 0, 0
         self.error_list = []
         self.I_c, self.I_r, self.error = None, None, None
         
-        self.tol_adapt =  kwargs.get("tol_adapt", 2e-1)
-        self.tol_refine = kwargs.get("tol_refine", 1e-9)
-        self.verbose = kwargs.get("verbose", True)        
+        self.tol_adapt =  kwargs.get("tol_adapt", 1e-1)
+        self.tol_refine = kwargs.get("tol_refine", 1e-2)
+        self.verbose = kwargs.get("verbose", False)        
         
     def __str__(self):
         s = f"Integral at iteration #{self.nb_refinements}"
         for i, sub in enumerate(self.intervals):
             s += "\n" + str(i) +"/" + sub.__str__() 
         return s
+
+    def plot_integrand(self):
+        theta =np.linspace(self.a, self.b, 1000)
+        f =np.array([self.f(xi) for xi in theta])
+        # ff = f /(np.sin(theta)**4*np.cos(theta))
+
+        plt.figure()
+        plt.plot(theta,f,"b.")
+        plt.figure()
+        plt.semilogy(theta,f,"b.")
+
+        plt.show()
+        # exit()
+
 
     def number_of_nodes(self):
         n = np.sum([len(quad_int.x_r) for quad_int in self.intervals])
@@ -75,10 +97,10 @@ class Integral():
             self.error_list.append(quad_int.error)
         self.error = np.sum(self.error_list)
 
-
     def adapt_intervals(self):
         # Determine the intervals based on previous error
         test_interval, test_tol = True, True
+        self.boundaries = []
         while test_interval and test_tol:
             self.nb_adaptations += 1
             if self.verbose:
@@ -94,25 +116,23 @@ class Integral():
             self.intervals = intervals
             self.update()
             # self.plot_polynomials()
-            self.plot_error_on_intervals()
+            # self.plot_error_on_intervals()
             
-            
-            
+
             # plt.show()
             # exit()
-            print(colored(f"I_r={self.I_r:.10E}","green"))
-            print(colored(f"error={self.error:.10E}", "yellow"))
+            # print(colored(f"I_r={self.I_r:.10E}","green"))
+            # print(colored(f"error={self.error:.10E}", "yellow"))
             # print(np.abs(self.error/self.I_r))
             # for quad_int in self.intervals:
             #     print(quad_int)
-
             
             test_interval = any ([quad_int.status == "pending" for quad_int in self.intervals])
             test_tol = np.abs(self.error/self.I_r) > self.tol_adapt
             
-        self.plot_polynomials()
-        self.plot_error_on_intervals()
-        plt.show()
+        # self.plot_polynomials()
+        # self.plot_error_on_intervals()
+        # plt.show()
         
         # for quad_int in self.intervals:
         #         print(quad_int)
@@ -124,35 +144,41 @@ class Integral():
                 if quad_int.status in ["converged", "adapted"]:
                     new_intervals.append(quad_int)
                 elif quad_int.status == "pending":
-                    # print(quad_int)
-                    # print(quad_int.x_r)
-                    # print("new")
+                    self.boundaries  = (quad_int.x_r[0], quad_int.x_r[-1])
                     for i in range(quad_int.reference_scheme.n_r-1):
                         new_int = Interval(quad_int.x_r[i], quad_int.x_r[i+1], CC_autoadaptive(), quad_int.f_r[i], quad_int.f_r[i+1],status="adapted")
                         new_intervals.append(new_int)
                         # print(new_int)
+                        
             self.intervals = new_intervals
             self.update()
-            # for quad_int in self.intervals:
-            #     print(quad_int)
+        # for quad_int in self.intervals:
+        #     print(quad_int)
         # plt.show()
-        # exit()
+
         
     def refine_intervals(self):
-        # Determine the intervals based on previous error
+
         test = True
         while test:
+            # plt.figure(33)
             self.nb_refinements += 1
             index_max = np.argmax(np.abs(self.error_list))
-            print(f"index_max={index_max}")
-            # print(f"I_c={integral.I_c}")
-            # print(colored(f"I_r={integral.I_r:.10E}","green"))
-            print(colored(f"reler={np.abs(self.error/self.I_r):.10E}", "yellow"))
+            x_0, x_1 = self.intervals[index_max].x_r[0], self.intervals[index_max].x_r[-1]
+            if self.verbose:
+                print(f"I_c={self.I_c}")
+                print(colored(f"I_r={self.I_r:.10E}","green"))
+                print(colored(f"reler={np.abs(self.error/self.I_r):.10E}", "yellow"))
+                self.plot_error_on_intervals()
+                self.plot_polynomials()
+                plt.show()
             self.intervals[index_max].refine_reference_scheme()
             self.update()
             test = np.abs(self.error/self.I_r) > self.tol_refine
-
-
+            if self.nb_refinements > 15:
+                test = False
+            if self.intervals[index_max].reference_scheme.order > 16:
+                test = False
 
     def refine(self):
         # Refine the interval with the largest error
@@ -176,25 +202,22 @@ class Integral():
         x = np.linspace(self.a, self.b, 200)
         # x = np.linspace(0.85, 1., 1000)
         f = [self.f(xi) for xi in x]
-        plt.semilogy(x,(f), "b.-")
+        plt.plot(x,f, "b.-")
         # plt.show()
         # exit()
-        # for quad_int in self.intervals:
-        #     quad_int.plot_polynomials(fig)
-        #     f_r = [self.f(xi) for xi in quad_int.x_r]
-        #     f_c = [self.f(xi) for xi in quad_int.x_c]
-        #     plt.stem(quad_int.x_r, f_r, "r")
-        #     plt.stem(quad_int.x_c, f_c, "y")
-        # for quad_int in self.intervals:            
-        #     if quad_int.status == "pending":
-        #         f_r = [self.f(xi) for xi in quad_int.x_r]
-        #         f_c = [self.f(xi) for xi in quad_int.x_c]
-        #         plt.stem(quad_int.x_r, f_r, "m")
-        #         plt.stem(quad_int.x_c, f_c, "g")
+        for quad_int in self.intervals:
+            quad_int.plot_polynomials(fig)
+            f_r = [self.f(xi) for xi in quad_int.x_r]
+            f_c = [self.f(xi) for xi in quad_int.x_c]
+            plt.stem(quad_int.x_r, f_r, "r")
+            plt.stem(quad_int.x_c, f_c, "y")
+        for quad_int in self.intervals:            
+            if quad_int.status == "pending":
+                f_r = [self.f(xi) for xi in quad_int.x_r]
+                f_c = [self.f(xi) for xi in quad_int.x_c]
+                plt.stem(quad_int.x_r, f_r, "m")
+                plt.stem(quad_int.x_c, f_c, "g")
 
-
-                
-                
         plt.title("Function and polynomial approximations")
 
     def plot_error_on_intervals(self):
@@ -232,8 +255,8 @@ class Integral():
         plt.title("Error function   ")
 
     def plot_grid(self):
-        plt.figure(30000000)
+        plt.figure(4)
         for i, interval in enumerate(self.intervals):
-            interval.plot_grid(self.nb_refinements)
+            interval.plot_grid(10*self.nb_adaptations+self.nb_refinements)
             
             

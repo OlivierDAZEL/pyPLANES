@@ -64,13 +64,13 @@ class DfPwProblem(PwProblem):
                 self.solve()
                 TAU[i,j] = self.result.tau[-1]*np.sin(theta)*np.cos(theta)
                 
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_surface(R, I, TAU)
-        # plt.figure()
-        # plt.contourf(R,I,np.abs(TAU))
-        # plt.colorbar()
-        # plt.show()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(R, I, TAU)
+        plt.figure()
+        plt.contourf(R,I,np.abs(TAU))
+        plt.colorbar()
+        plt.show()
 
     def resolution_kernel(self):
         """  Resolution of the problem """
@@ -78,31 +78,33 @@ class DfPwProblem(PwProblem):
             with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
                 mlkkklmk
         else:
-            tau = np.zeros(len(self.frequencies))
+            tau = [None] * len(self.frequencies)
+            neval = [None] * len(self.frequencies)
             D = 0.5 # Denominator in the TL 
-            tol = 1e-5
             for i, f in enumerate(self.frequencies):
-
+                self.neval = 0
                 self.f = f
+                self.result.f.append(self.f)
+                print(self.f)
                 def func(theta):
                     self.theta_d = theta*180/pi
                     self.update_frequency(2*np.pi*self.f)
                     self.create_linear_system(2*np.pi*self.f)
                     self.solve()
-                    return np.sin(theta)*np.cos(theta)*self.result.tau[-1]
+                    return np.sin(theta)*np.cos(theta)*self.result.tau[-1]/D
     
-                # def func(theta):
-                #     return theta
-    
-                scipy = integrate.quad(func, 0, pi/2,full_output=1)
-                Tau_scipy, infodict = scipy[0], scipy[2]
-                print(colored(f"I_scipy={Tau_scipy:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+                if self.DF_method == "scipy":
+                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=.01)
+                    tau[i] = Tau
+                    neval[i] = infodict['neval']
+                    if self.verbose: 
+                        print(colored(f"I_scipy={Tau_scipy:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+                elif self.DF_method == "quadlaum":
+                    Tau = self.diffuse_field_OD(func, tol)
+                # print(f"Tau     IN= {Tau}")
+                # print(-20*np.log10(Tau))
+                # exit()
 
-                Tau = self.diffuse_field_OD(func, tol)
-                print(f"Tau     IN= {Tau}")
-
-                exit()
-                tau[i] = Tau
                 self.result.R0 = []
                 self.result.T0 = []
                 self.result.Z_prime = []
@@ -114,7 +116,7 @@ class DfPwProblem(PwProblem):
     def resolution(self):
         """  Resolution of the problem """
         self.resolution_kernel()
-        self.result.tau = list(self.result.tau)
+        
         self.result.save(self.file_names, self.save_append)
 
     def compute_indicators(self):
@@ -148,50 +150,73 @@ class DfPwProblem(PwProblem):
             json_file.write("\n")
         
     def diffuse_field_OD(self, func, tol):
-        verbose = True
+        verbose = False
         # if verbose: 
         #     print("diffuse_field_OD")
         #     print("initialization with GK3-15 by default")
         integral = Integral(func)
-
-        # print(subdivision)
         integral.update()
+        integral.tol_adapt =1e-1
+        integral.adapt_intervals()
+        integral.refine_intervals()
         # print(f"I_c={integral.I_c}")
         # print(colored(f"I_r={integral.I_r:.10E}","green"))
         # print(colored(f"error={integral.error:.10E}", "yellow"))
 
-        integral.plot_polynomials()
-        integral.plot_error_on_intervals()
-        plt.show()
-        exit()
+        # # print("comp")
+        # comp_int = Integral(func, boundaries=[0]+list(integral.boundaries)+[pi/2])        
+        # comp_int.update()
+        # # print(f"CI_c={comp_int.I_c}")
+        # # print(colored(f"CI_r={comp_int.I_r:.10E}","green"))
+        # # print(colored(f"error={comp_int.error:.10E}", "yellow"))
+        # comp_int.refine_intervals()
+
         
-        integral.adapt_intervals()
+
+        Tau = integral.I_r
         
-        exit()
+        return Tau
+
+
+
+
+        # print(f"I_c={integral.I_c}")
+        # print(colored(f"I_r={integral.I_r:.10E}","green"))
+        # print(colored(f"error={integral.error:.10E}", "yellow"))
+
+        # plt.show()
+        # exit()
+
+
+        # integral.plot_polynomials()
+        # integral.plot_error_on_intervals()
         # plt.show()        
         
         # print(f"I_c={integral.I_c}")
         # print(colored(f"I_r={integral.I_r:.10E}","green"))
         # print(colored(f"error={integral.error:.10E}", "yellow"))
+        # integral.plot_polynomials()
+        # integral.plot_error_on_intervals()
         
+
+
+        
+
+
+
+        # exit()
         # integral.plot_polynomials()
         # integral.plot_error_on_intervals()
 
+
+        # print(f"I_c={integral.I_c}")
+        # print(colored(f"I_r={integral.I_r:.10E}","green"))
+        # print(colored(f"error={integral.error:.10E}", "yellow"))
         
-        integral.refine_intervals()
-
-        # integral.plot_polynomials()
-        # integral.plot_error_on_intervals()
+        # # integral.plot_grid()
+        # plt.show()      
 
 
-        print(f"I_c={integral.I_c}")
-        print(colored(f"I_r={integral.I_r:.10E}","green"))
-        print(colored(f"error={integral.error:.10E}", "yellow"))
-        
-        # integral.plot_grid()
-        plt.show()      
-
-        exit()
 
         # nb_it = 0
         # for i in range(1):
@@ -231,8 +256,6 @@ class DfPwProblem(PwProblem):
         
         # plt.show()
         
-        Tau = integral.I_r
-        
-        return Tau
+
 
 

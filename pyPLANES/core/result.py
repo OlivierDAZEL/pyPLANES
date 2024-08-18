@@ -153,11 +153,11 @@ class Result():
                             for i_w in range(nb_w):
                                 d["real(k)[{}]".format(i_w)].append(np.real(self.k[i_k][i_w]))
                                 d["imag(k)[{}]".format(i_w)].append(np.imag(self.k[i_k][i_w]))
-                    else: 
+                    else:
                         d[m] = self.__dict__[m]
-            else: 
+            else:
                 d[m] = self.__dict__[m]
-
+        print(d.keys())
         with open(file+".json", append_file) as json_file:
             json.dump(d, json_file)
             json_file.write("\n")

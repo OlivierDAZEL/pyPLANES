@@ -132,9 +132,7 @@ class CC_autoadaptive(ReferenceScheme):
         d_r = np.vstack([np.zeros((1,self.n_r)), np.diag([1/i for i in range(1, self.n_r+1)])])
         # Coefficients of the antiderivative polynomial 
         self.matrix_Poly_r = np.dot(d_r, self.matrix_poly_r)
-        
-        
-        
+
 def ReferenceSchemes(typ):
     if typ == "CC":
         d =dict()

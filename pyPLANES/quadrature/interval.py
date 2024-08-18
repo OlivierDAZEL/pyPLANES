@@ -116,7 +116,7 @@ class Interval():
 
     def split(self,refined_schemes):
         index_max = np.argmax(np.abs(self.error_list))
-        print(f"Splitting interval {index_max} on {len(self.error_list)-1}")
+        # print(f"Splitting interval {index_max} on {len(self.error_list)-1}")
         refined_scheme = refined_schemes["3"]
         
         if index_max == 0:
@@ -263,12 +263,17 @@ class Interval():
     def adapt(self):
         
         index_max = np.argmax(self.repartition_error)
-        print(index_max)
+        # print(index_max)
         subintervals = []
         if self.repartition_error[index_max] > 0.6: # The error is on a single subinterval
             if index_max ==0:
-                jkl
-                IOError("Error on the first interval")
+                indices = slice(2*index_max, 2*index_max+3)
+                x, f = self.x_r[indices], self.f_r[indices]
+                subintervals.append(Interval(x[0], x[2], self.reference_scheme))
+                for i in range(index_max+1, self.reference_scheme.n_c-1):
+                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
+                
+                
             elif index_max == len(self.error_list)-1:
                 for i in range(index_max):
                     subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
@@ -296,8 +301,8 @@ class Interval():
                     # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
             
             
-        for inter in subintervals:
-            print(inter)
+        # for inter in subintervals:
+        #     print(inter)
         return subintervals
 
     def refine_reference_scheme(self):
