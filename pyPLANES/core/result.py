@@ -103,6 +103,12 @@ class Result():
                     raise NameError("No imag(T0) field")
             if "TL" in keys:
                 self.TL = d["TL"]
+            if "tau" in keys:
+                self.tau = np.array(d["tau"])
+            if "neval" in keys:
+                self.neval = np.array(d["neval"])
+            if "final_error" in keys:
+                self.final_error = np.array(d["final_error"])
             if "real(k)[0]" in keys:
                 # Determination of the number of waves
                 nb_w = 1
@@ -138,6 +144,7 @@ class Result():
                         d["real(T0)"] = np.real(self.T0).tolist()
                         d["imag(T0)"] = np.imag(self.T0).tolist()
                     elif m == "tau":
+                        d["tau"] = self.tau
                         d["TL"] = (-10*np.log10(self.tau)).tolist()
                     elif m == "Z_prime":
                         d["real(Z_prime)"] = np.real(self.Z_prime).tolist()
@@ -157,7 +164,6 @@ class Result():
                         d[m] = self.__dict__[m]
             else:
                 d[m] = self.__dict__[m]
-        print(d.keys())
         with open(file+".json", append_file) as json_file:
             json.dump(d, json_file)
             json_file.write("\n")

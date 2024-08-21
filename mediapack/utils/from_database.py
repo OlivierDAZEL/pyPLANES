@@ -33,7 +33,7 @@ def from_database(db, key,force=None):
 
     One may set the optional argument 'force' to a medium type to force loading this one.
     """
-    print(key)
+
     d = db[key]
 
     if d.get('medium_type') is None and force is None:

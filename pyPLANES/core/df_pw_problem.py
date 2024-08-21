@@ -24,17 +24,20 @@
 import numpy as np
 import numpy.linalg as LA
 import json
-
+from termcolor import colored
 from numpy import pi
 import matplotlib.pyplot as plt
 from mediapack import Air, Fluid
 from alive_progress import alive_bar
 from scipy import integrate
+import chebpy as chebpy
 
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.utils.io import reference_frequencies, reference_curve, reference_C, reference_C_tr
-# from pyPLANES.utils.gauss_kronrod import gauss_kronrod
 from scipy.interpolate import lagrange
+from pyPLANES.quadrature.integral import Integral
+
+
 
 class DfPwProblem(PwProblem):
     """
@@ -42,55 +45,90 @@ class DfPwProblem(PwProblem):
     """
     def __init__(self, **kwargs):
         PwProblem.__init__(self, **kwargs)
+        self.neval = 0# number of evaluation of the function
+        self.DF_method = kwargs.get("DF_method", "scipy")
+        self.tol_adapt =  kwargs.get("tol_adapt", 1e-1)
+        self.tol_refine = kwargs.get("tol_refine", 1e-2)
+        self.verbose = kwargs.get("verbose", False)
+        self.epsrel = kwargs.get("epsrel", 1.49e-8)
+        self.epsabs = kwargs.get("epsabs", 1.49e-8)
+        
 
     def resolution_kernel(self):
         """  Resolution of the problem """
-        tau = np.zeros(len(self.frequencies))
-        D = 0.5 # Denominator in the TL 
-        neval = []
         if self.alive_bar:
             with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
-                for i, f in enumerate(self.frequencies):
-                        bar()
-                        self.f = f
-                        def func(theta):
-                            self.theta_d = theta*180/pi
-                            self.solve()
-                            return np.sin(theta)*np.cos(theta)*self.result.tau[-1]                    
-                        Tau, abserror, infodict,  = integrate.quad(func, 0, pi/2, full_output=1)
-                        neval.append(infodict["neval"])
-                        Tau /= D
-                        tau[i] = Tau
-                        self.result.R0 = []
-                        self.result.T0 = []
-                        self.result.Z_prime = []
-                        self.result.R = []
-                        self.result.T = []
-                        self.result.abs =[]
-                self.result.tau = tau
+                mlkkklmk
         else:
+            tau = [None] * len(self.frequencies)
+            neval = [None] * len(self.frequencies)
+            final_error = [None] * len(self.frequencies)
+            D = 0.5 # Denominator in the TL 
             for i, f in enumerate(self.frequencies):
-                    self.f = f
-                    def func(theta):
-                        self.theta_d = theta*180/pi
-                        self.solve()
-                        return np.sin(theta)*np.cos(theta)*self.result.tau[-1]                    
-                    Tau, abserror, infodict,  = integrate.quad(func, 0, pi/2, full_output=1)
-                    neval.append(infodict["neval"])
-                    Tau /= D
+                self.neval = 0
+                self.f = f
+                self.result.f.append(self.f)
+                def func(theta):
+                    self.theta_d = theta*180/pi
+                    self.update_frequency(2*np.pi*self.f)
+                    self.create_linear_system(2*np.pi*self.f)
+                    self.solve()
+                    return np.sin(theta)*np.cos(theta)*self.result.tau[-1]/D
+    
+                if self.DF_method == "scipy":
+                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel, epsabs=self.epsabs)
                     tau[i] = Tau
-                    self.result.R0 = []
-                    self.result.T0 = []
-                    self.result.Z_prime = []
-                    self.result.R = []
-                    self.result.T = []
-                    self.result.abs =[]
+                    neval[i] = infodict['neval']
+                    final_error[i] = abserror
+                    if self.verbose: 
+                        print(colored(f"I_scipy={Tau_scipy:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+                elif self.DF_method == "chebpy":
+                    chebpy.chebfun(lambda theta: func(theta), [0, 10])
+                    hjk
+                
+                elif self.DF_method == "quadLAUM":
+                    # To be removed at the end                    
+                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.tol_refine)
+                    print(colored(f"I_scipy={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+
+                    integral = Integral(func, epsrel=self.epsrel, epsabs=self.epsabs)
+
+                    if not integral.test_convergence():
+                        integral.determine_intervals()
+                        
+                        exit()
+                        integral.refine()
+
+                    print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
+                    print(integral.I_c)
+                    integral.plot_error_on_intervals()
+                    integral.plot_polynomials()
+                    plt.show()
+                    exit()
+                    tau[i], neval[i] = integral.I_r, integral.neval
+                elif self.DF_method == "Interval_GK":
+                    integral = Integral(func, 0, np.pi/2,typ="GK",order=10)
+                    tau[i], neval[i] = integral.I_r, integral.neval
+
+                        
+                    
+
+
+
+                self.result.R0 = []
+                self.result.T0 = []
+                self.result.Z_prime = []
+                self.result.R = []
+                self.result.T = []
+                self.result.abs =[]
             self.result.tau = tau
+            self.result.neval = neval
+            self.result.final_error = final_error
 
     def resolution(self):
         """  Resolution of the problem """
         self.resolution_kernel()
-        self.result.tau = list(self.result.tau)
+        
         self.result.save(self.file_names, self.save_append)
 
     def compute_indicators(self):
@@ -123,7 +161,88 @@ class DfPwProblem(PwProblem):
             json.dump(d0, json_file)
             json_file.write("\n")
         
-        
 
+
+    def map_tau(self):
+        """  Resolution of the problem """
+        self.f = self.frequencies[0]
+        self.update_frequency(2*np.pi*self.f)
+        n_r, n_i = 80, 81
+        theta_r = np.linspace(0, np.pi/2-0.00001, n_r)
+        theta_i = 3*np.linspace(-np.pi/4, np.pi/4, n_i)
+        R, I = np.meshgrid(theta_i, theta_r)
+        TAU = np.zeros((n_r,n_i), dtype=complex)
+        
+        for i in range(n_r):
+            for j in range(n_i):
+                theta = (R[i,j]+I[i,j])
+                self.theta_d = theta*180/pi
+                self.update_frequency(2*np.pi*self.f)
+                self.create_linear_system(2*np.pi*self.f)
+                self.solve()
+                TAU[i,j] = self.result.tau[-1]*np.sin(theta)*np.cos(theta)
+                
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(R, I, TAU)
+        plt.figure()
+        plt.contourf(R,I,np.abs(TAU))
+        plt.colorbar()
+        plt.show()
+
+
+    def plot_tau(self,f, **kwargs):
+        """  Resolution of the problem """
+        self.f = f
+        self.update_frequency(2*np.pi*self.f)
+        
+        rho_0 = self.layers[0].medium.rho
+        c_0 = self.layers[0].medium.c
+        rho = self.layers[1].medium.rho 
+        E = np.real(self.layers[1].medium.E)
+        nu = self.layers[1].medium.nu 
+        h = self.layers[1].d
+
+
+        D = E*h**3/(12*(1-nu**2))
+        f_c = c_0**2*np.sqrt(rho*h/D)/(2*np.pi)
+        s2 = c_0**2*np.sqrt(rho*h/D)/(2*np.pi*self.f)
+        if s2<1:
+            theta_c = np.arcsin(np.sqrt(s2))
+        else:
+            theta_c = None
+            
+
+        
+        
+        
+        
+        n_r = 100
+        tf = kwargs.get("tf", 10)
+        theta_list = np.linspace(0, np.pi/2-0.00001, n_r)
+        tau_list = []        
+        for theta in theta_list:
+                self.theta_d = theta*180/pi
+                self.update_frequency(2*np.pi*self.f)
+                self.create_linear_system(2*np.pi*self.f)
+                self.solve()
+                tau_list.append(self.result.tau[-1]*np.sin(theta)*np.cos(theta))
+
+
+
+
+                
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+        ax.set_xlabel(r"$\theta$", fontsize=tf)
+        ax.set_ylabel(r"$f(\theta)$", fontsize=tf)
+        plt.xticks(fontsize=tf)
+        plt.yticks(fontsize=tf)
+        plt.plot(theta_list, tau_list,color=[0.005350,0.121552,0.403926])
+
+        if theta_c is not None:
+            plt.plot([theta_c, theta_c], [0, 1.1*np.max(tau_list)],"r--")
+        
 
 

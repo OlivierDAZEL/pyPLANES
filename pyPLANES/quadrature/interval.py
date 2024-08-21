@@ -46,12 +46,14 @@ class Interval():
         if reference_scheme is None:
             raise NameError("Reference scheme is missing")
         self.typ = reference_scheme.typ
-        
+        self.neval = 0
         self.x_c = self.A+(self.B-self.A)*(self.reference_scheme.xi_c+1)/2.
         self.x_r = self.A+(self.B-self.A)*(self.reference_scheme.xi_r+1)/2.
+        self.f = np.array([None]*len(self.x_r))
 
-        self.matrix_Poly_c = ((self.B-self.A)/2)*self.reference_scheme.matrix_Poly_c
-        self.matrix_Poly_r = ((self.B-self.A)/2)*self.reference_scheme.matrix_Poly_r
+        
+        self.P_c = ((self.B-self.A)/2)*self.reference_scheme.P_c
+        self.P_r = ((self.B-self.A)/2)*self.reference_scheme.P_r
 
     def __str__(self):
         s = f"[{self.a:.3E} ; {self.b:.3E}]" + colored (f"{self.status} ", "green") + self.reference_scheme.__str__() 
@@ -59,46 +61,41 @@ class Interval():
         return s
 
     def update_f_values(self, func):
-        self.f_r = np.array([func(x) for x in self.x_r])
-        self.f_c = self.f_r[::2]
+        # self.f_r = np.array([func(x) for x in self.x_r])
+        for i,f in enumerate(self.f):
+            if f is None:
+                self.f[i] = func(self.x_r[i])
+                self.neval += 1
+        # self.f_c = self.f_r[::2]
         
     def update(self, func):
         self.update_f_values(func)
+        
+        
         # self.coeff_c = (self.matrix_poly_c@self.f_c)
         # self.coeff_r = (self.matrix_poly_r@self.f_r)
         
         # zeros are added to the coefficients of the coarse scheme
-        self.coeff_c = np.hstack([self.matrix_Poly_c@self.f_c, [0]*(self.reference_scheme.n_r-self.reference_scheme.n_c)])
-        self.coeff_r = (self.matrix_Poly_r@self.f_r)
+        self.coeff_c = self.P_c@self.f
+        self.coeff_r = self.P_r@self.f
         
         # Computation of the integrals
-        # print(self)
-        # print(self.reference_scheme.order)
-        # print((self.matrix_Poly_c).shape)
-        # print((self.matrix_Poly_c@self.f_c).shape)
-        # print(self.coeff_c.shape)
-        # print(self.coeff_r.shape)
-        # print((self.reference_scheme.xib_powers-self.reference_scheme.xia_powers).shape)
         self.I_c = self.coeff_c@(self.reference_scheme.xib_powers-self.reference_scheme.xia_powers)
         self.I_r = self.coeff_r@(self.reference_scheme.xib_powers-self.reference_scheme.xia_powers)
         # self.error = np.abs((self.I_c-self.I_r)/self.I_r)
         
         # Computation of the errors
-        if self.typ == "GK": 
-            x_c = np.hstack([self.a, self.x_c, self.b])
-        elif self.typ in ["CC", "PV"]:
-            x_c = self.x_c
-        else:
-            raise NameError("Unknown quadrature scheme")
+        # if self.typ == "GK": 
+        #     x_c = np.hstack([self.a, self.x_c, self.b])
+        # elif self.typ in ["CC", "PV"]:
+        #     x_c = self.x_c
+        # else:
+        #     raise NameError("Unknown quadrature scheme")
 
-        if self.typ in ["CC", "PV"]:
-            values_list = np.array([self.coeff_r@self.reference_scheme.xi_powers[i+1]- self.coeff_r@self.reference_scheme.xi_powers[i] for i in range(self.reference_scheme.n_c-1)])
+        if self.typ in ["CC", "GK", "PV"]:
+            # values_list = np.array([self.coeff_r@self.reference_scheme.xi_powers[i+1]- self.coeff_r@self.reference_scheme.xi_powers[i] for i in range(self.reference_scheme.n_c-1)])
             self.error_list = np.array([ (self.coeff_c@self.reference_scheme.xi_powers[i+1]-self.coeff_r@self.reference_scheme.xi_powers[i+1])-(self.coeff_c@self.reference_scheme.xi_powers[i]-self.coeff_r@self.reference_scheme.xi_powers[i])for i in range(self.reference_scheme.n_c-1)])
-            
             self.error = np.sum(self.error_list)
-
-            self.relative_error_list = np.abs(self.error_list/np.abs(values_list))
-            
             abs_error = np.abs(self.error_list)
             self.repartition_error = abs_error/np.sum(abs_error)
 
@@ -110,7 +107,7 @@ class Interval():
         
         # print(f"Error on interval [{self.a}, {self.b}] : {self.error}")
         
-        
+
         if np.abs(self.error/self.I_c) < self.RelTol:
             self.is_converged = True
 
@@ -207,8 +204,8 @@ class Interval():
     def plot_polynomials(self, fig=None):
         x_plot =np.linspace(self.A, self.B, 500)
         xi_plot =np.linspace(-1, 1, 500)
-        c_c = (self.reference_scheme.matrix_poly_c@self.f_c)
-        c_r = (self.reference_scheme.matrix_poly_r@self.f_r)
+        c_c = (self.reference_scheme.Vinverse_c@self.f)
+        c_r = (self.reference_scheme.Vinverse_r@self.f)
         c_plot = (np.array([np.sum([c_c[i]*xi**i for i in range(self.reference_scheme.n_c)]) for xi in xi_plot]))
         r_plot = (np.array([np.sum([c_r[i]*xi**i for i in range(self.reference_scheme.n_r)]) for xi in xi_plot]))
         plt.plot(x_plot,c_plot,"g")
@@ -268,36 +265,36 @@ class Interval():
         if self.repartition_error[index_max] > 0.6: # The error is on a single subinterval
             if index_max ==0:
                 indices = slice(2*index_max, 2*index_max+3)
-                x, f = self.x_r[indices], self.f_r[indices]
+                x, f = self.x_r[indices], self.f[indices]
                 subintervals.append(Interval(x[0], x[2], self.reference_scheme))
                 for i in range(index_max+1, self.reference_scheme.n_c-1):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
+                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
                 
                 
             elif index_max == len(self.error_list)-1:
                 for i in range(index_max):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
+                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
                     # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
                 indices = slice(2*index_max, 2*index_max+3)
-                x, f = self.x_r[indices], self.f_r[indices]
+                x, f = self.x_r[indices], self.f[indices]
                 subintervals.append(Interval(x[0], x[2], self.reference_scheme))
             else: #error on an intermediate interval
                 for i in range(index_max):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
+                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
                     # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
 
                 indices = slice(2*index_max, 2*index_max+3)
-                x, f = self.x_r[indices], self.f_r[indices]
+                x, f = self.x_r[indices], self.f[indices]
                 subintervals.append(Interval(x[0], x[2], self.reference_scheme))
                 # list_subintervals.append(Interval(x[1], x[2], reference_scheme))
                 
                 
                 for i in range(index_max+1, self.reference_scheme.n_c-1):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
+                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
                     # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
         else:
             for i in range(self.reference_scheme.n_c-1):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i], self.f_r[2*i+2],status="adapted"))
+                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
                     # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
             
             
@@ -307,8 +304,7 @@ class Interval():
 
     def refine_reference_scheme(self):
         if isinstance(self.reference_scheme, CC_autoadaptive):
-            self.reference_scheme.refine()
             self.x_c = self.A+(self.B-self.A)*(self.reference_scheme.xi_c+1)/2.
             self.x_r = self.A+(self.B-self.A)*(self.reference_scheme.xi_r+1)/2.
-            self.matrix_Poly_c = ((self.B-self.A)/2)*self.reference_scheme.matrix_Poly_c
-            self.matrix_Poly_r = ((self.B-self.A)/2)*self.reference_scheme.matrix_Poly_r
+            self.P_c = ((self.B-self.A)/2)*self.reference_scheme.P_c
+            self.P_r = ((self.B-self.A)/2)*self.reference_scheme.P_r

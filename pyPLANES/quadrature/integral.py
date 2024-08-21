@@ -29,24 +29,31 @@ from scipy.interpolate import lagrange
 from scipy import integrate
 # from .gauss_kronrod import gauss_kronrod, import_gauss_kronrod, 
 from .interval import Interval
-from .reference_scheme import ReferenceSchemes, CC_autoadaptive
+from .reference_scheme import ReferenceSchemes, ReferenceScheme, CC_autoadaptive
 from termcolor import colored
 
 
 
 class Integral(): 
-    def __init__(self, f, a=0, b=pi/2, typ="CC", **kwargs):
-
-
+    def __init__(self, f, a=0, b=pi/2, **kwargs):
         self.f = f
         self.a = a 
         self.b = b
-        self.typ = typ
-        self.reference_schemes = ReferenceSchemes(typ)
-        self.reference_scheme_for_adaptation = self.reference_schemes["3"]
+        self.typ = kwargs.get("typ", "quadLAUM")
+        self.order = kwargs.get("order", None)
+        self.adaptation = kwargs.get("adaptation", True)
+        
+        
+        if self.typ in ["GK", "CC"]:
+            if self.order is not None:
+                self.initial_reference_scheme = ReferenceScheme(self.typ, order=self.order)
+        else:    
+         self.initial_reference_scheme = kwargs.get("initial_reference_scheme", ReferenceScheme("CC", order=5))
+        # self.reference_schemes = ReferenceSchemes(self.typ)
+        # self.reference_scheme_for_adaptation = self.reference_schemes["3"]
         boundaries = kwargs.get("boundaries", False)
         if boundaries is False:
-            self.intervals = [Interval(self.a, self.b, self.reference_scheme_for_adaptation)]
+            self.intervals = [Interval(self.a, self.b, self.initial_reference_scheme)]
         else:
             self.intervals = []
             for i, x in enumerate(boundaries[:-1]):
@@ -54,14 +61,23 @@ class Integral():
             for quad_int in self.intervals:
                 quad_int.status = "adapted"
                 
-            
         self.nb_refinements, self.nb_adaptations = 0, 0
         self.error_list = []
-        self.I_c, self.I_r, self.error = None, None, None
+        self.I_c, self.I_r, self.error, self.neval = None, None, None, 0
         
-        self.tol_adapt =  kwargs.get("tol_adapt", 1e-1)
-        self.tol_refine = kwargs.get("tol_refine", 1e-2)
-        self.verbose = kwargs.get("verbose", False)        
+        self.epsrel = kwargs.get("epsrel", 1.49e-8)
+        self.epsabs = kwargs.get("epsabs", 1.49e-8)
+        self.epsadapt = kwargs.get("epsadapt", 10)
+
+        
+        self.verbose = kwargs.get("verbose", False)
+        self.update()
+        
+    def test_convergence(self):
+        print(np.abs((self.I_c-self.I_r)/self.I_c))
+        return np.abs((self.I_c-self.I_r)/self.I_c) < self.tol_refine
+        
+        
         
     def __str__(self):
         s = f"Integral at iteration #{self.nb_refinements}"
@@ -82,25 +98,33 @@ class Integral():
         plt.show()
         # exit()
 
-
     def number_of_nodes(self):
         n = np.sum([len(quad_int.x_r) for quad_int in self.intervals])
         return n-len(self.intervals)+1
         
     def update(self):
+        """
+            update the values of I_r, I_c, and the error
+        """
         # Initialisation
         self.I_c, self.I_r, self.error, self.error_list = 0. , 0., 0, []
         for i_interval, quad_int in enumerate(self.intervals):
             quad_int.update(self.f)
+            self.neval += quad_int.neval
             self.I_c += quad_int.I_c
             self.I_r += quad_int.I_r
             self.error_list.append(quad_int.error)
         self.error = np.sum(self.error_list)
+        
+        
 
-    def adapt_intervals(self):
+    def determine_intervals(self):
         # Determine the intervals based on previous error
+
         test_interval, test_tol = True, True
         self.boundaries = []
+        self.plot_polynomials()
+        self.plot_error_on_intervals()
         while test_interval and test_tol:
             self.nb_adaptations += 1
             if self.verbose:
@@ -115,9 +139,10 @@ class Integral():
                     intervals.append(quad_int)
             self.intervals = intervals
             self.update()
-            # self.plot_polynomials()
-            # self.plot_error_on_intervals()
-            
+            self.plot_polynomials()
+            self.plot_error_on_intervals()
+            plt.show()
+            exit()
 
             # plt.show()
             # exit()
@@ -146,7 +171,7 @@ class Integral():
                 elif quad_int.status == "pending":
                     self.boundaries  = (quad_int.x_r[0], quad_int.x_r[-1])
                     for i in range(quad_int.reference_scheme.n_r-1):
-                        new_int = Interval(quad_int.x_r[i], quad_int.x_r[i+1], CC_autoadaptive(), quad_int.f_r[i], quad_int.f_r[i+1],status="adapted")
+                        new_int = Interval(quad_int.x_r[i], quad_int.x_r[i+1], CC_autoadaptive(), quad_int.f[i], quad_int.f[i+1],status="adapted")
                         new_intervals.append(new_int)
                         # print(new_int)
                         
@@ -156,8 +181,7 @@ class Integral():
         #     print(quad_int)
         # plt.show()
 
-        
-    def refine_intervals(self):
+    def refine(self):
 
         test = True
         while test:
@@ -180,7 +204,7 @@ class Integral():
             if self.intervals[index_max].reference_scheme.order > 16:
                 test = False
 
-    def refine(self):
+    def refine_old(self):
         # Refine the interval with the largest error
         self.nb_refinements += 1
         error = 0.
@@ -239,10 +263,10 @@ class Integral():
         # fig = plt.figure(4000+self.nb_refinements)
         # ax = fig.add_subplot(111)
         # ax.set_xlim(left=self.a, right=self.b)
-        error = []
-        for quad_int in self.intervals:
-            # quad_int.plot_relative_error_on_intervals(ax)
-            error.extend(quad_int.relative_error_list)
+        # error = []
+        # for quad_int in self.intervals:
+        #     # quad_int.plot_relative_error_on_intervals(ax)
+        #     error.extend(quad_int.relative_error_list)
         # error  = np.max(np.abs(error))
         # ax.set_ylim(bottom=0, top=error)
         # plt.title("Relative error function on intervals")    
