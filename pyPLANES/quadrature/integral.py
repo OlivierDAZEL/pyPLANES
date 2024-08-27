@@ -35,29 +35,29 @@ from termcolor import colored
 
 
 class Integral(): 
-    def __init__(self, f, a=0, b=pi/2, **kwargs):
-        self.f = f
+    def __init__(self, func, a=0, b=pi/2, **kwargs):
+        self.func = func
         self.a = a 
         self.b = b
         self.typ = kwargs.get("typ", "quadLAUM")
         self.order = kwargs.get("order", None)
-        self.adaptation = kwargs.get("adaptation", True)
+        # self.adaptation = kwargs.get("adaptation", True)
         
-        
-        if self.typ in ["GK", "CC"]:
+        if self.typ in ["GK", "CC", "GL"]:
             if self.order is not None:
                 self.initial_reference_scheme = ReferenceScheme(self.typ, order=self.order)
         else:    
-         self.initial_reference_scheme = kwargs.get("initial_reference_scheme", ReferenceScheme("CC", order=5))
+            self.initial_reference_scheme = ReferenceScheme("GK", order=10)
+            #self.initial_reference_scheme = kwargs.get("initial_reference_scheme", ReferenceScheme("CC", order=5))
         # self.reference_schemes = ReferenceSchemes(self.typ)
         # self.reference_scheme_for_adaptation = self.reference_schemes["3"]
         boundaries = kwargs.get("boundaries", False)
         if boundaries is False:
-            self.intervals = [Interval(self.a, self.b, self.initial_reference_scheme)]
+            self.intervals = [Interval(self.func, self.a, self.b, self.initial_reference_scheme)]
         else:
             self.intervals = []
             for i, x in enumerate(boundaries[:-1]):
-                self.intervals.append(Interval(x, boundaries[i+1], CC_autoadaptive()))
+                self.intervals.append(Interval(self.f, x, boundaries[i+1], CC_autoadaptive()))
             for quad_int in self.intervals:
                 quad_int.status = "adapted"
                 
@@ -65,25 +65,26 @@ class Integral():
         self.error_list = []
         self.I_c, self.I_r, self.error, self.neval = None, None, None, 0
         
-        self.epsrel = kwargs.get("epsrel", 1.49e-8)
-        self.epsabs = kwargs.get("epsabs", 1.49e-8)
+        self.epsrel = kwargs.get("epsrel", 1e-2)
+        self.epsabs = kwargs.get("epsabs", 0)
         self.epsadapt = kwargs.get("epsadapt", 10)
 
         
         self.verbose = kwargs.get("verbose", False)
         self.update()
+
+    def __str__(self):
+         return colored(f"I_r={self.I_r:.10E}","green") + " with " + colored(f"{self.neval}", "red") + " evaluations" + f" // error ={np.abs(self.error/self.I_r):.3e}"
+
         
     def test_convergence(self):
-        print(np.abs((self.I_c-self.I_r)/self.I_c))
-        return np.abs((self.I_c-self.I_r)/self.I_c) < self.tol_refine
+        return np.abs((self.I_c-self.I_r)/self.I_c) < self.epsrel
         
-        
-        
-    def __str__(self):
-        s = f"Integral at iteration #{self.nb_refinements}"
-        for i, sub in enumerate(self.intervals):
-            s += "\n" + str(i) +"/" + sub.__str__() 
-        return s
+    # def __str__(self):
+    #     s = f"Integral at iteration #{self.nb_refinements}"
+    #     for i, sub in enumerate(self.intervals):
+    #         s += "\n" + str(i) +"/" + sub.__str__() 
+    #     return s
 
     def plot_integrand(self):
         theta =np.linspace(self.a, self.b, 1000)
@@ -109,22 +110,46 @@ class Integral():
         # Initialisation
         self.I_c, self.I_r, self.error, self.error_list = 0. , 0., 0, []
         for i_interval, quad_int in enumerate(self.intervals):
-            quad_int.update(self.f)
+            quad_int.update()
             self.neval += quad_int.neval
             self.I_c += quad_int.I_c
             self.I_r += quad_int.I_r
             self.error_list.append(quad_int.error)
         self.error = np.sum(self.error_list)
         
+
+    def step_1(self):
         
+        # print(f"Adaptation #{self.nb_adaptations}")
+        for ii in range(3):
+            self.nb_adaptations += 1
+            intervals = []
+            for i, quad_int in enumerate(self.intervals):
+                if quad_int.status != "converged":
+                    intervals.extend(quad_int.step_1())
+                else:
+                    intervals.append(quad_int)
+            self.intervals = intervals
+            self.update()
+            
+            self.plot_error_on_intervals()
+            self.plot_polynomials()
+            for quad_int in self.intervals:
+                print(quad_int)            
+            print(colored(f"I      ={self.I_r:.10E}","green") + " with " + colored(f"{self.neval}", "red") + " evaluations")
+
+
+        
+        
+        
+        
+
 
     def determine_intervals(self):
         # Determine the intervals based on previous error
 
         test_interval, test_tol = True, True
         self.boundaries = []
-        self.plot_polynomials()
-        self.plot_error_on_intervals()
         while test_interval and test_tol:
             self.nb_adaptations += 1
             if self.verbose:
@@ -225,41 +250,43 @@ class Integral():
         fig = plt.figure(100000+100*self.nb_adaptations+self.nb_refinements)
         x = np.linspace(self.a, self.b, 200)
         # x = np.linspace(0.85, 1., 1000)
-        f = [self.f(xi) for xi in x]
-        plt.plot(x,f, "b.-")
+        f = [self.func(xi) for xi in x]
+        plt.plot(x,f, "m")
         # plt.show()
         # exit()
         for quad_int in self.intervals:
             quad_int.plot_polynomials(fig)
-            f_r = [self.f(xi) for xi in quad_int.x_r]
-            f_c = [self.f(xi) for xi in quad_int.x_c]
+            f_r = [self.func(xi) for xi in quad_int.x_r]
+            f_c = [self.func(xi) for xi in quad_int.x_c]
             plt.stem(quad_int.x_r, f_r, "r")
-            plt.stem(quad_int.x_c, f_c, "y")
-        for quad_int in self.intervals:            
-            if quad_int.status == "pending":
-                f_r = [self.f(xi) for xi in quad_int.x_r]
-                f_c = [self.f(xi) for xi in quad_int.x_c]
-                plt.stem(quad_int.x_r, f_r, "m")
-                plt.stem(quad_int.x_c, f_c, "g")
+            plt.stem(quad_int.x_c, f_c, "b")
+        # for quad_int in self.intervals:            
+        #     if quad_int.status == "pending":
+        #         f_r = [self.func(xi) for xi in quad_int.x_r]
+        #         f_c = [self.func(xi) for xi in quad_int.x_c]
+        #         plt.stem(quad_int.x_r, f_r, "m")
+        #         plt.stem(quad_int.x_c, f_c, "g")
 
         plt.title("Function and polynomial approximations")
 
-    def plot_error_on_intervals(self):
+    def plot_error_on_intervals(self, return_ax=False):
         fig = plt.figure(200000+100*self.nb_adaptations+self.nb_refinements)
         ax = fig.add_subplot(111)
-        ax.set_xlim(left=self.a, right=self.b)
+        # ax.set_xlim(left=self.a, right=self.b)
         error = []
         for quad_int in self.intervals:
             quad_int.plot_error_on_intervals(ax)
-            error.extend(quad_int.error_list)
+            # error.extend(quad_int.error_list)
         # error  = np.max(np.abs(error))
         
-        for inter in self.intervals:
-            inter.plot_grid(1.0)
+        # for inter in self.intervals:
+        #     inter.plot_grid(1.0)
         
-        ax.set_ylim(bottom=0, top=1.1)
+        # ax.set_ylim(bottom=0, top=1.1)
         plt.title("Repartition of the error function on intervals")
-    
+
+        if return_ax:
+            return fig, ax
         # fig = plt.figure(4000+self.nb_refinements)
         # ax = fig.add_subplot(111)
         # ax.set_xlim(left=self.a, right=self.b)

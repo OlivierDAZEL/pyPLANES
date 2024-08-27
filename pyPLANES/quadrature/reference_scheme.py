@@ -40,7 +40,8 @@ class ReferenceScheme():
             self.xi_r = np.cos([np.pi*k/(2*self.order) for k in range(2*self.order+1)])[::-1]
             self.w_r = self.w_c = None
             self.xi_c_with_boundaries =  self.xi_c
-            self.indices_c = np.array([i for i in range(0, 2*self.order+1, 2)])
+            self.xi_r_with_boundaries =  self.xi_r
+            # self.indices_c = np.array([i for i in range(0, 2*self.order+1, 2)])
 
         elif self.typ == "GK":
             self.order = kwargs.get("order",2)
@@ -49,16 +50,19 @@ class ReferenceScheme():
             self.xi_c, self.w_c = np.array(sc["xi_c"]), np.array(sc["w_c"])
             self.xi_r, self.w_r = np.array(sc["xi_r"]), np.array(sc["w_r"])
             self.xi_c_with_boundaries = np.hstack([-1., self.xi_c, 1.])
-            self.indices_c = np.array([i for i in range(0, 2*self.order+1, 2)])
+            self.xi_r_with_boundaries = np.hstack([-1., self.xi_r, 1.])
+            # self.indices_c = np.array([i for i in range(0, 2*self.order+1, 2)])
 
         elif self.typ == "PV":
+            self.order = None
             self.x = kwargs.get("x")
             self.f = kwargs.get("f")
             a, b = self.x[0], self.x[-1]
             self.xi_r = -1 + 2*(self.x-a)/(b-a)
             self.xi_c = self.xi_r[::2]
-            self.xi_c_interval =  self.xi_c
-            self.indices_c = np.array([i for i in range(0, len(self.xi_r), 2)])
+            self.xi_c_with_boundaries =  self.xi_c
+            self.xi_r_with_boundaries =  self.xi_r
+            # self.indices_c = np.array([i for i in range(0, len(self.xi_r), 2)])
         else:
             print(f"Unknown scheme {typ}")
             raise NotImplementedError()
@@ -68,6 +72,7 @@ class ReferenceScheme():
     def compute_missings(self):
 
         self.n_c, self.n_r = len(self.xi_c), len(self.xi_r)
+        self.nb_subintervals = len(self.xi_c_with_boundaries)-1
 
         # Powers (for polynomial evaluation) at nodes 
         self.xi_powers = [np.array([xi**i for i in range(self.n_r+1)]) for xi in self.xi_c_with_boundaries]
@@ -78,20 +83,19 @@ class ReferenceScheme():
         self.Vinverse_c = np.linalg.inv(np.vander(self.xi_c,increasing=True))
         self.Vinverse_r = np.linalg.inv(np.vander(self.xi_r,increasing=True))
 
-
-
         ## Coarse scheme
         # Power integration diagonal matrix 
         d_c = np.vstack([np.zeros((1,self.n_c)), np.diag([1/i for i in range(1,self.n_c+1)]),np.zeros((self.n_r-self.n_c, self.n_c))])
         # Coefficients of the antiderivative polynomial 
         self.P_c = np.dot(d_c, self.Vinverse_c)
         P_c = np.zeros((self.n_r+1,self.n_r))
+        if self.typ in ["CC", "PV"]:
+            offset_c2r = 0
+        elif self.typ == "GK":
+            offset_c2r = 1
         for i in range(self.n_c):
-            P_c[:,2*i] = self.P_c[:,i]
+            P_c[:,2*i+offset_c2r] = self.P_c[:,i]
         self.P_c = P_c    
-
-
-
         ## Refined scheme
         # Power integration diagonal matrix 
         d_r = np.vstack([np.zeros((1,self.n_r)), np.diag([1/i for i in range(1, self.n_r+1)])])
@@ -99,21 +103,22 @@ class ReferenceScheme():
         self.P_r = np.dot(d_r, self.Vinverse_r)
         
         if self.typ == "CC":
-            self.w_c = np.array([1+(-1)**(k+1) for k in range(self.n_r+1)]).reshape((1,self.n_r+1))@self.P_c
-            self.w_r = np.array([1+(-1)**(k+1) for k in range(self.n_r+1)]).reshape((1,self.n_r+1))@self.P_r
-
-        
+            self.w_c = (np.array([1+(-1)**(k+1) for k in range(self.n_r+1)]).reshape((1,self.n_r+1))@self.P_c)[0]
+            self.w_r = (np.array([1+(-1)**(k+1) for k in range(self.n_r+1)]).reshape((1,self.n_r+1))@self.P_r)[0]
+        elif self.typ == "GK":  
+            w_c = (np.array([1+(-1)**(k+1) for k in range(self.n_r+1)]).reshape((1,self.n_r+1))@self.P_c)[0]
+            w_r = (np.array([1+(-1)**(k+1) for k in range(self.n_r+1)]).reshape((1,self.n_r+1))@self.P_r)[0]
 
         Vinverse_c = np.zeros((self.n_c,self.n_r))
         for i in range(self.n_c):
-            Vinverse_c[:,2*i] = self.Vinverse_c[:,i]
+            Vinverse_c[:,2*i+offset_c2r] = self.Vinverse_c[:,i]
         self.Vinverse_c = Vinverse_c 
-    
-    
+        
     def __str__(self):
-        s = f"{self.typ} of order {self.order}"
+        s = f"{self.typ}"
+        if self.order is not None:
+            s += f"of  order {self.order} ({self.n_c}-{self.n_r}) stencil"
         return s
-
 
     def plot_grid(self):
         plt.figure()

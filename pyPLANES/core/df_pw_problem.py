@@ -30,7 +30,6 @@ import matplotlib.pyplot as plt
 from mediapack import Air, Fluid
 from alive_progress import alive_bar
 from scipy import integrate
-import chebpy as chebpy
 
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.utils.io import reference_frequencies, reference_curve, reference_C, reference_C_tr
@@ -53,7 +52,16 @@ class DfPwProblem(PwProblem):
         self.epsrel = kwargs.get("epsrel", 1.49e-8)
         self.epsabs = kwargs.get("epsabs", 1.49e-8)
         
+        
+    def __str__(self):
+        return colored(f"I={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations"
 
+        
+    def update_frequency(self, omega):
+        PwProblem.update_frequency(self, omega)
+        self.f = omega/(2*np.pi)
+        
+        
     def resolution_kernel(self):
         """  Resolution of the problem """
         if self.alive_bar:
@@ -81,7 +89,7 @@ class DfPwProblem(PwProblem):
                     neval[i] = infodict['neval']
                     final_error[i] = abserror
                     if self.verbose: 
-                        print(colored(f"I_scipy={Tau_scipy:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+                        print(colored(f"I_scipy={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
                 elif self.DF_method == "chebpy":
                     chebpy.chebfun(lambda theta: func(theta), [0, 10])
                     hjk
@@ -92,10 +100,15 @@ class DfPwProblem(PwProblem):
                     print(colored(f"I_scipy={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
 
                     integral = Integral(func, epsrel=self.epsrel, epsabs=self.epsabs)
+                    print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
 
                     if not integral.test_convergence():
-                        integral.determine_intervals()
-                        
+                        integral.step_1()
+                        # integral.plot_error_on_intervals()
+                        # integral.plot_polynomials()
+                        # print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
+
+                        plt.show()
                         exit()
                         integral.refine()
 
@@ -106,9 +119,12 @@ class DfPwProblem(PwProblem):
                     plt.show()
                     exit()
                     tau[i], neval[i] = integral.I_r, integral.neval
-                elif self.DF_method == "Interval_GK":
-                    integral = Integral(func, 0, np.pi/2,typ="GK",order=10)
-                    tau[i], neval[i] = integral.I_r, integral.neval
+
+                elif type(self.DF_method) is tuple:
+                    integral = Integral(func, 0, np.pi/2,typ=self.DF_method[0],order=self.DF_method[1])
+                    tau[i], neval[i], final_error[i] = abserror = integral.I_r, integral.neval, integral.I_c-integral.I_r
+                else:
+                    raise NotImplementedError(f"Method {self.DF_method} not implemented")
 
                         
                     
@@ -161,8 +177,6 @@ class DfPwProblem(PwProblem):
             json.dump(d0, json_file)
             json_file.write("\n")
         
-
-
     def map_tau(self):
         """  Resolution of the problem """
         self.f = self.frequencies[0]
@@ -191,7 +205,7 @@ class DfPwProblem(PwProblem):
         plt.show()
 
 
-    def plot_tau(self,f, **kwargs):
+    def integrand(self,f, theta_list, **kwargs):
         """  Resolution of the problem """
         self.f = f
         self.update_frequency(2*np.pi*self.f)
@@ -212,14 +226,6 @@ class DfPwProblem(PwProblem):
         else:
             theta_c = None
             
-
-        
-        
-        
-        
-        n_r = 100
-        tf = kwargs.get("tf", 10)
-        theta_list = np.linspace(0, np.pi/2-0.00001, n_r)
         tau_list = []        
         for theta in theta_list:
                 self.theta_d = theta*180/pi
@@ -227,22 +233,9 @@ class DfPwProblem(PwProblem):
                 self.create_linear_system(2*np.pi*self.f)
                 self.solve()
                 tau_list.append(self.result.tau[-1]*np.sin(theta)*np.cos(theta))
-
-
-
-
-                
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-        ax.set_xlabel(r"$\theta$", fontsize=tf)
-        ax.set_ylabel(r"$f(\theta)$", fontsize=tf)
-        plt.xticks(fontsize=tf)
-        plt.yticks(fontsize=tf)
-        plt.plot(theta_list, tau_list,color=[0.005350,0.121552,0.403926])
-
-        if theta_c is not None:
-            plt.plot([theta_c, theta_c], [0, 1.1*np.max(tau_list)],"r--")
+        return tau_list
+        # if theta_c is not None:
+        #     plt.plot([theta_c, theta_c], [0, 1.1*np.max(tau_list)],"r--")
         
 
 
