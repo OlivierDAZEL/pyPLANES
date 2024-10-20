@@ -22,7 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
+# from pyPLANES.gmsh.tools.write_geo_file import Gmsh as Gmsh
 from pyPLANES.gmsh.write_gmsh import GmshModelpyPLANES
 
 def one_layer( **kwargs):
@@ -34,7 +34,6 @@ def one_layer( **kwargs):
     mat = kwargs.get("mat", "Air")
     method = kwargs.get("method", "FEM")
     BC = kwargs.get("BC", None)
-
 
     vertices = {}
     vertices["A"] = (0, 0)

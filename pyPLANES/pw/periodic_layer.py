@@ -50,11 +50,13 @@ class PeriodicLayerBase(Mesh):
     def __init__(self, **kwargs):
         self.condensation = kwargs.get("condensation", True)
         Mesh.__init__(self, **kwargs)
+        
+
         _x = kwargs.get("_x", 0)
         for _v in self.vertices[1:]:
             _v.coord[1] += _x
         for _e in self.elements[1:]:
-             _e.coord[1,:] += _x
+            _e.coord[1,:] += _x
              
              
         y = [_v.coord[1] for _v in self.vertices[1:]]

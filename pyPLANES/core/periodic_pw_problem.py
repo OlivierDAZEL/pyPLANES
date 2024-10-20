@@ -61,7 +61,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.method = "Global Method"
         else: 
             raise NameError("Invalid method name: " + self.method)
-        
+        print(self.method)        
 
         self.method_TM = kwargs.get("method_TM", False)
         

@@ -57,7 +57,6 @@ class GmshPeriodicitycondition():
         self.s_1 = s_1
         self.s_2 = s_2
         self.period = None
-
         
     def __str__(self):
         out = "Periodicity condition\n"
@@ -83,6 +82,10 @@ class GmshModelpyPLANES():
         self.list_curves.extend(s.lines)
         self.list_surfaces.append(s)
 
+
+
+
+
     def addCondition(self, curve, cond):
         list_existing_conditions = [c.cond for c in self.list_conditions]
         if cond in list_existing_conditions: # 
@@ -103,7 +106,6 @@ class GmshModelpyPLANES():
             # self.list_1d_entities_with_conditions.extend(c.list_index_curves)
             self.list_conditions.append(c)
 
-
     def addPeriodicity(self, s_1, s_2):
         
         self.addCondition([s_1, s_2], "condition=Periodicity")
@@ -121,7 +123,6 @@ class GmshModelpyPLANES():
 
         c.period = x_2-x_1
         self.list_periodicity.append(c)
-
 
     def index_of_curves(self, list_curves):
         """ Indentify the gmsh indices of the curves given as parameter 

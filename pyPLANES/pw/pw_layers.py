@@ -35,8 +35,6 @@ from pyPLANES.pw.characteristics import Characteristics
 from scipy.linalg import expm, block_diag
 from pyPLANES.utils.utils_spectral import chebyshev, chebyshev_nodes
 
-
-
 class PwGeneric():
     def __init__(self, d, **kwargs):
         """

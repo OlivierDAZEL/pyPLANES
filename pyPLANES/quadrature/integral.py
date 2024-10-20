@@ -121,12 +121,19 @@ class Integral():
     def step_1(self):
         
         # print(f"Adaptation #{self.nb_adaptations}")
-        for ii in range(3):
+        while not self.test_convergence():
             self.nb_adaptations += 1
             intervals = []
+            indexmax = np.argmax(np.abs(self.error_list))
             for i, quad_int in enumerate(self.intervals):
                 if quad_int.status != "converged":
-                    intervals.extend(quad_int.step_1())
+                    if i == indexmax:
+                        if type(quad_int.reference_scheme) == CC_autoadaptive:
+                            jhkhjk
+                        else:
+                            intervals.extend(quad_int.step_1())
+                    else:
+                        intervals.append(quad_int)
                 else:
                     intervals.append(quad_int)
             self.intervals = intervals

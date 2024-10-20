@@ -46,6 +46,7 @@ class GmshMesh(Mesh):
         super().__init__(*args, **kwargs)
 
     def load_msh_file(self):
+        self.verbose = False
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)
         gmsh.open(self.msh_file)
@@ -53,6 +54,8 @@ class GmshMesh(Mesh):
         # Nodes
         nodeTags, nodeCoords, nodeParams =gmsh.model.mesh.getNodes()
         nb_nodes = len(nodeTags)
+        if self.verbose:
+            print(f"Number of nodes: {nb_nodes}")
         self.vertices =[None]*(nb_nodes+1)
         nodeCoords = nodeCoords.reshape((nb_nodes,3))
         for i in range(nb_nodes):
@@ -60,19 +63,37 @@ class GmshMesh(Mesh):
         # Elements
         elemTypes, elemTags, elemNodeTags = gmsh.model.mesh.getElements()
         nb_elements = int(max([max(a) for a in elemTags]))
-        self.elements =[None]*(nb_elements+1)  
+        if self.verbose:
+            print(f"Number of elements: {nb_elements}")
+        self.elements =[None]*(nb_elements+1)
         for i_typ, typ in enumerate(elemTypes):
             tags = elemTags[i_typ]
             if typ ==1: # 2 nodes segments
                 nodes = np.array(elemNodeTags[i_typ]).reshape((len(tags),2))
                 for i, tag in enumerate(tags):
                     self.elements[tag] = FemElement(typ, tag, [self.vertices[j] for j in nodes[i,:]])
-            if typ ==2: # TR3
+            elif typ ==2: # TR3
                 nodes = np.array(elemNodeTags[i_typ]).reshape((len(tags),3))
                 for i, tag in enumerate(tags):
                     self.elements[tag] = FemElement(typ, tag, [self.vertices[j] for j in nodes[i,:]])
+            elif typ ==8: # 3 nodes segments
+                nodes = np.array(elemNodeTags[i_typ]).reshape((len(tags),3))
+                for i, tag in enumerate(tags):
+                    self.elements[tag] = FemElement(typ, tag, [self.vertices[j] for j in nodes[i,:]])
+            elif typ ==9: # 6 nodes triangles
+                nodes = np.array(elemNodeTags[i_typ]).reshape((len(tags),6))
+                for i, tag in enumerate(tags):
+                    self.elements[tag] = FemElement(typ, tag, [self.vertices[j] for j in nodes[i,:]])
+            else:
+                raise NameError("Unknown type")
+                    
+                    
+                    
+                    
         # Entities (import them all first)
         entities = gmsh.model.getEntities()
+        if self.verbose:
+            print(f"Number of entities: {len(entities)}")
         self.entities = dict()
         for ie, e in enumerate(entities):
             dim, tag = e
@@ -85,9 +106,8 @@ class GmshMesh(Mesh):
             physicalTags = dict(zip(keys, values))
             # end of conversion of physicalTags to a dict
             # Determine the entity constructor
-            if dim ==0:
-                entity_constructor = GmshEntity
-            elif dim == 1:
+            entity_constructor = None
+            if dim == 1:
                 if len(physicalTags) !=0:
                     if (physicalTags["condition"]=="bottom") or (physicalTags["condition"]=="top"):
                         entity_constructor= PwFem
@@ -107,7 +127,9 @@ class GmshMesh(Mesh):
                     entity_constructor = PemFem
                 else:
                     raise NameError("invalid material")
-            
+            if entity_constructor == None:
+                entity_constructor = GmshEntity
+
             _ent = entity_constructor(dim=dim, tag=tag, physicalTags=physicalTags, entities=self.entities, updown=gmsh.model.getAdjacencies(dim, tag))
             
             # Affect elements to fem entities
@@ -116,7 +138,6 @@ class GmshMesh(Mesh):
                 for e in elemTags[0]:
                     _ent.elements.append(self.elements[e])
 
-            
           # Add entity to lists
             self.entities[(dim,tag)] = _ent
             if isinstance(_ent, FemEntity):
@@ -125,6 +146,10 @@ class GmshMesh(Mesh):
                 else:
                     self.fem_entities.append(_ent)
   
+  
+        # if self.verbose:
+        #     for _ent in self.entities:
+        #         print(type(_ent))
   
   
         # periodicity
@@ -161,24 +186,3 @@ class GmshMesh(Mesh):
 
         gmsh.clear()
         gmsh.finalize()
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
- 

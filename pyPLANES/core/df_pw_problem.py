@@ -46,8 +46,6 @@ class DfPwProblem(PwProblem):
         PwProblem.__init__(self, **kwargs)
         self.neval = 0# number of evaluation of the function
         self.DF_method = kwargs.get("DF_method", "scipy")
-        self.tol_adapt =  kwargs.get("tol_adapt", 1e-1)
-        self.tol_refine = kwargs.get("tol_refine", 1e-2)
         self.verbose = kwargs.get("verbose", False)
         self.epsrel = kwargs.get("epsrel", 1.49e-8)
         self.epsabs = kwargs.get("epsabs", 1.49e-8)
@@ -96,16 +94,18 @@ class DfPwProblem(PwProblem):
                 
                 elif self.DF_method == "quadLAUM":
                     # To be removed at the end                    
-                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.tol_refine)
+                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=1e-8)
+                    print(colored(f"I_ref  ={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+
+                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel)
                     print(colored(f"I_scipy={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
 
                     integral = Integral(func, epsrel=self.epsrel, epsabs=self.epsabs)
-                    print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
-
+                    integral.plot_error_on_intervals()
+                    integral.plot_polynomials()
                     if not integral.test_convergence():
                         integral.step_1()
-                        # integral.plot_error_on_intervals()
-                        # integral.plot_polynomials()
+
                         # print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
 
                         plt.show()

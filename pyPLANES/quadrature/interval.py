@@ -47,7 +47,7 @@ class Interval():
         if reference_scheme is None:
             raise NameError("Reference scheme is missing")
         
-        self.reference_scheme_for_step_1 = ReferenceScheme("GK", order=10)
+        self.reference_scheme_for_not_peak = CC_autoadaptive(order = 2)
         self.reference_scheme_for_peak = ReferenceScheme("CC", order=9)
 
         self.typ = reference_scheme.typ
@@ -114,95 +114,6 @@ class Interval():
         # if np.abs(self.error/self.I_c) < self.RelTol:
         #     self.is_converged = True
 
-    def split(self,refined_schemes):
-        index_max = np.argmax(np.abs(self.error_list))
-        # print(f"Splitting interval {index_max} on {len(self.error_list)-1}")
-        refined_scheme = refined_schemes["3"]
-        
-        if index_max == 0:
-            list_subintervals = []
-            list_subintervals.append(Interval(self.x_r[0], self.x_r[1], refined_scheme,self.f_r[0], self.f_r[1]))
-            list_subintervals.append(Interval(self.x_r[1], self.x_r[2], refined_scheme,self.f_r[1], self.f_r[2]))            
-            x, f = self.x_r[2:], self.f_r[2:]
-            if len(x) > 1:
-                reference_scheme = ReferenceScheme("PV", x=x, f=f)
-                list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
-
-        elif index_max == len(self.error_list)-1:
-            list_subintervals = []
-            x, f = self.x_r[:-2], self.f_r[:-2]
-            if len(x) > 1:
-                reference_scheme = ReferenceScheme("PV", x=x, f=f)
-                list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
-            list_subintervals.append(Interval(self.x_r[-3], self.x_r[-2], refined_scheme,self.f_r[-3], self.f_r[-2]))
-            list_subintervals.append(Interval(self.x_r[-2], self.x_r[-1], refined_scheme,self.f_r[-2], self.f_r[-1]))    
-        else:
-            list_subintervals = []
-            indices = slice(1+2*index_max)
-            x, f = self.x_r[indices], self.f_r[indices]
-            reference_scheme = ReferenceScheme("PV", x=x, f=f)
-            list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
-            index_a, index_b =  2*index_max , 2*index_max+1
-            list_subintervals.append(Interval(self.x_r[index_a], self.x_r[index_b], refined_scheme,self.f_r[index_a], self.f_r[index_b]))
-            index_a, index_b = 2*index_max+1 , 2*index_max+2
-            list_subintervals.append(Interval(self.x_r[index_a], self.x_r[index_b], refined_scheme,self.f_r[index_a], self.f_r[index_b]))
-            indices = slice(2*index_max+2, self.reference_scheme.n_r)
-            x, f = self.x_r[indices], self.f_r[indices]
-            reference_scheme = ReferenceScheme("PV", x=x, f=f)
-            list_subintervals.append(Interval(x[0], x[-1], reference_scheme))
-
-        return list_subintervals
-            
-
-            
-            
-            
-
-
-
-
-
-
-
-
-
-
-        # if self.typ == "CC":
-        #     nb_sub_intervals = len(self.x_c)-1
-        #     list_subintervals = []
-        #     for i in range(nb_sub_intervals):
-        #         if i == index_max:
-        #             previous_values = {"x_r" : self.x_r[:2], "f": self.f_r[:2], "xi" : self.xi_r[:2], "type" : "left"}
-        #         else:
-        #             indices = slice(1+2*i,1+2*i+3) 
-        #             x, f = self.x_r[indices], self.f_r[indices]
-        #             previous_values = ReferenceScheme("PV", x=x, f=f)
-        #             exit()    
-                
-                
-        #         list_subintervals.append(Interval(self.x_c[i], self.x_c[i+1], self.typ, self.reference_scheme, previous_values))
-            
-        #     for inter in list_subintervals:
-        #         print(inter)
-        #     exit()
-        # elif self.typ == "GK":
-        #     # detemine the number of nodes to add in each interval
-        #     nb_sub_intervals = len(self.x_c)+1
-        #     list_subintervals = [None]*nb_sub_intervals
-            
-            
-        #     # First interval
-        #     previous_values = {"x_r" : self.x_r[:2], "f": self.f_r[:2], "xi" : self.xi_r[:2], "type" : "left"}
-        #     list_subintervals[0] = Interval(self.a, self.x_c[0], self.typ, self.reference_scheme, previous_values)
-        #     # Intermediate intervals
-        #     for i in range(nb_sub_intervals-2):
-        #         previous_values = {"x_r" : self.x_r[1+2*i:1+2*i+3], "f": self.f_r[1+2*i:1+2*i+2], "xi" : self.xi_r[1+2*i:1+2*i+3], "type" : "middle"}
-        #         list_subintervals[i+1] = Interval(self.x_c[i], self.x_c[i+1], self.typ, self.reference_scheme, previous_values)
-        #     # Last interval
-        #     previous_values = {"x_r" :  self.x_r[-2:], "f": self.f_r[-2:], "xi": self.xi_r[-2:], "type" : "right"}
-        #     list_subintervals[nb_sub_intervals-1] = Interval(self.x_c[-1], self.b, self.typ, self.reference_scheme, previous_values)
-        # else:
-        #     raise NameError("Unknown quadrature scheme")
 
     def plot_polynomials(self, fig=None):
         x_plot =np.linspace(self.A, self.B, 500)
@@ -264,7 +175,7 @@ class Interval():
         plt.plot(self.x_r,i*np.ones(self.reference_scheme.n_r),"r.")
         plt.plot(self.x_c,i*np.ones(self.reference_scheme.n_c),"b.")
 
-    def identify_intervals(self,level=0.6):
+    def identify_intervals(self,level=0.5):
         status_subinterval = ["peak"]*len(self.repartition_error)
         index_max = np.argmax(self.repartition_error)
         for i in range(index_max-1):
@@ -272,21 +183,10 @@ class Interval():
         for i in range(index_max+2, self.reference_scheme.nb_subintervals):
             status_subinterval[i] = "after"
         mask = [int(status == "peak") for status in status_subinterval]
+        print(f"self.repartition_error.dot(mask)={self.repartition_error.dot(mask)}")
         if self.repartition_error.dot(mask) < level:
             status_subinterval = ["flat"]*len(self.repartition_error)
         return status_subinterval
-
-    def subdivide_subintervals(self, x, f):
-        reference_scheme = ReferenceScheme("PV", x=x, f=f)
-        interval = Interval(self.func, x[0], x[-1], reference_scheme)
-        interval.update()
-        if np.abs(interval.error/interval.I_r) > 1e-2:
-            interval  = Interval(self.func, x[0], x[-1], CC_autoadaptive(),status="adapted")
-            interval.update()
-            return interval
-        else:
-            interval.status = "converged"
-            return interval
 
     def before(self):
         if "before" in self.status_subintervals:
@@ -303,12 +203,10 @@ class Interval():
         else:
             return []
         
-        
     def peak(self):
         indices_peak = [i for i, status in enumerate(self.status_subintervals) if status=="peak"]
         interval = Interval(self.func, self.x_r_with_boundaries[2*indices_peak[0]], self.x_r_with_boundaries[2*indices_peak[-1]+2], self.reference_scheme_for_peak)
         interval.update()
-        
         return [interval]
 
     def after(self):
@@ -322,64 +220,27 @@ class Interval():
                 interval.status = "converged"
                 return [interval] # to be iterable 
             else: # In that, it is better to take new points 
-                return [Interval(self.func, x[0], x[-1], self.reference_scheme_for_step_1)]
+                return [Interval(self.func, x[0], x[-1], self.reference_scheme_for_not_peak)]
         else:
             return []
 
-    def step_1(self):
+    def flat(self):
+        interval_1 = Interval(self.func, self.a, (self.a+self.b)/2, self.reference_scheme)
+        interval_2 = Interval(self.func, (self.a+self.b)/2, self.b, self.reference_scheme)
+        return [interval_1, interval_2]
 
+
+    def step_1(self):
         subintervals = []
         self.status_subintervals = self.identify_intervals()
-        # print("--")
-        # for i, status in enumerate(self.status_subintervals):
-        #     print(f"[{self.x_r_with_boundaries[2*i]:.3f}, {self.x_r_with_boundaries[2*i+2]:.3f}] / {status}")
-        
-        subintervals.extend(self.before())
-        subintervals.extend(self.peak())
-        subintervals.extend(self.after())
-
-        #             raise NameError("Unknown status")
-        return subintervals
-
-    def adapt(self):
-        
-        index_max = np.argmax(self.repartition_error)
-        # print(index_max)
-        subintervals = []
-        if self.repartition_error[index_max] > 0.6: # The error is on a single subinterval
-            if index_max ==0:
-                indices = slice(2*index_max, 2*index_max+3)
-                x, f = self.x_r[indices], self.f[indices]
-                subintervals.append(Interval(x[0], x[2], self.reference_scheme))
-                for i in range(index_max+1, self.reference_scheme.n_c-1):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
-                
-                
-            elif index_max == len(self.error_list)-1:
-                for i in range(index_max):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
-                    # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
-                indices = slice(2*index_max, 2*index_max+3)
-                x, f = self.x_r[indices], self.f[indices]
-                subintervals.append(Interval(x[0], x[2], self.reference_scheme))
-            else: #error on an intermediate interval
-                for i in range(index_max):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
-                    # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
-
-                indices = slice(2*index_max, 2*index_max+3)
-                x, f = self.x_r[indices], self.f[indices]
-                subintervals.append(Interval(x[0], x[2], self.reference_scheme))
-                # list_subintervals.append(Interval(x[1], x[2], reference_scheme))
-                
-                
-                for i in range(index_max+1, self.reference_scheme.n_c-1):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
-                    # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
-        else:
-            for i in range(self.reference_scheme.n_c-1):
-                    subintervals.append(Interval(self.x_r[2*i], self.x_r[2*i+2], CC_autoadaptive(), self.f[2*i], self.f[2*i+2],status="adapted"))
-                    # subintervals.append(Interval(self.x_r[2*i+1], self.x_r[2*i+2], CC_autoadaptive(), self.f_r[2*i+1], self.f_r[2*i+2],status="adapted"))
+        if "before" in self.status_subintervals:
+            subintervals.extend(self.before())
+        if "peak" in self.status_subintervals:
+            subintervals.extend(self.peak())
+        if "after" in self.status_subintervals:
+            subintervals.extend(self.after())
+        if "flat" in self.status_subintervals:
+            subintervals.extend(self.flat())
 
         return subintervals
 
