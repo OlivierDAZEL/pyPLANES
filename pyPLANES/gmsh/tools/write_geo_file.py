@@ -243,21 +243,19 @@ class Gmsh():
             sys.exit()
         else:
             self.f.write("Periodic " + obj1.typ + " {{{}}} = {{{}}} Translate {{{},{},{}}};\n".format(obj1.tag, obj2.tag, Delta[0],Delta[1],Delta[2]))
-            
-            
+
+
     def generate_points_from_dict(self, d,lcar):
         dp = {}
         for key in d.keys():
             self.new_point(d[key][0],d[key][1],lcar)
 
-    # def new_circle(self,)
 
     def run_gmsh(self, option=""):
         self.f.close()
         if sys.platform == "darwin":
             os.system("/Applications/Gmsh.app/Contents/MacOS/gmsh " + option + self.geo_file)
         else:
-            
             os.system("gmsh " + option + self.geo_file)
 
 # def one_layer(p):

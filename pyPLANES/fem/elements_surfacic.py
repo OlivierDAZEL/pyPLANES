@@ -58,13 +58,13 @@ def fsi_elementary_matrix(_elem):
     K_ref = _elem.reference_element
     n, m = K_ref.Phi.shape
     M = np.zeros((n, n))
-    if _elem.typ == 1:
+    if _elem.typ == 1: #2-node line.
         J = LA.norm(_elem.coord[:, 1]-_elem.coord[:, 0])/2.
         for ipg in range(m):
             _Phi = K_ref.Phi[:, ipg].reshape(n)
             M += J*K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
         return M
-    elif _elem.typ == 8:
+    elif _elem.typ == 8: #3-node second order line
         for ipg in range(m):
             _Phi = K_ref.Phi[:, ipg].reshape(n)
             J = _elem.get_jacobian_matrix(K_ref.xi[ipg])

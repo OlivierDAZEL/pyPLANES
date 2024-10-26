@@ -219,8 +219,7 @@ class FluidStructureFem(FemEntity):
         FemEntity.__init__(self, **kwargs)
         self.fluid_neighbour = None
         self.struc_neighbour = None
-        if self.verbose:
-            print(self)
+
 
     def elementary_matrices(self, _el):
         # Elementary matrices

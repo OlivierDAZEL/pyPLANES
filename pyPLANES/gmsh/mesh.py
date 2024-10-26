@@ -46,7 +46,7 @@ class GmshMesh(Mesh):
         super().__init__(*args, **kwargs)
 
     def load_msh_file(self):
-        self.verbose = False
+        self.verbose = True
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)
         gmsh.open(self.msh_file)
@@ -87,9 +87,7 @@ class GmshMesh(Mesh):
             else:
                 raise NameError("Unknown type")
                     
-                    
-                    
-                    
+
         # Entities (import them all first)
         entities = gmsh.model.getEntities()
         if self.verbose:
@@ -115,6 +113,8 @@ class GmshMesh(Mesh):
                         entity_constructor= PeriodicityFem
                     elif physicalTags["condition"]=="Imposed displacement":
                         entity_constructor= ImposedDisplacementFem
+                    elif physicalTags["condition"]=="Fluid_Structure":
+                        entity_constructor = FluidStructureFem
                     else:
                         entity_constructor= GmshEntity
             elif dim == 2:
