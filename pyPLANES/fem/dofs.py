@@ -158,8 +158,7 @@ def periodic_dofs_identification(self):
             orient += [1]*(self.order-1)*4
         else:
             orient += [(-1)**ii for ii in range(self.order-1)]*4
-            
-        
+
         dof_left += list(itertools.chain(*_ed.dofs))
         dof_right += list(itertools.chain(*edges_right[corr_edges[_il]].dofs))
 

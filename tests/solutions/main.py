@@ -21,13 +21,13 @@ nb_layers = 1
 L = 2.e-2
 d = 2.e-2
 lcar = d
-nb_bloch_waves = 4
+nb_bloch_waves = 0
 order = 2
 
 frequency = 3e1
 
 name_project="solution"
-case = ["layer", "sandwich"][0]
+case = ["layer", "sandwich"][1]
 method_FEM = ["jap", "characteristics", "global"][2]
 termination = ["rigid", "transmission"][1]
 material = ["Air", "Wwood", "melamine"][2]
@@ -37,8 +37,8 @@ if case == "layer":
     one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
     ml_fem = [ ("mesh", None)]*nb_layers
 if case == "sandwich":
-    ml = [("rubber",0.2e-3), ["melamine" , d], ("rubber",0.2e-3)]
-    # one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=ml[1][0])
+    ml = [("rubber",0.2e-3), [material , d], ("rubber",0.2e-3)]
+    one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=ml[1][0])
     ml_fem = [("rubber",0.2e-3), ["mesh" , None], ("rubber",0.2e-3)]
 
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
@@ -52,6 +52,7 @@ characteristic_method.resolution()
 
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
+
 
 
 # eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)

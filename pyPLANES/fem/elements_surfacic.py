@@ -53,7 +53,7 @@ def imposed_pw_elementary_vector(_elem, k):
     
     return np.abs(h/2.)*np.exp(-1j*k*x_mid)*F_analytical
 
-def fsi_elementary_matrix(_elem):
+def fsi_elementary_matrix(_elem, n_=None):
     
     K_ref = _elem.reference_element
     n, m = K_ref.Phi.shape
@@ -69,7 +69,8 @@ def fsi_elementary_matrix(_elem):
             _Phi = K_ref.Phi[:, ipg].reshape(n)
             J = _elem.get_jacobian_matrix(K_ref.xi[ipg])
             M += J*K_ref.w[ipg]*np.dot(_Phi.reshape((n, 1)), _Phi.reshape((1, n)))
-            n_ = _elem.get_normal(K_ref.xi[ipg], _elem.elem2d)
+            if n_ is None:
+                n_ = _elem.get_normal(K_ref.xi[ipg], _elem.elem2d)
             M_x = M*n_[0]
             M_y = M*n_[1]
         return M_x, M_y

@@ -95,19 +95,23 @@ class PeriodicLayerBase(Mesh):
         if len(self.pwfem_entities) !=0:
             periodic_dofs_identification(self)
 
-            # determination of the internal dofs
-            dof_periodic = self.dof_left+self.dof_right 
-            self.dof_internal = [i+1 for i in range(self.n_dof) if i not in dof_periodic]
+            # determination of the internal dofs // We cancel the +1
+            dof_periodic = [i-1 for i in self.dof_left]+[i-1 for i in self.dof_right] # We cancel the +1
+            self.dof_internal = [i for i in range(self.n_dof) if i not in dof_periodic]
+            self.n_dof_minus_periodicity = self.n_dof - len(self.dof_left)
             n = self.n_dof
-            m = self.n_dof - len(self.dof_left)
-                        
-            rows = [d-1 for d in self.dof_left]+ [d-1 for d in self.dof_internal]
+            m = self.n_dof_minus_periodicity
+            
+            # creation of P_periodicity_master 
+            # first left dofs then internal dofs
+            rows = [d-1 for d in self.dof_left]+ [d for d in self.dof_internal]
             columns = [i for i in range(m)]
             self.P_periodicity_master = csr_matrix((np.ones(m), (rows, columns)), shape=(n, m))
+            # creation of P_periodicity_delta
             rows = [d-1 for d in self.dof_right]
-            columns = [i for i in range(len(self.dof_left))]
+            columns = [d for d in range(len(self.dof_left))]
             
-            self.P_periodicity_delta = csr_matrix((np.ones(len(self.dof_left)), (rows, columns)), shape=(n, m))
+            self.P_periodicity_delta = csr_matrix((np.ones(len(self.dof_left),dtype=complex), (rows, columns)), shape=(n, m))
 
         self.characteristics = [None, None] # Will be completed in PeriodicPwProblem.__init__()
 
@@ -123,14 +127,13 @@ class PeriodicLayerBase(Mesh):
         self.kx = kx
         self.nb_waves = len(kx)
         self.delta_periodicity = np.exp(-1j*self.kx[0]*self.period)
+        self.P_periodicity = self.P_periodicity_master+self.delta_periodicity*self.P_periodicity_delta
+
+
         self.omega = omega # Needs to be stored
         for _ent in self.pwfem_entities:
             _ent.dofs = np.arange(_ent.nb_dof_per_node*len(self.kx))
             _ent.nb_dofs = len(_ent.dofs)
-            
-        
-        self.P_periodicity = self.P_periodicity_master+self.delta_periodicity*self.P_periodicity_delta
-
 
 
 
@@ -172,16 +175,10 @@ class PeriodicLayerBase(Mesh):
 
     def create_global_method_matrices(self):
         self.create_bulk_matrices()
-        # self.apply_periodicity_on_Dii()
         self.linear_system_2_numpy()
-        
-        # index_A = np.where(((self.A_i*self.A_j) != 0) )
-        # D_ii = coo_matrix((self.A_v[index_A], (self.A_i[index_A]-1, self.A_j[index_A]-1)), shape=(self.n_dof, self.n_dof)).tocsr()        
 
-        # index_A = np.where(((self.A_i*self.A_j) != 0) )
         D_ii = csr_matrix((self.A_v, (self.A_i, self.A_j)), shape=(self.n_dof+1, self.n_dof+1))[1:,1:]
-
-
+        D_ii = self.P_periodicity.H@D_ii@self.P_periodicity
 
         self.A_i, self.A_j, self.A_v = [], [], []
         RR = [] # Initialisation of the list of the R will be [R_b R_t]
@@ -247,22 +244,13 @@ class PeriodicLayerBase(Mesh):
                     else:
                         raise NameError("_ent.typ has no valid type")
             DD.append(D_xx)
-            DD_xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.n_dof)))
-
-            # Application of periodicity to the columns of D_xi (D_ti and D_bi)
-            # for i_left, _dof_left in enumerate(self.dof_left):
-            #     # Corresponding dof
-            #     _dof_right = self.dof_right[i_left]-1
-            #     index = [i for i,d in enumerate(dof_FEM) if d==_dof_right]
-            #     for _i in index:
-            #         dof_FEM[_i] = _dof_left-1
-            #         D_val[_i] /= self.delta_periodicity*self.orientation_periodic_dofs[i_left]
-
+            DD_xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.n_dof))@self.P_periodicity)
             # Creation of the D_ix, minus sign <- transposition +normal 
             DD_ix.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
         
-        D_ix = np.hstack([D_i.todense() for D_i in DD_ix])
-        RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof, 2*2*_ent.nb_dof_per_node*self.nb_waves))
+        D_ix = np.hstack([self.P_periodicity.H@D_i.todense() for D_i in DD_ix])
+
+        RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
         R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
         R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
@@ -370,21 +358,24 @@ class PeriodicLayerBase(Mesh):
         D_ix = np.hstack([D_i.todense() for D_i in DD_ix])
         RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof, 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
-        R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
-        R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
+        self.R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
+        self.R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
 
         _s = _ent.nb_dof_per_node*self.nb_waves
         M_b = np.zeros((2*_s, 2*_s), dtype=complex)
         M_t = np.zeros((2*_s, 2*_s), dtype=complex)
 
-        M_b[:_s,:] = DD_xi[1]@R_b# [D_ti][R_b]
-        M_b[_s:,:] = DD[0]+DD_xi[0]@R_b# [D_bb]+[D_bi][R_b]
+        M_b[:_s,:] = DD_xi[1]@self.R_b# [D_ti][R_b]
+        M_b[_s:,:] = DD[0]+DD_xi[0]@self.R_b# [D_bb]+[D_bi][R_b]
 
-        M_t[:_s,:] = DD[1]+DD_xi[1]@R_t# [D_tt]+[D_ti][R_t]
-        M_t[_s:,:] = DD_xi[0]@R_t# [D_bi][R_t]
+        M_t[:_s,:] = DD[1]+DD_xi[1]@self.R_t# [D_tt]+[D_ti][R_t]
+        M_t[_s:,:] = DD_xi[0]@self.R_t# [D_bi][R_t]
 
         self.M_b = M_b
         self.M_t = M_t
+
+
+
 
         self.TM = -LA.solve(M_b, M_t)
         # print(self.TM)
@@ -407,7 +398,7 @@ class PeriodicLayerBase(Mesh):
         n_y = 1.
         # for _w, kx in enumerate(self.kx):
         for _elem in _ent.elements:
-            M_elem = fsi_elementary_matrix(_elem)
+            M_elem = fsi_elementary_matrix(_elem,[0, -n_y])
             dof, orient, __ = _ent.method_dof(_elem)
             M = orient @ M_elem @ orient
             M = n_y*np.kron(LA.solve(Q[n_w:,:n_w],Q[n_w:,n_w:]), M)
@@ -421,7 +412,7 @@ class PeriodicLayerBase(Mesh):
         n_y = -1;
         # for _w, kx in enumerate(self.kx):
         for _elem in _ent.elements:
-            M_elem = fsi_elementary_matrix(_elem)
+            M_elem = fsi_elementary_matrix(_elem,[0, -n_y])
             dof, orient, __ = _ent.method_dof(_elem)
             M = orient @ M_elem @ orient
             M = n_y*np.kron(LA.solve(Q[:n_w,:n_w],Q[:n_w,n_w:]), M)
@@ -574,7 +565,7 @@ class PeriodicLayerBase(Mesh):
         # Concatenation of the slave dofs at the end of the vector
         self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
         if self.condensation:
-            T = coo_matrix((self.T_v, (self.T_i, self.T_j)), shape=(self.nb_dof_FEM-self.nb_dof_master, self.nb_dof_master)).tocsr()
+            T = coo_matrix((self.T_v, ([t-self.nb_dof_master for t_i in  self.T_i], self.T_j)), shape=(self.nb_dof_FEM-self.nb_dof_master, self.nb_dof_master)).tocsr()
             X = np.insert(T@X, 0, X)
         
         for _vr in self.vertices[1:]:

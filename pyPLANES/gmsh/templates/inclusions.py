@@ -28,36 +28,56 @@ import gmsh
 import numpy as np
 
 
-def one_inclusion_rigid(name_mesh="one_inclusion_rigid", L=2e-2, d=2e-2, a=0.008, lcar=1e-2, mat="Air"):
+def one_inclusion_rigid(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benchmark_1"):
 
-    order_geometry = 2
-    G = Gmsh(name_mesh, order_geometry)
-
-    p_0 = G.new_point(0, 0, lcar)
-    p_1 = G.new_point(L, 0,lcar)
-    p_2 = G.new_point(L, d, lcar)
-    p_3 = G.new_point(0, d, lcar)
-    l_0 = G.new_line(p_0, p_1)
-    l_1 = G.new_line(p_1, p_2)
-    l_2 = G.new_line(p_2, p_3)
-    l_3 = G.new_line(p_3, p_0)
-    ll_0 = G.new_line_loop([l_0, l_1, l_2, l_3])
-    c_0 = G.new_circle(L/2, d/2, a, lcar/2)
-
-    matrice = G.new_surface([ll_0.tag, -c_0.tag])
+    gmsh.initialize()
+    vertice_A = gmsh.model.geo.addPoint(0, 0, 0, lcar)
+    vertice_B = gmsh.model.geo.addPoint(L, 0, 0, lcar) 
+    vertice_C = gmsh.model.geo.addPoint(L, d, 0, lcar)
+    vertice_D = gmsh.model.geo.addPoint(0, d, 0, lcar)
+    line_AB = gmsh.model.geo.addLine(vertice_A, vertice_B)
+    line_BC = gmsh.model.geo.addLine(vertice_B, vertice_C)
+    line_CD = gmsh.model.geo.addLine(vertice_C, vertice_D)
+    line_DA = gmsh.model.geo.addLine(vertice_D, vertice_A)
+    line_loop = gmsh.model.geo.addCurveLoop([line_AB, line_BC, line_CD, line_DA])
+        
+    center = gmsh.model.geo.addPoint(L/2, d/2, 0,  lcar)
+    north = gmsh.model.geo.addPoint(L/2, d/2+a, 0, lcar)
+    south = gmsh.model.geo.addPoint(L/2, d/2-a, 0, lcar)
+    east = gmsh.model.geo.addPoint(L/2+a, d/2, 0,  lcar)
+    west = gmsh.model.geo.addPoint(L/2-a, d/2, 0,  lcar)
+    circle_north_west = gmsh.model.geo.addCircleArc(north, center, west)
+    circle_west_south = gmsh.model.geo.addCircleArc(west, center, south)
+    circle_south_east = gmsh.model.geo.addCircleArc(south, center, east)
+    circle_east_north = gmsh.model.geo.addCircleArc(east, center, north)
     
+    circle_loop = gmsh.model.geo.addCurveLoop([circle_north_west, circle_west_south, circle_south_east, circle_east_north])
+    
+    core = gmsh.model.geo.addPlaneSurface([line_loop, -circle_loop])
 
-    G.new_physical(l_2, "condition=top")
-    G.new_physical([l_1, l_3], "condition=Periodicity")
-    G.new_physical(l_0, "condition=bottom")
-    G.new_physical([matrice], "mat="+mat)
-    G.new_physical([l_0, l_1, l_3, l_2], "typ=1D")
-    G.new_physical([matrice], "typ=2D")
-    G.new_physical([l_0, l_1, l_3, l_2, matrice], "method=FEM")
-    G.new_periodicity(l_1, l_3, (L, 0, 0))
 
-    option = "-2 -v 0 "
-    G.run_gmsh(option)
+    gmsh.model.addPhysicalGroup(1, [line_AB], name="condition=bottom")
+    gmsh.model.addPhysicalGroup(1, [line_CD], name="condition=top") 
+    gmsh.model.addPhysicalGroup(1, [line_BC, line_DA], name="condition=Periodicity")
+    gmsh.model.addPhysicalGroup(2,[core], name="mat="+mat_core)
+    gmsh.model.addPhysicalGroup(1, [line_AB, line_BC, line_DA, line_CD], name="typ=1D")
+    gmsh.model.addPhysicalGroup(2, [core], name="typ=2D")
+    gmsh.model.addPhysicalGroup(1, [line_AB, line_BC, line_DA, line_CD], name="method=FEM")
+    gmsh.model.addPhysicalGroup(2, [core], name="method=FEM")
+    gmsh.model.geo.synchronize()
+     # Generate mesh:
+    gmsh.model.mesh.generate()
+    gmsh.model.mesh.setOrder(2)
+    affine_transform = np.eye(4)
+    affine_transform[0,3] = d # taken on the first elements because they are all equal
+    affine_transform = list(affine_transform.flatten())
+    gmsh.model.mesh.setPeriodic(1,[line_BC],[line_DA],affine_transform)
+    gmsh.write(f"msh/{name_mesh}.geo_unrolled")
+    gmsh.write(f"msh/{name_mesh}.msh")
+    gmsh.finalize()
+
+
+
 
 
 def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):

@@ -85,7 +85,7 @@ class PwInterface():
                 delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
                 index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
                 M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_bottom)
-                M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_0@delta_0)
+                M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1@delta_1)
                 i_eq += self.number_relations*self.nb_waves
             else: # Layer 1 is periodic
                 SV_0 = self.layers[0].SV

@@ -176,9 +176,9 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             # plt.spy(self.A)
             # plt.show()
             self.X = LA.solve(self.A, self.F)
-                
+            print(self.X)
             R = self.X[:self.nb_waves]
-            # print(f"R={R}")
+            print(f"R={R}")
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
@@ -255,3 +255,5 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     _l.plot_solution(S_b, S_t)
                 else:                
                     _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q_minus)
+        elif self.method == "Global Method":
+            jkhh
