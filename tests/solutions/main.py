@@ -13,7 +13,7 @@ from pyPLANES.core.result import Results, Result, Test
 
 
 plot_solution = [True, True, True, False, False, False]
-# plot_solution = [False]*6
+plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 50.00000
@@ -27,7 +27,7 @@ order = 2
 frequency = 3e1
 
 name_project="solution"
-case = ["layer", "sandwich"][1]
+case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "characteristics", "global"][2]
 termination = ["rigid", "transmission"][1]
 material = ["Air", "Wwood", "melamine"][2]
@@ -54,7 +54,6 @@ eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=th
 eTMM_method.resolution()
 
 
-
 # eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 # eTMM_method.resolution()
 
@@ -64,7 +63,7 @@ eTMM_method.resolution()
 print(f"R GM ={global_method.result.R0}")
 print(f"R RM ={recursive_method.result.R0}")
 print(f"R CM ={characteristic_method.result.R0}")
-# print(f"R FEM={eTMM_method.result.R0}")
+print(f"R FEM={eTMM_method.result.R0}")
 # print(f"R CFE={rTMM_method.result.R0}")
 
 # print(f"xxxxxxxxxxxx")
