@@ -81,7 +81,7 @@ class PwInterface():
                 i_eq += self.number_relations*self.nb_waves
             elif periodic_layer[0]: # Layer 0 is periodic
                 SV_1 = self.layers[1].SV
-                d_1 = ([0]*self.n_1+[self.layers[1].d]*self.n_1)*self.nb_waves
+                d_1 = ([0]*self.n_1+[-self.layers[1].d]*self.n_1)*self.nb_waves
                 delta_1 = np.diag(np.exp(self.layers[1].lam*d_1))
                 index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
                 M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_bottom)
@@ -95,6 +95,7 @@ class PwInterface():
                 M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
                 M [index_rel, self.layers[1].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_top)
                 i_eq += self.number_relations*self.nb_waves
+
         else:
             # Only homogeneous layers
             SV_0 = self.layers[0].SV
@@ -107,6 +108,7 @@ class PwInterface():
             M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
             M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1@delta_1)
             i_eq += self.number_relations*self.nb_waves
+            
         return i_eq
 
     def update_Omega(self, Om):
@@ -357,7 +359,7 @@ class ElasticPemInterface(PwInterface):
         self.C_bottom[2, 1], self.C_top[2, 2] = 1., -1.
         # Case of 2001 formulation 0 =w
         if isinstance(self.layers[1], PeriodicLayer):
-            if self.layers[1].pwfem_entities[0].typ == "Biot01":
+            if self.layers[1].pwfem_entities[1].typ == "Biot01":
                 self.C_bottom[2, 1] = 0.
         # sigma_zz = \hat{\sigma_zz} - p
         self.C_bottom[3, 2], self.C_top[3, 3], self.C_top[3, 4] = 1., -1., 1. 
@@ -598,6 +600,8 @@ class SemiInfinite(PwInterface):
             t = self.layers[0].medium.MEDIUM_TYPE
         elif isinstance(self.layers[0], PeriodicLayer):
             t = self.layers[0].medium[1].MEDIUM_TYPE
+
+
         if t in ["fluid", "eqf"]:
             self.typ = "fluid"
             self.n_0 = self.n_1 = 1
@@ -605,7 +609,7 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-            self.pw_method = fluid_waves_TMM
+            # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
             formulation = "Biot98"
@@ -632,11 +636,10 @@ class SemiInfinite(PwInterface):
             self.typ ="elastic"
             self.n_0, self.n_1 = 2, 1
             self.number_relations = 3
+            # \sigma_xy = 0, u_y = u_y^s, \sima_yy = -p
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-            
-            
             
 
         else:

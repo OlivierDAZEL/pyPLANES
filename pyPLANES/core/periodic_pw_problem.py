@@ -90,6 +90,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.R, self.T = None, None
 
 
+
+
+
+
     def preprocess(self):
         Calculus.preprocess(self)
         self.info_file.write("Periodic Plane Wave solver // Recursive method\n")
@@ -176,9 +180,8 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             # plt.spy(self.A)
             # plt.show()
             self.X = LA.solve(self.A, self.F)
-            print(self.X)
             R = self.X[:self.nb_waves]
-            print(f"R={R}")
+            # print(f"R={R}")
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 

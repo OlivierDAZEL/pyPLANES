@@ -374,9 +374,6 @@ class PeriodicLayerBase(Mesh):
         self.M_b = M_b
         self.M_t = M_t
 
-
-
-
         self.TM = -LA.solve(M_b, M_t)
         # print(self.TM)
 
@@ -419,7 +416,6 @@ class PeriodicLayerBase(Mesh):
             self.A_i.extend(list(chain.from_iterable([[_d]*len(dof) for _d in dof])))
             self.A_j.extend(list(dof)*len(dof))
             self.A_v.extend(M.flatten())
-
 
     def update_Omegac(self, Om, omega):
         self.create_bulk_matrices()
@@ -547,11 +543,11 @@ class PeriodicLayerBase(Mesh):
             self.T_v.extend(_T_v)
 
     def linear_system_2_numpy(self):
-        self.F_i = np.array(self.F_i)
-        self.F_v = np.array(self.F_v, dtype=complex)
-        self.A_i = np.array(self.A_i)
-        self.A_j = np.array(self.A_j)
-        self.A_v = np.array(self.A_v, dtype=complex)
+        # self.F_i = np.array(self.F_i)
+        # self.F_v = np.array(self.F_v, dtype=complex)
+        # self.A_i = np.array(self.A_i)
+        # self.A_j = np.array(self.A_j)
+        # self.A_v = np.array(self.A_v, dtype=complex)
         if self.condensation:
             self.T_i = np.array(self.T_i)-self.nb_dof_master
             self.T_j = np.array(self.T_j)
