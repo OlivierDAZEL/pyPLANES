@@ -28,10 +28,10 @@ frequency = 3e1
 # frequency = np.linspace(200, 1e3, 30)
 
 name_project="solution"
-case = ["layer", "sandwich"][1]
+case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global"][1]
 termination = ["rigid", "transmission"][1]
-material = ["Air", "Wwood", "melamine", "rubber"][1]
+material = ["Air", "Wwood", "melamine", "rubber"][2]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -42,9 +42,6 @@ if case == "sandwich":
     one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
     ml_fem = [("rubber",0.2e-3), ["mesh" , None], ("rubber",0.2e-3)]
 
-    ml = [(material,d+0.4e-3)]
-    ml_fem = [(material,0.4e-3), ("mesh" , None)]
-    ml_fem = [("mesh" , None), (material ,0.4e-3)]
 
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()

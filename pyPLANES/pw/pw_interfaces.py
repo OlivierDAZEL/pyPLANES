@@ -95,7 +95,6 @@ class PwInterface():
                 M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
                 M [index_rel, self.layers[1].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_top)
                 i_eq += self.number_relations*self.nb_waves
-
         else:
             # Only homogeneous layers
             SV_0 = self.layers[0].SV

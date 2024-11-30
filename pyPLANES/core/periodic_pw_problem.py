@@ -185,11 +185,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
-            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+            abs = 1-np.abs(self.result.R0[-1])**2
             if self.termination == "transmission":
                 T =self.X[-self.nb_waves:]
                 self.result.T0.append(T[0])
                 self.result.T.append(np.sum(np.real(self.ky)*np.abs(T)**2)/np.real(self.ky[0]))
+                abs -= self.result.T[-1]
+            self.result.abs.append(abs)
         else:
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             E_0 = np.array([-alpha, 1]).reshape((2,1))
@@ -259,4 +261,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 else:                
                     _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q_minus)
         elif self.method == "Global Method":
-            jkhh
+            print(f"X={self.X}")
+            for _l in self.layers[1:]:
+                if isinstance(_l, PeriodicLayer):
+                    S_b = self.X[_l.dofs_bottom]
+                    S_t = self.X[_l.dofs_top]
+                    _l.plot_solution(S_b, S_t)
+                    # _l.plot_solution_global(self.plot,self.X[_l.dofs-1])  

@@ -252,18 +252,18 @@ class PeriodicLayerBase(Mesh):
 
         RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
-        R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
-        R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
+        self.R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
+        self.R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
 
         _s = _ent.nb_dof_per_node*self.nb_waves
         M_b = np.zeros((2*_s, 2*_s), dtype=complex)
         M_t = np.zeros((2*_s, 2*_s), dtype=complex)
 
-        M_b[:_s,:] = DD_xi[1]@R_b# [D_ti][R_b]
-        M_b[_s:,:] = DD[0]+DD_xi[0]@R_b# [D_bb]+[D_bi][R_b]
+        M_b[:_s,:] = DD_xi[1]@self.R_b# [D_ti][R_b]
+        M_b[_s:,:] = DD[0]+DD_xi[0]@self.R_b# [D_bb]+[D_bi][R_b]
 
-        M_t[:_s,:] = DD[1]+DD_xi[1]@R_t# [D_tt]+[D_ti][R_t]
-        M_t[_s:,:] = DD_xi[0]@R_t# [D_bi][R_t]
+        M_t[:_s,:] = DD[1]+DD_xi[1]@self.R_t# [D_tt]+[D_ti][R_t]
+        M_t[_s:,:] = DD_xi[0]@self.R_t# [D_bi][R_t]
 
         self.M_b = M_b
         self.M_t = M_t
@@ -559,10 +559,11 @@ class PeriodicLayerBase(Mesh):
         X = self.R_b@S_b +self.R_t@S_t
         X = np.insert(X, 0, 0)
         # Concatenation of the slave dofs at the end of the vector
-        self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
-        if self.condensation:
-            T = coo_matrix((self.T_v, ([t-self.nb_dof_master for t_i in  self.T_i], self.T_j)), shape=(self.nb_dof_FEM-self.nb_dof_master, self.nb_dof_master)).tocsr()
-            X = np.insert(T@X, 0, X)
+        # self.nb_dof_condensed = self.nb_dof_FEM - self.nb_dof_master
+        # if self.condensation:
+        #     T = coo_matrix((self.T_v, ([t-self.nb_dof_master for t_i in  self.T_i], self.T_j)), shape=(self.nb_dof_FEM-self.nb_dof_master, self.nb_dof_master)).tocsr()
+        #     X = np.insert(T@X, 0, X)
+        # print(X.shape)
         
         for _vr in self.vertices[1:]:
             for i_dim in range(4):
