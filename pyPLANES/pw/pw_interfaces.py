@@ -76,8 +76,8 @@ class PwInterface():
         if any(periodic_layer):
             if all(periodic_layer):
                 index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
-                M [index_rel, self.layers[0].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_bottom)
-                M [index_rel, self.layers[1].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_top)
+                M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_bottom)
+                M [index_rel, self.layers[1].dofs_bottom] = np.kron(np.eye(self.nb_waves), self.C_top)
                 i_eq += self.number_relations*self.nb_waves
             elif periodic_layer[0]: # Layer 0 is periodic
                 SV_1 = self.layers[1].SV

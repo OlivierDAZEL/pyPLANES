@@ -95,6 +95,8 @@ class PeriodicLayerBase(Mesh):
         if len(self.pwfem_entities) !=0:
             periodic_dofs_identification(self)
 
+
+
             # determination of the internal dofs // We cancel the +1
             dof_periodic = [i-1 for i in self.dof_left]+[i-1 for i in self.dof_right] # We cancel the +1
             self.dof_internal = [i for i in range(self.n_dof) if i not in dof_periodic]
@@ -105,8 +107,11 @@ class PeriodicLayerBase(Mesh):
             # creation of P_periodicity_master 
             # first left dofs then internal dofs
             rows = [d-1 for d in self.dof_left]+ [d for d in self.dof_internal]
+            self.orientation_periodic_dofs += [1. for d in self.dof_internal]
             columns = [i for i in range(m)]
-            self.P_periodicity_master = csr_matrix((np.ones(m), (rows, columns)), shape=(n, m))
+
+            
+            self.P_periodicity_master = csr_matrix((self.orientation_periodic_dofs, (rows, columns)), shape=(n, m))
             # creation of P_periodicity_delta
             rows = [d-1 for d in self.dof_right]
             columns = [d for d in range(len(self.dof_left))]

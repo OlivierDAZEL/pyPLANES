@@ -55,6 +55,7 @@ class PeriodicMultiLayer():
         self.condensation = kwargs.get("condensation", True)
         self.period = False # If period is false: homogeneous layer
         self.nb_waves = None
+        self.result.n_dof = 0
         _x = 0
         periodic_layer = False
         
@@ -79,15 +80,15 @@ class PeriodicMultiLayer():
                         self.layers.append(ElasticLayer(mat, d, x_0=_x, method_TM=self.method_TM))
                     _x += d
                 elif os.path.isfile("msh/" + _l[0] + ".msh"):
-                    if periodic_layer:
-                        raise NameError ("Only a periodic layer is supported"
-                                         )
-                    else: 
-                        self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
-                        self.result.n_dof = self.layers[-1].nb_dof_master
+                    self.layers.append(PeriodicLayer(name_mesh=_l[0], _x=_x, theta_d= self.theta_d, verbose=self.verbose, order=self.order, plot=self.plot, condensation=self.condensation))
+                    self.result.n_dof += self.layers[-1].nb_dof_master
+                    if self.period == False:
                         self.period = self.layers[-1].period
-                        _x += self.layers[-1].d
-                        periodic_layer = True
+                    else:
+                        if self.period != self.layers[-1].period:
+                            raise NameError ("Periodicity is not consistent")
+                    _x += self.layers[-1].d
+                    periodic_layer = True
             else:
                 raise NameError ("layer {} is neither a mediapack material nor a msh file ".format(_l[0]))
         if self.period == False:
@@ -191,6 +192,8 @@ class PeriodicMultiLayer():
         #         print(f"dof({i})={_l.dofs_bottom} // {_l.dofs_top}")
         #     else:
         #         print(f"dof({i})={_l.dofs}")
+
+
 
     def update_frequency(self, omega, kx):
         for _l in self.layers:

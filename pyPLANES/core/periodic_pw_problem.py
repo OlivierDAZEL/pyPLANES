@@ -89,11 +89,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.kx, self.ky, self.k = None, None, None
         self.R, self.T = None, None
 
-
-
-
-
-
     def preprocess(self):
         Calculus.preprocess(self)
         self.info_file.write("Periodic Plane Wave solver // Recursive method\n")
@@ -167,18 +162,17 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     index_rel = slice(i_eq, i_eq+2*_l.nb_waves_in_medium*self.nb_waves)
                     self.A[index_rel, _l.dofs_bottom] = _l.M_b
                     self.A[index_rel, _l.dofs_top] = _l.M_t
+                    i_eq = index_rel.stop
             self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             for i in range(self.nb_waves):
                 self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
+
         else:
             raise NameError("Unknow method")
         
     def solve(self):
         Calculus.solve(self)
         if self.method == "Global Method":
-            # plt.figure()
-            # plt.spy(self.A)
-            # plt.show()
             self.X = LA.solve(self.A, self.F)
             R = self.X[:self.nb_waves]
             # print(f"R={R}")

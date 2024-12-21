@@ -129,7 +129,10 @@ class Result():
                 self.R = d["R"]
             if "period" in keys:
                 self.period = d["period"]
-
+            if "n_dof" in keys:
+                self.n_dof = d["n_dof"]
+            if "lcar" in keys:
+                self.lcar = d["lcar"]
 
     def save(self,file, append_file):
         d = dict()
