@@ -165,9 +165,8 @@ class PwProblem(Calculus, MultiLayer):
                 else:
                     sigma = 1/np.cos(self.theta_d*pi/180)
 
-                # self.tau_c = self.X[-1]
-                # self.win = np.cos(self.theta_d*pi/180)*sigma
-
+                self.tau_c = self.X[-1]
+                self.win = np.cos(self.theta_d*pi/180)*sigma
                 self.result.tau.append((np.abs(self.X[-1])**2)*np.cos(self.theta_d*pi/180)*sigma)
                 self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
         self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1]))
