@@ -40,10 +40,12 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
         # General variables
         Calculus.__init__(self, **kwargs)
         self.result.Solver = type(self).__name__
-
         # Angles
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.angles = kwargs.get("angles", None)
+        self.nb_bloch_waves = kwargs.get("nb_bloch_waves", 1)
+        self.nb_waves = 1+2*self.nb_bloch_waves
+        self.period = kwargs.get("period", 1)
         if self.angles is not None:
             self.theta_d = self.angles[0]
             self.phi_d = self.angles[1]
@@ -70,7 +72,7 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
 
         # Creation of the Multilayer  
         assert "ml" in kwargs
-        GeneralMultiLayer.__init__(self, ml=kwargs.get("ml"), method=self.method, material_database=self.material_database)
+        GeneralMultiLayer.__init__(self, ml=kwargs.get("ml"), nb_waves=self.nb_waves, method=self.method, material_database=self.material_database)
         self.termination = kwargs.get("termination", "rigid")
         self.add_excitation_and_termination(self.termination)
 
@@ -83,12 +85,18 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
-        self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])*np.array([np.cos(self.phi_d*np.pi/180)])
+        kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])*np.array([np.cos(self.phi_d*np.pi/180)])
+        self.nb_waves = 1+2*self.nb_bloch_waves
+        _ = np.zeros(self.nb_waves)
+        for i in range(self.nb_bloch_waves):
+            _[1+2*i]= i+1
+            _[2+2*i]= -(i+1)
+        self.kx = kx+_*(2*pi/self.period)
+        k_y = np.sqrt(self.k_air**2-self.kx**2+0*1j)
+        
         self.kz = self.k_air*          np.sin(self.theta_d*np.pi/180)            *np.sin(self.phi_d*np.pi/180)
-        self.ky = self.k_air*np.cos(self.theta_d*np.pi/180)
 
-        # print(self.kx, self.ky, self.kz)
-        # print(self.kx**2+self.ky**2+self.kz**2)
+        self.ky = np.sqrt(self.k_air**2-self.kx**2-self.kz**2+0*1j)
         GeneralMultiLayer.update_frequency(self, omega, self.kx, self.kz)
 
     def create_linear_system(self, omega):
@@ -127,14 +135,15 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
         elif self.method == "Global Method":
-            self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
+            self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
             i_eq = 0
             # Loop on the interfaces
             for _int in self.interfaces:
                 if self.method == "Global Method":
                     i_eq = _int.update_M_global(self.A,i_eq)
-            self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
-            self.A = np.delete(self.A, 0, axis=1)
+            self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
+            for i in range(self.nb_waves):
+                self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
         else:
             raise NameError("Unknow method")
     def solve(self):
@@ -154,37 +163,6 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                 self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
-            # print(f"X={self.X}")
-            R = self.X[0]
-            # print("-----")
-            # print(f"R={R}")
-            # q = self.X[1:2*self.layers[1].nb_waves_in_medium+1]
-            
-            # self.n_b = self.layers[0].nb_waves_in_medium 
-            # self.n_t = self.layers[1].nb_waves_in_medium
-            # SV_b = self.layers[0].SV
-            # SV_t = self.layers[1].SV
-            # d_b = ([self.layers[0].d]*self.n_b+[0]*self.n_b)
-            # d_t = ([0]*self.n_t +[-self.layers[1].d]*self.n_t)
-            # delta_b = np.diag(np.exp(self.layers[0].lam*d_b))
-            # delta_t = np.diag(np.exp(self.layers[1].lam*d_t))
-            # print(f"SV_b={SV_b@delta_b@(np.array([np.exp(1j*self.ky*self.layers[0].d),R]).reshape((2,1)))}")
-            # print(f"SV_t={SV_t@delta_t@q}")
-            # d_t = ([self.layers[1].d]*self.n_t+[0]*self.n_t)
-            # delta_t = np.diag(np.exp(self.layers[1].lam*d_t))
-            
-            # print(f"SV_0={SV_t@delta_t@q}")
-
-                        
-            # exit() 
-             
-            
-            
-            
-            
-            # exit()
-            
-            
             self.result.R0.append(self.X[0])
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":

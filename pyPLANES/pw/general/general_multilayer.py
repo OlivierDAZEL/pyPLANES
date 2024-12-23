@@ -44,8 +44,9 @@ class GeneralMultiLayer():
         self.material_database = kwargs.get("material_database", None)
         # Creation of the list of layers
         self.layers = []
+        self.nb_waves = kwargs.get("nb_waves", 1)
         self.kx, self.kz = None, None
-        _x = 0   
+        _x = 0 
         for _l in ml:
             if isinstance(_l,(list,tuple)):
                 mat,d = _l
@@ -125,11 +126,11 @@ class GeneralMultiLayer():
             self.layers.insert(0, incident_layer)
             self.nb_PW = 0
             for _layer in self.layers:
-                _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium)
-                self.nb_PW += 2*_layer.nb_waves_in_medium                
+                _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
             if isinstance(self.interfaces[-1], SemiInfinite_3D):
-                self.interfaces[-1].dofs = [self.nb_PW]
-                self.nb_PW += 1
+                self.interfaces[-1].dofs = slice(self.nb_PW, self.nb_PW+self.nb_waves)
+                self.nb_PW += self.nb_waves
 
     def update_frequency(self, omega, kx, kz):
         self.kx = kx
