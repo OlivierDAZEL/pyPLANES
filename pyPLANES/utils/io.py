@@ -92,9 +92,7 @@ def run_pymls(**kwargs):
     solver = Solver()
     for _l in ml:
         mat = load_material(_l[0])
-        print(mat)
         solver.layers.append(Layer(mat, _l[1]))
-        
     R = []
     
     
