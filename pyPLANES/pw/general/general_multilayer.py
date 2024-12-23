@@ -134,7 +134,6 @@ class GeneralMultiLayer():
     def update_frequency(self, omega, kx, kz):
         self.kx = kx
         self.kz = kz
-
         for _l in self.layers:
             _l.update_frequency(omega, self.kx, self.kz)
         for _i in self.interfaces:

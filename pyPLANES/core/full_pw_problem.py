@@ -83,10 +83,12 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
     def update_frequency(self, omega):
         Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
-        self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])*np.array([np.sin(self.phi_d*np.pi/180)])
-        self.kz = self.k_air*np.sin(self.theta_d*np.pi/180)*np.cos(self.phi_d*np.pi/180)
-        self.ky = self.k_air*np.array([np.cos(self.theta_d*np.pi/180)])
+        self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])*np.array([np.cos(self.phi_d*np.pi/180)])
+        self.kz = self.k_air*          np.sin(self.theta_d*np.pi/180)            *np.sin(self.phi_d*np.pi/180)
+        self.ky = self.k_air*np.cos(self.theta_d*np.pi/180)
 
+        # print(self.kx, self.ky, self.kz)
+        # print(self.kx**2+self.ky**2+self.kz**2)
         GeneralMultiLayer.update_frequency(self, omega, self.kx, self.kz)
 
     def create_linear_system(self, omega):
@@ -152,6 +154,37 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                 self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
+            # print(f"X={self.X}")
+            R = self.X[0]
+            # print("-----")
+            # print(f"R={R}")
+            # q = self.X[1:2*self.layers[1].nb_waves_in_medium+1]
+            
+            # self.n_b = self.layers[0].nb_waves_in_medium 
+            # self.n_t = self.layers[1].nb_waves_in_medium
+            # SV_b = self.layers[0].SV
+            # SV_t = self.layers[1].SV
+            # d_b = ([self.layers[0].d]*self.n_b+[0]*self.n_b)
+            # d_t = ([0]*self.n_t +[-self.layers[1].d]*self.n_t)
+            # delta_b = np.diag(np.exp(self.layers[0].lam*d_b))
+            # delta_t = np.diag(np.exp(self.layers[1].lam*d_t))
+            # print(f"SV_b={SV_b@delta_b@(np.array([np.exp(1j*self.ky*self.layers[0].d),R]).reshape((2,1)))}")
+            # print(f"SV_t={SV_t@delta_t@q}")
+            # d_t = ([self.layers[1].d]*self.n_t+[0]*self.n_t)
+            # delta_t = np.diag(np.exp(self.layers[1].lam*d_t))
+            
+            # print(f"SV_0={SV_t@delta_t@q}")
+
+                        
+            # exit() 
+             
+            
+            
+            
+            
+            # exit()
+            
+            
             self.result.R0.append(self.X[0])
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":

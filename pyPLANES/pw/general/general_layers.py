@@ -370,7 +370,6 @@ class PemLayer_3D(PwLayer_3D):
 
     def plot_solution_recursive(self, plot, X, nb_points=10):
 
-
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
         for i_dim in range(6*self.nb_waves):

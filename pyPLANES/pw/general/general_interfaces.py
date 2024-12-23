@@ -202,7 +202,7 @@ class FluidPemInterface_3D(Interface_3D):
         self.C_b[0,0], self.C_t[0,3] = 1,-1 # u_y-u_y^t 
         self.C_b[1,1], self.C_t[1,7] = 1,-1 # p-p
         self.C_t[2,4] = 1 # hat{sigma}_{yy}
-        self.C_t[3,5] = 1 # hat{sigma}_{yz},
+        self.C_t[3,5] = 1 # hat{sigma}_{yz}
         self.C_t[4,6] = 1 # hat{sigma}_{xy}
         
         self.C_bc, self.C_tc = self.C_b, self.C_t
@@ -601,7 +601,6 @@ class SemiInfinite_3D(Interface_3D):
             t = self.layers[0].medium.MEDIUM_TYPE
         elif isinstance(self.layers[0], PeriodicLayer):
             t = self.layers[0].medium[1].MEDIUM_TYPE
-
 
         if t in ["fluid", "eqf"]:
             self.typ = "fluid"
