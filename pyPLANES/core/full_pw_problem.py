@@ -145,7 +145,7 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
             # Loop on the interfaces
             for _int in self.interfaces:
                 i_eq = _int.update_M_global(self.A,i_eq)
-            self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
+            self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             for i in range(self.nb_waves):
                 self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
         else:

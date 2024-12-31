@@ -58,10 +58,9 @@ class Interface_3D():
                 self.carac_t.typ = self.layers[1].pwfem_entities[1].typ
         else:
             self.carac_t = None
-        self.nb_waves = None
 
-    def update_frequency(self, omega, kx=[0], kz=0):
-        self.nb_waves = len(kx)
+
+    def update_frequency(self, omega, kx=0, kz=0):
         if isinstance(self.layers[0],PwLayer_3D):
             self.layers[0].medium.update_frequency(omega)
         if isinstance(self.layers[1],PwLayer_3D):
@@ -100,14 +99,14 @@ class Interface_3D():
             SV_b = self.layers[0].SV
             SV_t = self.layers[1].SV
 
-            d_b = ([self.layers[0].d]*self.n_b+[0]*self.n_b)*self.nb_waves
-            d_t = ([0]*self.n_t +[-self.layers[1].d]*self.n_t)*self.nb_waves
+            d_b = ([self.layers[0].d]*self.n_b+[0]*self.n_b)
+            d_t = ([0]*self.n_t +[-self.layers[1].d]*self.n_t)
             delta_b = np.diag(np.exp(self.layers[0].lam*d_b))
             delta_t = np.diag(np.exp(self.layers[1].lam*d_t))
-            index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
-            M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_b)@(SV_b@delta_b)
-            M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_t)@(SV_t@delta_t)
-            i_eq += self.number_relations*self.nb_waves
+            index_rel = slice(i_eq, i_eq+self.number_relations)
+            M [index_rel, self.layers[0].dofs] = self.C_b@(SV_b@delta_b)
+            M [index_rel, self.layers[1].dofs] = self.C_t@(SV_t@delta_t)
+            i_eq += self.number_relations
         return i_eq
 
 class FluidFluidInterface_3D(Interface_3D):
@@ -413,11 +412,11 @@ class RigidBacking_3D(Interface_3D):
             M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C)
             i_eq += self.number_relations*self.nb_waves
         else:
-            d_0 = ([self.layers[0].d]*self.number_relations+[0]*self.number_relations)*self.nb_waves
+            d_0 = ([self.layers[0].d]*self.number_relations+[0]*self.number_relations)
             delta_0 = np.diag(np.exp(self.layers[0].lam*d_0))
-            lines = slice(i_eq, i_eq+self.nb_waves*self.number_relations)
-            M[lines, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C)@(self.layers[0].SV@delta_0)        
-            i_eq += self.number_relations*self.nb_waves
+            lines = slice(i_eq, i_eq+self.number_relations)
+            M[lines, self.layers[0].dofs] = self.C@(self.layers[0].SV@delta_0)        
+            i_eq += self.number_relations
         return i_eq
 
     def Omega(self, nb_bloch_waves=0):
@@ -686,16 +685,16 @@ class SemiInfinite_3D(Interface_3D):
 
     def update_M_global(self, M, i_eq):
         SV_t = self.SV[:,::2] # Just the outgoing waves
-        index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+        index_rel = slice(i_eq, i_eq+self.number_relations)
         if isinstance(self.layers[0], PeriodicLayer):
             M [index_rel, self.layers[0].dofs_top] = np.kron(np.eye(self.nb_waves), self.C_bottom)
             M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
         else:
             SV_b = self.layers[0].SV
-            d_b = ([self.layers[0].d]*self.n_b+[0]*self.n_b)*self.nb_waves
+            d_b = ([self.layers[0].d]*self.n_b+[0]*self.n_b)
             delta_b = np.diag(np.exp(self.layers[0].lam*d_b))     
-            index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
-            M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_b)@(SV_b@delta_b)
-            M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_t)@(SV_t)
-        i_eq += self.number_relations*self.nb_waves
+            index_rel = slice(i_eq, i_eq+self.number_relations)
+            M [index_rel, self.layers[0].dofs] = self.C_b@(SV_b@delta_b)
+            M [index_rel, self.dofs] = self.C_t@(SV_t)
+        i_eq += self.number_relations
         return i_eq

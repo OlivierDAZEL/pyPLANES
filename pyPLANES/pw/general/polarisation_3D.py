@@ -30,9 +30,8 @@ def PEM_waves_3D(mat, kx, kz):
         q = {q_1^+, q_1^-, q_2^+, q_2^-, q_3^+, q_3^-, q_4^+, q_4^-}
     '''
 
-    n_w = len(kx)
-    Phi = np.zeros((8*n_w, 8*n_w), dtype=complex)
-    lam = np.zeros(8*n_w, dtype=complex)
+    Phi = np.zeros((8, 8), dtype=complex)
+    lam = np.zeros(8, dtype=complex)
     
     lam_1 = np.sqrt(-mat.delta_1**2+kx**2+kz**2)
     lam_2 = np.sqrt(-mat.delta_2**2+kx**2+kz**2)
@@ -42,20 +41,20 @@ def PEM_waves_3D(mat, kx, kz):
     ky_2 = -1j*lam_2
     ky_3 = -1j*lam_3
 
-    for _w, _kx in enumerate(kx):
-        ky = np.array([ky_1[_w], ky_2[_w], ky_3[_w], ky_3[_w]], dtype=complex)
-        delta = np.array([mat.delta_1, mat.delta_2, mat.delta_3, mat.delta_3], dtype=complex)
-        _ = slice(0+8*_w,8+8*_w)
-        Phi[_, 0+8*_w]=np.array([_kx,kz, ky[0], mat.mu_1*ky[0],-1j*(mat.A_hat*mat.delta_1**2+2*mat.N*ky[0]**2),-2*1j*mat.N*ky[0]*kz,-2*1j*mat.N*ky[0]*_kx,1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1])
-        Phi[_, 4+8*_w]=np.array([_kx,kz,-ky[0],-mat.mu_1*ky[0],-1j*(mat.A_hat*mat.delta_1**2+2*mat.N*ky[0]**2), 2*1j*mat.N*ky[0]*kz, 2*1j*mat.N*ky[0]*_kx,1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1])
-        Phi[_, 1+8*_w]=np.array([_kx,kz, ky[1], mat.mu_2*ky[1],-1j*(mat.A_hat*mat.delta_2**2+2*mat.N*ky[1]**2),-2*1j*mat.N*ky[1]*kz,-2*1j*mat.N*ky[1]*_kx,1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2])
-        Phi[_, 5+8*_w]=np.array([_kx,kz,-ky[1],-mat.mu_2*ky[1],-1j*(mat.A_hat*mat.delta_2**2+2*mat.N*ky[1]**2), 2*1j*mat.N*ky[1]*kz, 2*1j*mat.N*ky[1]*_kx,1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2])
-        Phi[_, 2+8*_w]=np.array([ky[2],0,-_kx,-mat.mu_3*_kx, 2*1j*mat.N*ky[2]*_kx, 1j*mat.N*_kx*kz,          -1j*mat.N*(ky[2]**2-_kx**2),0]) 
-        Phi[_, 6+8*_w]=np.array([ky[2],0, _kx, mat.mu_3*_kx, 2*1j*mat.N*ky[2]*_kx,-1j*mat.N*_kx*kz,           1j*mat.N*(ky[2]**2-_kx**2),0]) 
-        Phi[_, 3+8*_w]=np.array([0,ky[2],- kz,-mat.mu_3* kz, 2*1j*mat.N*ky[2]* kz,-1j*mat.N*(ky[2]**2-kz**2), 1j*mat.N*kz*_kx           ,0])
-        Phi[_, 7+8*_w]=np.array([0,ky[2],  kz, mat.mu_3* kz, 2*1j*mat.N*ky[2]* kz, 1j*mat.N*(ky[2]**2-kz**2),-1j*mat.N*kz*_kx           ,0])
-        lam[0+8*_w:4+8*_w] = -1j*ky
-        lam[4+8*_w:8+8*_w] =  1j*ky
+
+    ky = np.array([ky_1, ky_2, ky_3, ky_3], dtype=complex)
+    delta = np.array([mat.delta_1, mat.delta_2, mat.delta_3, mat.delta_3], dtype=complex)
+    _ = slice(0,8)
+    Phi[_, 0]=np.array([kx,kz, ky[0], mat.mu_1*ky[0],-1j*(mat.A_hat*mat.delta_1**2+2*mat.N*ky[0]**2),-2*1j*mat.N*ky[0]*kz,-2*1j*mat.N*ky[0]*kx,1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1])
+    Phi[_, 4]=np.array([kx,kz,-ky[0],-mat.mu_1*ky[0],-1j*(mat.A_hat*mat.delta_1**2+2*mat.N*ky[0]**2), 2*1j*mat.N*ky[0]*kz, 2*1j*mat.N*ky[0]*kx,1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1])
+    Phi[_, 1]=np.array([kx,kz, ky[1], mat.mu_2*ky[1],-1j*(mat.A_hat*mat.delta_2**2+2*mat.N*ky[1]**2),-2*1j*mat.N*ky[1]*kz,-2*1j*mat.N*ky[1]*kx,1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2])
+    Phi[_, 5]=np.array([kx,kz,-ky[1],-mat.mu_2*ky[1],-1j*(mat.A_hat*mat.delta_2**2+2*mat.N*ky[1]**2), 2*1j*mat.N*ky[1]*kz, 2*1j*mat.N*ky[1]*kx,1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2])
+    Phi[_, 2]=np.array([ky[2],0,-kx,-mat.mu_3*kx, 2*1j*mat.N*ky[2]*kx, 1j*mat.N*kx*kz,           -1j*mat.N*(ky[2]**2-kx**2),0]) 
+    Phi[_, 6]=np.array([ky[2],0, kx, mat.mu_3*kx, 2*1j*mat.N*ky[2]*kx,-1j*mat.N*kx*kz,            1j*mat.N*(ky[2]**2-kx**2),0]) 
+    Phi[_, 3]=np.array([0,ky[2],-kz,-mat.mu_3*kz, 2*1j*mat.N*ky[2]*kz,-1j*mat.N*(ky[2]**2-kz**2), 1j*mat.N*kz*kx           ,0])
+    Phi[_, 7]=np.array([0,ky[2], kz, mat.mu_3*kz, 2*1j*mat.N*ky[2]*kz, 1j*mat.N*(ky[2]**2-kz**2),-1j*mat.N*kz*kx           ,0])
+    lam[0:4] = -1j*ky
+    lam[4:8] =  1j*ky
     return Phi, lam
 
 def elastic_waves_3D(mat, kx, kz):
@@ -64,9 +63,9 @@ def elastic_waves_3D(mat, kx, kz):
         q={q_1^+, q_1^-, q_2^+, q_2^-, q_3^+, q_3^-}
     '''
 
-    n_w = len(kx)
-    Phi = np.zeros((6*n_w,6*n_w), dtype=complex)
-    lam = np.zeros(6*n_w, dtype=complex)
+
+    Phi = np.zeros((6,6), dtype=complex)
+    lam = np.zeros(6, dtype=complex)
 
     lam_p = np.sqrt(-mat.delta_p**2+kx**2+kz**2)
     lam_s = np.sqrt(-mat.delta_s**2+kx**2+kz**2)
@@ -74,17 +73,16 @@ def elastic_waves_3D(mat, kx, kz):
     ky_s = -1j*lam_s
     
 
-    for _w, _kx in enumerate(kx):
-        ky = np.array([ky_p[_w], ky_s[_w], ky_s[_w]])
-        _ = slice(0+6*_w,6+6*_w)
-        Phi[_, 0+6*_w] = np.array([_kx, kz, ky[0], -1j*(mat.lambda_*mat.delta_p**2+2*mat.mu*ky[0]**2),-2*1j*mat.mu*ky[0]*kz,-2*1j*mat.mu*ky[0]*_kx])
-        Phi[_, 3+6*_w] = np.array([_kx, kz, -ky[0], -1j*(mat.lambda_*mat.delta_p**2+2*mat.mu*ky[0]**2), 2*1j*mat.mu*ky[0]*kz, 2*1j*mat.mu*ky[0]*_kx])
-        Phi[_, 1+6*_w] = np.array([ky[1],0,-_kx, 2*1j*mat.mu*ky[1]*_kx, 1j*mat.mu*_kx*kz,          -1j*mat.mu*(ky[1]**2-_kx**2)]) 
-        Phi[_, 4+6*_w] = np.array([ky[1],0, _kx, 2*1j*mat.mu*ky[1]*_kx,-1j*mat.mu*_kx*kz,           1j*mat.mu*(ky[1]**2-_kx**2)]) 
-        Phi[_, 2+6*_w] = np.array([0,ky[1],- kz, 2*1j*mat.mu*ky[1]* kz,-1j*mat.mu*(ky[1]**2-kz**2), 1j*mat.mu*kz*_kx           ])
-        Phi[_, 5+6*_w] = np.array([0,ky[1],  kz, 2*1j*mat.mu*ky[1]* kz, 1j*mat.mu*(ky[1]**2-kz**2), -1j*mat.mu*kz*_kx           ])
-        lam[0+6*_w:3+6*_w] =  -1j*ky
-        lam[3+6*_w:6+6*_w] =  1j*ky
+    ky = np.array([ky_p, ky_s, ky_s])
+    _ = slice(0,6+6)
+    Phi[_, 0] = np.array([kx, kz, ky[0], -1j*(mat.lambda_*mat.delta_p**2+2*mat.mu*ky[0]**2),-2*1j*mat.mu*ky[0]*kz,-2*1j*mat.mu*ky[0]*kx])
+    Phi[_, 3] = np.array([kx, kz, -ky[0], -1j*(mat.lambda_*mat.delta_p**2+2*mat.mu*ky[0]**2), 2*1j*mat.mu*ky[0]*kz, 2*1j*mat.mu*ky[0]*kx])
+    Phi[_, 1] = np.array([ky[1],0,-kx, 2*1j*mat.mu*ky[1]*kx, 1j*mat.mu*kx*kz,          -1j*mat.mu*(ky[1]**2-kx**2)]) 
+    Phi[_, 4] = np.array([ky[1],0, kx, 2*1j*mat.mu*ky[1]*kx,-1j*mat.mu*kx*kz,           1j*mat.mu*(ky[1]**2-kx**2)]) 
+    Phi[_, 2] = np.array([0,ky[1],-kz, 2*1j*mat.mu*ky[1]*kz,-1j*mat.mu*(ky[1]**2-kz**2), 1j*mat.mu*kz*kx           ])
+    Phi[_, 5] = np.array([0,ky[1], kz, 2*1j*mat.mu*ky[1]*kz, 1j*mat.mu*(ky[1]**2-kz**2),-1j*mat.mu*kz*kx           ])
+    lam[0:3] =  -1j*ky
+    lam[3:6] =  1j*ky
 
     return Phi, lam
 
@@ -115,12 +113,10 @@ def fluid_waves_3D(mat, kx, kz):
         raise ValueError('Provided material is not a fluid')
     lamda = np.sqrt(-mat.k**2+kx**2+kz**2+0j)
     ky = -1j*lamda
-    n_w = len(kx)
-    Phi = np.zeros((2*n_w, 2*n_w), dtype=complex)
-    lam = np.zeros(2*n_w, dtype=complex)
-    for _w, _ky in enumerate(ky):
-        Phi[0+2*_w, 0+2*_w:2+2*_w] = np.array([-1j*_ky/(K*mat.k**2), 1j*_ky/(K*mat.k**2)])
-        Phi[1+2*_w, 0+2*_w:2+2*_w] = np.array([1, 1])
+    Phi = np.zeros((2, 2), dtype=complex)
+    lam = np.zeros(2, dtype=complex)
+    Phi[0, 0:2] = np.array([-1j*ky/(K*mat.k**2), 1j*ky/(K*mat.k**2)])
+    Phi[1, 0:2] = np.array([1, 1])
 
     lam[::2] = -1j*ky
     lam[1::2] = 1j*ky

@@ -326,7 +326,7 @@ class PemLayer_3D(PwLayer_3D):
     def update_frequency(self, omega, kx=[0], kz=0):
         PwLayer_3D.update_frequency(self, omega, kx, kz)
         self.SV, self.lam = PEM_waves_3D(self.medium, self.kx, self.kz)
-        self.nb_waves = len(self.kx)
+
 
     def state_matrix(self, omega):
         # self.medium.update_frequency(omega)
@@ -424,7 +424,7 @@ class ElasticLayer_3D(PwLayer_3D):
         PwLayer_3D.update_frequency(self, omega, kx, kz)
         self.medium.update_frequency(omega)
         self.SV, self.lam = elastic_waves_3D(self.medium, kx, kz)
-        self.nb_waves = len(kx)
+
 
     def plot_solution_global(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
