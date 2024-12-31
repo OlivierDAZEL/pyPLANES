@@ -67,7 +67,6 @@ class PwGeneric_3D():
     def A2SV(self, S):
         pass 
         
-        
     def transfert_matrix_analytic(self, omega, direction=1):
         pass
 

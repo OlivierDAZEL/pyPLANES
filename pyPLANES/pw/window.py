@@ -4,7 +4,6 @@ from scipy import integrate
 from scipy.special import jv
 from numpy import exp, cos, sin, sqrt, pi
 from mediapack import Air
-plot_color = ["r", "b", "m", "k", "g", "y", "k", "r--", "b--", "m--", "k--", "g--", "y--", "k--"]
 
 class Window():
     def __init__(self, L_x=1., L_y=1., **kwargs):
@@ -15,10 +14,21 @@ class Window():
         self.rho_0 = Air.rho
         self.c_0 = Air.c
         self.update_frequency(2*pi*1000)
+        self.method = None
 
     def update_frequency(self, omega):
         self.omega = omega
         self.k_0 = self.omega / self.c_0
+
+
+    def sigma(self, f, theta_d, phi_d):
+        omega = 2*pi*f
+        self.update_frequency(omega)
+        if self.method == "Yu":
+            return self.sigma_average_Yu(self.k_0*np.sin(theta_d*pi/180))
+        elif self.method == "Rhazi":
+            return self.sigma_Rhazi(self.k_0*np.sin(theta_d*pi/180), phi_d*pi/180)
+
 
     def sigma_Rhazi(self, k, phi):
         def R_theta(t):
@@ -50,7 +60,6 @@ class Window():
             out *= self.k_0*k_r/sqrt(self.k_0**2-k_r**2)
             return out
         return (self.rho_0*self.c_0*self.S/(pi**2))*np.array(integrate.dblquad(ff, 0, 2*pi, 0, self.k_0))[0]
-
 
     def sigma_average_Rhazi(self, k):
         def func(phi):

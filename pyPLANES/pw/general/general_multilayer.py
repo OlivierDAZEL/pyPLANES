@@ -43,10 +43,11 @@ class GeneralMultiLayer():
         self.method_TM = kwargs.get("method_TM","diag")
         self.material_database = kwargs.get("material_database", None)
         # Creation of the list of layers
-        self.layers = []
+
         self.nb_waves = kwargs.get("nb_waves", 1)
         self.kx, self.kz = None, None
         _x = 0 
+        self.layers = []
         for _l in ml:
             if isinstance(_l,(list,tuple)):
                 mat,d = _l
@@ -90,6 +91,10 @@ class GeneralMultiLayer():
                     self.interfaces.append(ElasticPemInterface_3D(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(ElasticElasticInterface_3D(_layer,self.layers[i_l+1]))
+        self.studs = []
+
+
+
 
     def __str__(self):
         out = "Interface #0\n"
@@ -122,7 +127,7 @@ class GeneralMultiLayer():
             self.interfaces.insert(0,FluidElasticInterface_3D(incident_layer, self.layers[0]))
             # # Addition of a fictious Air-Layer for the interface.
             # self.interfaces[0].layers[0] = incident_layer
-        if self.method == "Global Method":
+        if self.method in ["Global Method", "Stud"]:
             self.layers.insert(0, incident_layer)
             self.nb_PW = 0
             for _layer in self.layers:
@@ -131,6 +136,8 @@ class GeneralMultiLayer():
             if isinstance(self.interfaces[-1], SemiInfinite_3D):
                 self.interfaces[-1].dofs = slice(self.nb_PW, self.nb_PW+self.nb_waves)
                 self.nb_PW += self.nb_waves
+        else:
+            raise ValueError("Method not implemented")
 
     def update_frequency(self, omega, kx, kz):
         self.kx = kx
