@@ -33,6 +33,8 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.pw.general.general_layers import *
 from pyPLANES.pw.general.general_interfaces import *
 
+from pyPLANES.pw.stud import Stud
+
 class GeneralMultiLayer():
     """
     Multilayer structure
@@ -91,10 +93,13 @@ class GeneralMultiLayer():
                     self.interfaces.append(ElasticPemInterface_3D(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(ElasticElasticInterface_3D(_layer,self.layers[i_l+1]))
+        studs = kwargs.get("studs", [])
+        # Studs
         self.studs = []
-
-
-
+        if studs != []:
+            for st in studs:
+                st = Stud(st[0],self.layers)
+                self.studs.append(st)
 
     def __str__(self):
         out = "Interface #0\n"
@@ -129,6 +134,9 @@ class GeneralMultiLayer():
             # self.interfaces[0].layers[0] = incident_layer
         if self.method in ["Global Method", "Stud"]:
             self.layers.insert(0, incident_layer)
+
+    def compute_number_of_pw(self):
+        if self.method in ["Global Method", "Stud"]:
             self.nb_PW = 0
             for _layer in self.layers:
                 _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
@@ -138,6 +146,8 @@ class GeneralMultiLayer():
                 self.nb_PW += self.nb_waves
         else:
             raise ValueError("Method not implemented")
+        
+
 
     def update_frequency(self, omega, kx, kz):
         self.kx = kx

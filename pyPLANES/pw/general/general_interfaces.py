@@ -59,7 +59,6 @@ class Interface_3D():
         else:
             self.carac_t = None
 
-
     def update_frequency(self, omega, kx=0, kz=0):
         if isinstance(self.layers[0],PwLayer_3D):
             self.layers[0].medium.update_frequency(omega)
@@ -121,6 +120,7 @@ class FluidFluidInterface_3D(Interface_3D):
         self.C_t = -np.eye(self.number_relations)
         self.C_bc, self.C_tc = self.C_b, self.C_t
         self.pw_method = fluid_waves_3D
+        # return ("u_y^b-u_y^t", "p^b-p^t")
 
     def __str__(self):
         out = "\t Fluid-fluid interface"
@@ -144,13 +144,11 @@ class FluidPemInterface_3D(Interface_3D):
         self.C_t[2,4] = 1 # hat{sigma}_{yy}
         self.C_t[3,5] = 1 # hat{sigma}_{yz}
         self.C_t[4,6] = 1 # hat{sigma}_{xy}
-        
         self.C_bc, self.C_tc = self.C_b, self.C_t
         if isinstance(self.layers[1], PeriodicLayer):
             if self.layers[1].pwfem_entities[0].typ == "Biot01":
                 pass
             raise NameError("Periodic layers are not implemented for General Plane Wave Solver")
-
 
 
     def __str__(self):
@@ -210,7 +208,7 @@ class FluidElasticInterface_3D(Interface_3D):
         self.C_t[1,3], self.C_b[1,1] = 1, 1 # sigma_{yy}+p
         self.C_t[2,4] = 1 # hat{sigma}_{yy}
         self.C_t[3,5] = 1 # hat{sigma}_{yz},
-         
+        self.relations_sigma = [1, 2, 3] 
         
         self.C_bc, self.C_tc = self.C_b, self.C_t
         self.pw_method = fluid_waves_3D
@@ -236,7 +234,7 @@ class ElasticFluidInterface_3D(Interface_3D):
         self.C_b[1,3], self.C_t[1,1] = 1, 1 # sigma_{yy}+p
         self.C_b[2,4] = 1 # hat{sigma}_{yz}
         self.C_b[3,5] = 1 # hat{sigma}_{xy},
-
+        self.relations_sigma = [1, 2, 3]
 
         self.C_bc, self.C_tc = self.C_b, self.C_t
 
@@ -256,6 +254,7 @@ class ElasticElasticInterface_3D(Interface_3D):
         self.number_relations = 6
         self.C_b = np.eye(self.number_relations)
         self.C_t = -np.eye(self.number_relations)
+        self.relations_sigma = [3, 4, 5]
         self.C_bc, self.C_tc = self.C_b, self.C_t
 
         self.pw_method = elastic_waves_3D
@@ -321,9 +320,10 @@ class ElasticPemInterface_3D(Interface_3D):
         self.C_t[4,4], self.C_t[4,7], self.C_b[4,3] = 1,-1, -1 # hat{sigma}_{yy}-p-sigma_{yy}   
         self.C_t[5,5], self.C_b[5,4] = 1,-1 # hat{sigma}_{yz}-sigma_{yz}
         self.C_t[6,6], self.C_b[6,5] = 1,-1 # hat{sigma}_{yz}-sigma_{yz}
+        self.relations_sigma = [4, 5, 6]
         self.C_bc, self.C_tc = self.C_b, self.C_t
-
         self.pw_method = elastic_waves_3D
+        
 
     def __str__(self):
         out = "\t Elastic-PEM interface"
@@ -370,6 +370,7 @@ class PemElasticInterface_3D(Interface_3D):
         self.C_b[4,4], self.C_b[4,7], self.C_t[4,3] = 1,-1, -1 # hat{sigma}_{yy}-p-sigma_{yy}   
         self.C_b[5,5], self.C_t[5,4] = 1,-1 # hat{sigma}_{yz}-sigma_{yz}
         self.C_b[6,6], self.C_t[6,5] = 1,-1 # hat{sigma}_{yz}-sigma_{yz}
+        self.relations_sigma = [4, 5, 6]
         self.C_bc, self.C_tc = self.C_b, self.C_t
 
        # Case of 2001 formulation 0 =w

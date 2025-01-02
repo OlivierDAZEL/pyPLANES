@@ -18,15 +18,24 @@ class Stud():
     def __init__(self,layer, ml, **kwargs):
         self.connection_type = kwargs.get("connection_type", "Point")
         self.layer = layer
+        self.nb_PW = None
         # test if the stud connect two elastic layers
         if ml[self.layer-1].medium.MODEL != "elastic" and ml[self.layer+1].medium.MODEL != "elastic":
             raise NameError("The stud must connect two elastic layers")
         self.layer_b = ml[self.layer-1]
         self.layer_t = ml[self.layer-1]
-        
         self.K = np.zeros((6,6), dtype=complex)
-        self.R_list = []
-
+        K =1e9
+        self.K[0,2] = -1  
+        self.K[0,5] = 1
+        self.K[3,2] = -self.K[0,2]  
+        self.K[3,5] = self.K[0,5]
+        self.K *= K
+        
+    def __str__(self):
+        str = f"Stud associated to layer {self.layer}"
+        return str
+    
     def update_frequency(self, kx):
         pass
     
@@ -41,21 +50,8 @@ class Stud():
         d = [0]*self.layer_t.nb_waves_in_medium +[-self.layer_t.d]*self.layer_t.nb_waves_in_medium
         delta = np.diag(np.exp(self.layer_t.lam*d))
         self.Uw[3:6,self.layer_t.dofs-1] = SV[:3,:]@delta
-
+        return self.Uw
     
-    
-    def update(self, M, F):
-        
-        
-        
-        R = M
-        U_w = self.compute_Uw()
-        self.list_R.append(R)
-         
-        
-        
-        
-        
 
     def update_frequency(self, kx):
         self.kx = kx 
