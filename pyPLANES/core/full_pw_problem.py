@@ -31,31 +31,21 @@ from scipy import integrate
 
 from pyPLANES.core.calculus import Calculus
 from pyPLANES.pw.general.general_multilayer import GeneralMultiLayer
+from pyPLANES.pw.studs import Studs
+from pyPLANES.pw.pw_solver import PWSolver
+
 from pyPLANES.pw.window import Window
 
 
-class FullPwProblem(Calculus, GeneralMultiLayer):
+class FullPwProblem(Calculus, GeneralMultiLayer, Studs, PWSolver):
     def __init__(self, **kwargs):
         # General variables
         Calculus.__init__(self, **kwargs)
         self.result.Solver = type(self).__name__
-        # Angles
-        self.theta_d = kwargs.get("theta_d", 0.0)
-        self.angles = kwargs.get("angles", None)
-        if self.angles is not None:
-            self.theta_d = self.angles[0]
-            self.phi_d = self.angles[1]
-        self.diffuse_field = True if self.theta_d == 90 else False
-        self.DF_method = kwargs.get("DF_method", "scipy")
-        self.verbose = kwargs.get("verbose", False)
-        self.epsrel = kwargs.get("epsrel", 1.49e-1)
-        self.epsabs = kwargs.get("epsabs", 1.49e-1)
-
 
 
         # Windowing
         self.window = kwargs.get("window", False)
-
         if self.window is not False:
             self.window = Window(self.window[0], self.window[1])
             self.window.method = kwargs.get("window_method", False)
@@ -65,49 +55,40 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                 else:
                     self.window.method = "Rhazi"
 
-        # Computation method
-        self.method = kwargs.get("method", "Global Method")            
-        if self.method.lower() in ["recursive", "jap", "recursive method"]:
-            self.method = "Recursive Method"
-        elif self.method.lower() in ["tmm", "transfer matrix method"]:
-            self.method = "TMM"
-        elif self.method.lower() in ["characteristics", "characteristic", "carac"]:
-            self.method = "characteristics"
-        else: 
-            self.method = "Global Method"
-        # if self.homogeneous == False:
-        #     self.method = "Stud"
-        # Put a non zero angle for some methods
-        if self.method in [ "TMM", "Recursive Method"]:
-            if self.theta_d == 0:
-                self.theta_d = 1e-12
+        # Diffuse field
+        PWSolver.__init__(self, **kwargs)
 
-
-        self.homogeneous = True
-        studs = kwargs.get("studs", None)
+        # multilayer
         assert "ml" in kwargs
-
-
-        GeneralMultiLayer.__init__(self, ml=kwargs.get("ml"), method=self.method, material_database=self.material_database, studs=studs)
+        GeneralMultiLayer.__init__(self, ml=kwargs.get("ml"), method=self.method, material_database=self.material_database)
         self.termination = kwargs.get("termination", "rigid")
         self.add_excitation_and_termination(self.termination)
+
         GeneralMultiLayer.compute_number_of_pw(self)
-        self.period = kwargs.get("period", 0.5)
-        if self.studs != []:
-            self.homogeneous = False
-            self.method = "Stud"
-            self.period = kwargs.get("period", 0.5)
-            for st in self.studs:
-                i_eq = 0
-                for i, _int in enumerate(self.interfaces):
-                    if i == st.layer:
-                        st.sigma_b = i_eq + np.array(_int.relations_sigma)
-                        st.sigma_t = i_eq + _int.number_relations+np.array(self.interfaces[i+1].relations_sigma)
-                        st.B = np.zeros((self.nb_PW-1, 6), dtype=complex)
-                        st.B[st.sigma_b, :3] = np.eye(3)
-                        st.B[st.sigma_t, 3:] = np.eye(3)
-                    i_eq += _int.number_relations
-                st.nb_PW = self.nb_PW
+
+        # studs 
+        studs = kwargs.get("studs", [])
+        Studs.__init__(self, studs=studs)
+
+
+
+        # self.period = kwargs.get("period", None)
+        # if self.studs != []:
+        #     self.homogeneous = False
+        #     self.method = "Stud"
+        #     self.period = kwargs.get("period", .6)
+        #     for st in self.studs:
+        #         i_eq = 0
+        #         for i, _int in enumerate(self.interfaces):
+        #             if i == st.layer:
+        #                 st.sigma_b = i_eq + np.array(_int.relations_sigma)
+        #                 st.sigma_t = i_eq + _int.number_relations+np.array(self.interfaces[i+1].relations_sigma)
+        #                 st.B = np.zeros((self.nb_PW-1, 6), dtype=complex)
+        #                 st.B[st.sigma_t, :3] = np.eye(3)
+        #                 st.B[st.sigma_b, 3:] = -np.eye(3)
+        #             i_eq += _int.number_relations
+        #         st.nb_PW = self.nb_PW
+
             
         # Calculus variable (for pylint)
         self.kx, self.ky, self.kz, self.k = None, None, None, None
@@ -117,8 +98,10 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
     def update_frequency(self, omega, i_w=0):
         Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
-        self.kx = self.k_air*          np.sin(self.theta_d*np.pi/180)            *np.cos(self.phi_d*np.pi/180)+i_w*2*pi/self.period
-        self.kz = self.k_air*          np.sin(self.theta_d*np.pi/180)            *np.sin(self.phi_d*np.pi/180)
+        self.kx = self.k_air*np.sin(self.theta_d*np.pi/180)*np.cos(self.phi_d*np.pi/180)
+        if self.period is not None:
+            self.kx += i_w*2*pi/self.period
+        self.kz = self.k_air*np.sin(self.theta_d*np.pi/180)*np.sin(self.phi_d*np.pi/180)
         self.ky = np.sqrt(self.k_air**2-self.kx**2-self.kz**2+0*1j)
         GeneralMultiLayer.update_frequency(self, omega, self.kx, self.kz)
         for st in self.studs:
@@ -150,14 +133,14 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                 if self.window:
                     sigma = self.window.sigma(self.f, self.theta_d, self.phi_d)
                     self.tau *= sigma*np.cos(self.theta_d*pi/180)
+
         elif self.method == "Stud":
             omega = 2*pi*self.f
-            self.update_frequency(omega)
             i_w = 0
             test =True
             S = np.zeros((6,6), dtype=complex)
             S_old = S.copy()
-            q, rho = [], []
+            rho = []
             while test :
                 self.update_frequency(omega, i_w)
                 self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
@@ -167,30 +150,29 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                 if i_w == 0:
                     self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
                 self.A = np.delete(self.A,0, axis=1)
-                R = LA.inv(self.A)
+                A_i = LA.inv(self.A)
                 for stud in self.studs:
                     U_w = stud.compute_Uw()
                     if i_w == 0:
-                        q.append(R@self.F)
-                        F = U_w@q[0]
-                    rho.append(-R@stud.B)
+                        q_0 = A_i@self.F
+                        U0q0 = U_w@q_0
+                    rho.append(-A_i@stud.B)
                     S += U_w @ rho[-1]
                     
-                if LA.norm(S-S_old)< LA.norm(S)*1e-3:
+                if LA.norm(S-S_old)< LA.norm(S)*1e-2:
                     test = False
                 else:
                     S_old = S.copy()
                     # print(i_w)
-                    if i_w > 0:
+                    if i_w > 0: # ok for 0, 1, -1, ...
                         i_w = -i_w
                     else:
                         i_w = -i_w+1
 
-            # print(i_w)
-            u = LA.solve(np.eye(6)+S@stud.K, F)
-            sigma = stud.K@u
+            print(i_w)
+            sigma = LA.solve(np.eye(6)-stud.K@S, stud.K@U0q0)
             for i in range(1):
-                self.X = q[0] + rho[0]@sigma
+                self.X = q_0 + rho[0]@sigma
             self.R0 = self.X[0]
             if self.termination == "transmission":
                 self.T0 = self.X[-1]
@@ -198,8 +180,7 @@ class FullPwProblem(Calculus, GeneralMultiLayer):
                 if self.window:
                     sigma = self.window.sigma(self.f, self.theta_d, self.phi_d)
                     self.tau *= sigma*np.cos(self.theta_d*pi/180)
-            
-                        
+
 
             
         else:

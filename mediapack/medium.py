@@ -73,8 +73,6 @@ class Medium(object):
             test = test and getattr(self,p[0]) == getattr(other,p[0])
         return test
 
-
-
     def as_dict(self):
         return {k: self.__getattribute__(k) for k, _ in self.EXPECTED_PARAMS+self.OPT_PARAMS if hasattr(self, k) and self.__getattribute__(k) is not None}
 

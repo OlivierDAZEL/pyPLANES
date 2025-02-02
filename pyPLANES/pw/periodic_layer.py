@@ -140,9 +140,6 @@ class PeriodicLayerBase(Mesh):
             _ent.dofs = np.arange(_ent.nb_dof_per_node*len(self.kx))
             _ent.nb_dofs = len(_ent.dofs)
 
-
-
-
     def apply_periodicity_on_Dii(self):
         # Application of periodicity on Dii
         for i_left, dof_left in enumerate(self.dof_left):
@@ -273,7 +270,8 @@ class PeriodicLayerBase(Mesh):
         self.M_b = M_b
         self.M_t = M_t
 
-    def create_transfert_matrix(self):
+
+    def update_TM(self, omega):
         self.create_bulk_matrices()
         self.apply_periodicity_on_Dii()
         self.linear_system_2_numpy()
@@ -386,7 +384,7 @@ class PeriodicLayerBase(Mesh):
         self.Omega_minus = Om # To plot the solution
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
-        self.create_transfert_matrix()
+        self.update_TM(omega)
         m = self.nb_waves_in_medium*self.nb_waves
         Om = self.TM@Om
         Xi = np.eye(m)
@@ -559,8 +557,6 @@ class PeriodicLayerBase(Mesh):
             self.T_v = np.array(self.T_v, dtype=complex)
 
     def plot_solution(self, S_b, S_t):
-
-
         X = self.R_b@S_b +self.R_t@S_t
         X = np.insert(X, 0, 0)
         # Concatenation of the slave dofs at the end of the vector

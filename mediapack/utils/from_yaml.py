@@ -14,7 +14,7 @@
 import os
 import yaml
 
-from mediapack.eqf import EqFluidJCA, EqFluidJCAL
+from mediapack.eqf import EqFluidJCA#, EqFluidJCAL
 from mediapack.elastic import Elastic
 from mediapack.pem import PEM
 from mediapack.screen import Screen

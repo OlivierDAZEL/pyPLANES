@@ -50,7 +50,6 @@ class MultiLayer():
             if isinstance(_l, PwGeneric):
                 if _l.method_TM != self.method_TM:
                     _l.method_TM = self.method_TM
-                # print(_l.method_TM)
                 _l.x_0 = _x
                 d = _l.d
                 self.layers.append(_l)
@@ -128,6 +127,7 @@ class MultiLayer():
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
         
         incident_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
+
         if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
             self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
         elif self.layers[0].medium.MEDIUM_TYPE == "pem":
@@ -138,14 +138,25 @@ class MultiLayer():
             # self.interfaces[0].layers[0] = incident_layer
         if self.method == "Global Method":
             self.layers.insert(0, incident_layer)
-            self.nb_PW = 0
+            self.nb_dofs = 0
             for _layer in self.layers:
-                _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium)
-                self.nb_PW += 2*_layer.nb_waves_in_medium                
+                _layer.dofs = self.nb_dofs+np.arange(2*_layer.nb_waves_in_medium)
+                self.nb_dofs += 2*_layer.nb_waves_in_medium                
             if isinstance(self.interfaces[-1], SemiInfinite):
-                self.interfaces[-1].dofs = [self.nb_PW]
-                self.nb_PW += 1
+                self.interfaces[-1].dofs = [self.nb_dofs]
+                self.nb_dofs += 1
+        if self.method == "TMM":
+            self.layers.insert(0, incident_layer)
+            self.nb_dofs =2 # 1,R
+            for _layer in self.layers:
+                _layer.dofs = self.nb_dofs+np.arange(2*_layer.nb_waves_in_medium)
+                self.nb_dofs += 2*_layer.nb_waves_in_medium
+            if isinstance(self.interfaces[-1], SemiInfinite):
+                self.interfaces[-1].dofs = np.arange(self.nb_dofs, self.nb_dofs+1)
+                self.nb_dofs += 1
 
+ 
+ 
     def update_frequency(self, omega, kx):
         self.kx = kx
         for _l in self.layers:

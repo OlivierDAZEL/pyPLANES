@@ -53,7 +53,9 @@ class MetaporousSimulation():
         elif self.case in [4, 8, 12, 16]:
             r_i = 2e-3
             one_inclusion_bicomposite("mesh", self.L, self.d, self.a, r_i, self.lcar, "pem_benchmark_2", "pem_benchmark_1", "Steel")
-        if self.frequencies == None:
+        if hasattr(self.frequencies, '__iter__'):
+            self.frequencies = np.array(self.frequencies)
+        elif self.frequencies == None:
             if self.case in [1, 5,6,9, 13]:
                 self.frequencies = np.linspace(10, 5010, 201)
             else:

@@ -46,7 +46,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         Calculus.__init__(self, **kwargs)
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
-        
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -74,8 +73,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         self.result.order = self.order
         self.result.Solver = type(self).__name__
         self.result.Method = self.method
-        
-
         # Read periodic multilayer
         PeriodicMultiLayer.__init__(self, ml, theta_d=self.theta_d, order=self.order, plot=self.plot,method=self.method,  condensation=self.condensation)
 
@@ -118,7 +115,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
 
     def create_linear_system(self, omega):
         Calculus.create_linear_system(self, omega)
-        if self.method in ["Recursive Method", "TMM"]:
+        if self.method == "Recursive Method":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omega(self.nb_waves)
                 for i, _l in enumerate(self.layers[::-1]):
@@ -151,7 +148,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
         elif self.method == "Global Method":
-            self.A = np.zeros((self.nb_PW-self.nb_waves, self.nb_PW),dtype=complex)
+            self.A = np.zeros((self.nb_dofs-self.nb_waves, self.nb_dofs),dtype=complex)
             i_eq = 0
             for _int in self.interfaces:
                 if self.method == "Global Method":
@@ -166,7 +163,28 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.F = -self.A[:, 0]*np.exp(1j*self.ky[0]*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
             for i in range(self.nb_waves):
                 self.A = np.delete(self.A, 2*(self.nb_waves-i-1), axis=1)
-
+        elif self.method == "TMM":
+            for _l in self.layers:
+                _l.update_TM(omega)
+            self.A = np.zeros((self.nb_dofs-1, self.nb_dofs),dtype=complex)
+            i_eq = 0 # alpha*(-1+R)-u_y = 0
+            for i, _ky in enumerate(self.ky): 
+                alpha = 1j*(_ky/self.k_air)/(2*pi*self.f*Air.Z)
+                if i==0:
+                    self.A[i_eq,0] = -alpha
+                self.A[i_eq,1+i] = alpha
+                self.A[i_eq,1+self.nb_waves+2*i] = -1 # u_y
+                i_eq += 1 # 1+R-p = 0
+                if i==0:
+                    self.A[i_eq,0] = 1
+                self.A[i_eq,1+i] = 1
+                self.A[i_eq,2+self.nb_waves+2*i] = -1 # p 
+                i_eq += 1
+            for _int in self.interfaces:
+                i_eq = _int.update_M_TMM(self.A,i_eq)
+            self.F = -self.A[:, 0]# - is for transposition
+            self.A = np.delete(self.A, 0, axis=1)
+            
         else:
             raise NameError("Unknow method")
         
@@ -175,10 +193,21 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
         if self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             R = self.X[:self.nb_waves]
-            # print(f"R={R}")
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
+            abs = 1-np.abs(self.result.R0[-1])**2
+            if self.termination == "transmission":
+                T =self.X[-self.nb_waves:]
+                self.result.T0.append(T[0])
+                self.result.T.append(np.sum(np.real(self.ky)*np.abs(T)**2)/np.real(self.ky[0]))
+                abs -= self.result.T[-1]
+            self.result.abs.append(abs)
+        elif self.method == "TMM":
+            self.X = LA.solve(self.A, self.F)
+            R = self.X[:self.nb_waves]
+            self.result.R0.append(R[0])
+            self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
             abs = 1-np.abs(self.result.R0[-1])**2
             if self.termination == "transmission":
                 T =self.X[-self.nb_waves:]
@@ -224,7 +253,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.result.abs.append(abs)
 
     def plot_solution(self):
-        if self.method == "Recursive Method":
+        if self.method ["Recursive Method", "TMM"]:
             if not(isinstance(self.X_0_minus,np.ndarray)):
                 X_minus = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
             else:
@@ -255,7 +284,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 else:                
                     _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q_minus)
         elif self.method == "Global Method":
-            print(f"X={self.X}")
             for _l in self.layers[1:]:
                 if isinstance(_l, PeriodicLayer):
                     S_b = self.X[_l.dofs_bottom]

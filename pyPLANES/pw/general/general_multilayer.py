@@ -33,17 +33,18 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.pw.general.general_layers import *
 from pyPLANES.pw.general.general_interfaces import *
 
-from pyPLANES.pw.stud import Stud
+from pyPLANES.pw.studs import Stud
 
 class GeneralMultiLayer():
     """
     Multilayer structure
     """
     def __init__(self, **kwargs):
-        ml = kwargs.get("ml", None) 
-        self.method = kwargs.get("method","Global Method")
-        self.method_TM = kwargs.get("method_TM","diag")
+        ml = kwargs.get("ml", None)
+        self.homogeneous = True
         self.material_database = kwargs.get("material_database", None)
+        self.method_TM = kwargs.get("method_TM","diag")
+
         # Creation of the list of layers
 
         self.nb_waves = kwargs.get("nb_waves", 1)
@@ -93,13 +94,7 @@ class GeneralMultiLayer():
                     self.interfaces.append(ElasticPemInterface_3D(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(ElasticElasticInterface_3D(_layer,self.layers[i_l+1]))
-        studs = kwargs.get("studs", [])
-        # Studs
-        self.studs = []
-        if studs != []:
-            for st in studs:
-                st = Stud(st[0],self.layers)
-                self.studs.append(st)
+
 
     def __str__(self):
         out = "Interface #0\n"
@@ -145,8 +140,7 @@ class GeneralMultiLayer():
                 self.interfaces[-1].dofs = slice(self.nb_PW, self.nb_PW+self.nb_waves)
                 self.nb_PW += self.nb_waves
         else:
-            raise ValueError("Method not implemented")
-        
+            raise ValueError(f"Method {self.method} not implemented")
 
 
     def update_frequency(self, omega, kx, kz):

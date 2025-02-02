@@ -48,7 +48,7 @@ class PwGeneric():
         """
         self.d = d
         x_0 = kwargs.get("x_0", 0.0)
-        self.method_TM = kwargs.get("method_TM", False)
+        self.method_TM = kwargs.get("method_TM", "diag")
         if self.method_TM in ["cheb_1", "cheb_2"]:
             self.order_chebychev = kwargs.get("order_chebychev", 20)
         # pymls layer constructor 
@@ -57,6 +57,7 @@ class PwGeneric():
         self.lam = None
         self.SV = None
         self.SVp = None
+        self.TM = None
 
     def update_frequency(self, omega):
         pass
@@ -180,8 +181,10 @@ class PwGeneric():
         TM = TL@A
         return TM
 
-    def transfert_matrix(self, omega, direction=1):
+    def update_TM(self, omega):
+        self.TM = self.transfert_matrix(omega,-1)
 
+    def transfert_matrix(self, omega, direction=1):
         if self.method_TM == "expm":
             return expm(self.state_matrix(omega)*direction*self.d)
         elif self.method_TM == "diag":
@@ -195,7 +198,7 @@ class PwGeneric():
         elif self.method_TM == "cheb_2":
             return self.transfert_matrix_cheb_2(omega, direction)
         else:
-            raise NameError("self.method_TM incorrect")
+            raise NameError(f"self.method_TM <{self.method_TM}> incorrect")
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         """
@@ -337,7 +340,7 @@ class FluidLayer(PwLayer):
         self.nb_fields_SV = 2
 
     def __str__(self):
-        out = "\t Fluid Layer / " + self.medium.name
+        out = "\t Fluid Layer / " #+ self.medium.name
         return out
 
     def update_frequency(self, omega, kx=[0]):
@@ -527,7 +530,7 @@ class ElasticLayer(PwLayer):
         self.nb_fields_SV = 4
 
     def __str__(self):
-        out = "\t Elastic Layer / " + self.medium.name
+        out = "\t Elastic Layer / " 
         return out
 
     def update_frequency(self, omega, kx):

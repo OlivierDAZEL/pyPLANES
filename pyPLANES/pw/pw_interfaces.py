@@ -109,6 +109,14 @@ class PwInterface():
             i_eq += self.number_relations*self.nb_waves
             
         return i_eq
+    
+    def update_M_TMM(self, M, i_eq):
+        index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+        M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)
+        M [index_rel, self.layers[1].dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(self.layers[1].TM)
+        i_eq += self.number_relations*self.nb_waves
+            
+        return i_eq
 
     def update_Omega(self, Om):
 
@@ -478,6 +486,15 @@ class RigidBacking(PwInterface):
             i_eq += self.number_relations*self.nb_waves
         return i_eq
 
+    def update_M_TMM(self, M, i_eq):
+        lines = slice(i_eq, i_eq+self.nb_waves*self.number_relations)
+        M[lines, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C)  
+        i_eq += self.number_relations*self.nb_waves
+        return i_eq
+
+
+
+
     def Omega(self, nb_bloch_waves=0):
         pass
 
@@ -726,7 +743,6 @@ class SemiInfinite(PwInterface):
         # Om = [np.array([self.lam[2*_w]/(self.medium.rho*self.omega**2),1]).reshape(2,1) for _w in range(nb_bloch_waves)]
         Om = block_diag(*Omega_0)
         Om = np.kron(np.eye(self.nb_waves),self.carac_top.Q)@Om
-
         return self.update_Omegac(Om)
 
     def update_M_global(self, M, i_eq):
@@ -742,5 +758,13 @@ class SemiInfinite(PwInterface):
             index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
             M [index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)@(SV_0@delta_0)
             M [index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
+        i_eq += self.number_relations*self.nb_waves
+        return i_eq
+
+    def update_M_TMM(self, M, i_eq):
+        SV_1 = self.SV[:,::2] # Just the outgoing waves
+        index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
+        M[index_rel, self.layers[0].dofs] = np.kron(np.eye(self.nb_waves), self.C_bottom)
+        M[index_rel, self.dofs] = np.kron(np.eye(self.nb_waves), self.C_top)@(SV_1)
         i_eq += self.number_relations*self.nb_waves
         return i_eq

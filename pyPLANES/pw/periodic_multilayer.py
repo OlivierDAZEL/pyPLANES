@@ -41,7 +41,7 @@ class PeriodicMultiLayer():
     """
     Periodic Multilayer structure
     """
-    def __init__(self, ml, method_TM="JAP", **kwargs):
+    def __init__(self, ml, method_TM="diag", **kwargs):
         # Creation of the list of layers
         
         self.method = kwargs.get("method","Global Method")
@@ -169,26 +169,31 @@ class PeriodicMultiLayer():
         if self.method == "Global Method":
             self.layers.insert(0, incident_layer)
             self.nb_waves = 1+2*self.nb_bloch_waves
-            self.nb_PW =0
+            self.nb_dofs =0
             for _layer in self.layers:
                 if isinstance(_layer, PeriodicLayer):
-                    _layer.dofs_bottom = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
-                    self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
-                    _layer.dofs_top = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
-                    self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
+                    _layer.dofs_bottom = self.nb_dofs+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                    self.nb_dofs += 2*_layer.nb_waves_in_medium*self.nb_waves
+                    _layer.dofs_top = self.nb_dofs+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                    self.nb_dofs += 2*_layer.nb_waves_in_medium*self.nb_waves
                 else:
-                    _layer.dofs = self.nb_PW+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
-                    self.nb_PW += 2*_layer.nb_waves_in_medium*self.nb_waves
+                    _layer.dofs = self.nb_dofs+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                    self.nb_dofs += 2*_layer.nb_waves_in_medium*self.nb_waves
             if isinstance(self.interfaces[-1], SemiInfinite):
-                self.interfaces[-1].dofs = slice(self.nb_PW, self.nb_PW+self.nb_waves)
-                self.nb_PW += self.nb_waves
-                
+                self.interfaces[-1].dofs = slice(self.nb_dofs, self.nb_dofs+self.nb_waves)
+                self.nb_dofs += self.nb_waves
+        if self.method == "TMM":
+            self.layers.insert(0, incident_layer)
+            self.nb_waves = 1+2*self.nb_bloch_waves
+            self.nb_dofs = 1+self.nb_waves
+            for _layer in self.layers:
+                _layer.dofs = self.nb_dofs+np.arange(2*_layer.nb_waves_in_medium*self.nb_waves)
+                self.nb_dofs += 2*_layer.nb_waves_in_medium*self.nb_waves
+            if isinstance(self.interfaces[-1], SemiInfinite):
+                self.interfaces[-1].dofs = slice(self.nb_dofs, self.nb_dofs+self.nb_waves)
+                self.nb_dofs += self.nb_waves
+     
 
-        # for i, _l in enumerate(self.layers):
-        #     if isinstance(_l, PeriodicLayer):
-        #         print(f"dof({i})={_l.dofs_bottom} // {_l.dofs_top}")
-        #     else:
-        #         print(f"dof({i})={_l.dofs}")
 
 
 

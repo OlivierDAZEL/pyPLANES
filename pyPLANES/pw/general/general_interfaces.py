@@ -141,9 +141,9 @@ class FluidPemInterface_3D(Interface_3D):
         self.C_t= np.zeros((self.number_relations, 2*self.n_t))
         self.C_b[0,0], self.C_t[0,3] = 1,-1 # u_y-u_y^t 
         self.C_b[1,1], self.C_t[1,7] = 1,-1 # p-p
-        self.C_t[2,4] = 1 # hat{sigma}_{yy}
-        self.C_t[3,5] = 1 # hat{sigma}_{yz}
-        self.C_t[4,6] = 1 # hat{sigma}_{xy}
+        self.C_t[2,4] = -1 # hat{sigma}_{yy}
+        self.C_t[3,5] = -1 # hat{sigma}_{yz}
+        self.C_t[4,6] = -1 # hat{sigma}_{xy}
         self.C_bc, self.C_tc = self.C_b, self.C_t
         if isinstance(self.layers[1], PeriodicLayer):
             if self.layers[1].pwfem_entities[0].typ == "Biot01":
@@ -177,8 +177,8 @@ class PemFluidInterface_3D(Interface_3D):
         self.C_b= np.zeros((self.number_relations, 2*self.n_b))
         self.C_t= np.zeros((self.number_relations, 2*self.n_t))
         
-        self.C_t[0,0], self.C_b[0,3] = 1,-1 # u_y-u_y^t 
-        self.C_t[1,1], self.C_b[1,7] = 1,-1 # u_y-u_y^t
+        self.C_t[0,0], self.C_b[0,3] = -1,1 # u_y-u_y^t 
+        self.C_t[1,1], self.C_b[1,7] = -1,1 # u_y-u_y^t
         self.C_b[2,4] = 1 # hat{sigma}_{yy}
         self.C_b[3,5] = 1 # hat{sigma}_{yz},
         self.C_b[4,6] = 1 # hat{sigma}_{xy}
@@ -204,7 +204,7 @@ class FluidElasticInterface_3D(Interface_3D):
         self.C_b= np.zeros((self.number_relations, 2*self.n_b))
         self.C_t= np.zeros((self.number_relations, 2*self.n_t))
         
-        self.C_t[0,2], self.C_b[0,0] = 1,-1 # u_y^s-u_y 
+        self.C_t[0,2], self.C_b[0,0] = -1,1 # u_y^s-u_y 
         self.C_t[1,3], self.C_b[1,1] = 1, 1 # sigma_{yy}+p
         self.C_t[2,4] = 1 # hat{sigma}_{yy}
         self.C_t[3,5] = 1 # hat{sigma}_{yz},
@@ -313,13 +313,13 @@ class ElasticPemInterface_3D(Interface_3D):
 
         self.C_b = np.zeros((self.number_relations, 2*self.n_b))
         self.C_t = np.zeros((self.number_relations, 2*self.n_t))
-        self.C_t[0,0], self.C_b[0,0] = 1,-1 # u_x^s-u_x
-        self.C_t[1,1], self.C_b[1,1] = 1,-1 # u_z^s-u_z
-        self.C_t[2,2], self.C_b[2,2] = 1,-1 # u_y^s-u_y
-        self.C_t[3,3], self.C_b[3,2] = 1,-1 # u_y^t-u_y
-        self.C_t[4,4], self.C_t[4,7], self.C_b[4,3] = 1,-1, -1 # hat{sigma}_{yy}-p-sigma_{yy}   
-        self.C_t[5,5], self.C_b[5,4] = 1,-1 # hat{sigma}_{yz}-sigma_{yz}
-        self.C_t[6,6], self.C_b[6,5] = 1,-1 # hat{sigma}_{yz}-sigma_{yz}
+        self.C_t[0,0], self.C_b[0,0] = -1,1 # u_x^s-u_x
+        self.C_t[1,1], self.C_b[1,1] = -1,1 # u_z^s-u_z
+        self.C_t[2,2], self.C_b[2,2] = -1,1 # u_y^s-u_y
+        self.C_t[3,3], self.C_b[3,2] = -1,1 # u_y^t-u_y
+        self.C_t[4,4], self.C_t[4,7], self.C_b[4,3] = -1,1, 1 # hat{sigma}_{yy}-p-sigma_{yy}   
+        self.C_t[5,5], self.C_b[5,4] = -1,1 # hat{sigma}_{yz}-sigma_{yz}
+        self.C_t[6,6], self.C_b[6,5] = -1,1 # hat{sigma}_{yz}-sigma_{yz}
         self.relations_sigma = [4, 5, 6]
         self.C_bc, self.C_tc = self.C_b, self.C_t
         self.pw_method = elastic_waves_3D
@@ -373,28 +373,6 @@ class PemElasticInterface_3D(Interface_3D):
         self.relations_sigma = [4, 5, 6]
         self.C_bc, self.C_tc = self.C_b, self.C_t
 
-       # Case of 2001 formulation 0 =w
-        if isinstance(self.layers[0], PeriodicLayer):
-            if self.layers[0].pwfem_entities[0].typ == "Biot01":
-                self.C_top[2, 1] = 0.
-
-
-
-        if isinstance(self.layers[0], PeriodicLayer):
-            if self.layers[0].pwfem_entities[0].typ == "Biot01":
-                self.C_bottom[3, 4] = 0.
-         
-        
-        if isinstance(self.layers[0], PeriodicLayer):
-            if self.layers[0].pwfem_entities[0].typ == "Biot01":
-                M_01 = np.zeros((6,6))
-                M_01[0,0]=1
-                M_01[1,3]=1
-                M_01[2,2]=1
-                M_01[3,5]=1
-                M_01[4,1]=1
-                M_01[5,4]=1                
-                self.C_bottomc =  self.C_bottom@LA.inv(M_01)
 
     def __str__(self):
         out = "\t PEM-Elastic interface"

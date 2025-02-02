@@ -68,6 +68,7 @@ class PwProblem(Calculus, MultiLayer):
         ml = kwargs.get("ml")
 
         MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM, material_database=self.material_database)
+
         if self.method_TM in ["cheb_1"]:
             for l in self.layers:
                 l.order_chebychev = self.order_chebychev 
@@ -83,14 +84,11 @@ class PwProblem(Calculus, MultiLayer):
         self.k_air = omega/Air.c
         self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])
         self.ky = self.k_air*np.array([np.cos(self.theta_d*np.pi/180)])
-        # self.ky = np.sqrt(self.k_air**2-self.kx**2)
-        # print(self.kx**2+self.ky**2)
         MultiLayer.update_frequency(self, omega, self.kx)
 
     def create_linear_system(self, omega):
-
         Calculus.create_linear_system(self, omega)
-        if self.method in ["Recursive Method", "TMM"]:
+        if self.method == "Recursive Method":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omega()
                 for i, _l in enumerate(self.layers[::-1]):
@@ -124,27 +122,45 @@ class PwProblem(Calculus, MultiLayer):
                     _l.Omega_plus, _l.Xi = _l.update_Omegac(self.Omega, omega, self.method)
                     self.Omega, next_interface.Tau = next_interface.update_Omegac(_l.Omega_plus)
         elif self.method == "Global Method":
-            self.A = np.zeros((self.nb_PW-1, self.nb_PW),dtype=complex)
+            self.A = np.zeros((self.nb_dofs-1, self.nb_dofs),dtype=complex)
             i_eq = 0
             # Loop on the interfaces
             for _int in self.interfaces:
-                if self.method == "Global Method":
-                    i_eq = _int.update_M_global(self.A,i_eq)
+                i_eq = _int.update_M_global(self.A,i_eq)
             self.F = -self.A[:, 0]*np.exp(1j*self.ky*self.layers[0].d) # - is for transposition, exponential term is for the phase shift
+            self.A = np.delete(self.A, 0, axis=1)
+        elif self.method == "TMM":
+            for _l in self.layers:
+                _l.update_TM(omega)
+            self.A = np.zeros((self.nb_dofs-1, self.nb_dofs),dtype=complex)
+            i_eq = 0 # alpha*(-1+R)-u_y = 0
+            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+            self.A[i_eq,0] = -alpha
+            self.A[i_eq,1] = alpha
+            self.A[i_eq,2] = -1 # u_y
+            i_eq += 1 # 1+R-p = 0
+            self.A[i_eq,0] = 1
+            self.A[i_eq,1] = 1
+            self.A[i_eq,3] = -1 # p 
+            i_eq += 1
+            for _int in self.interfaces:
+                i_eq = _int.update_M_TMM(self.A,i_eq)
+            self.F = -self.A[:, 0]# - is for transposition
             self.A = np.delete(self.A, 0, axis=1)
         else:
             raise NameError("Unknow method")
+        
+        
+
     def solve(self):
         Calculus.solve(self)
-        if self.method in ["Recursive Method", "TMM", "characteristics"]:
+        if self.method in ["Recursive Method", "characteristics"]:
             self.Omega = self.Omega.reshape(2)
             if self.method == "characteristics":
                 self.Omega = self.interfaces[0].carac_bottom.P@self.Omega
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]
             self.result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
-            if self.verbose:
-                print("R_0={}".format(self.result.R0))
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
@@ -154,8 +170,6 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
             self.result.R0.append(self.X[0])
-            if self.verbose:
-                print("R_0={}".format(self.result.R0))
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":
                 self.result.T0.append(self.X[-1])
@@ -169,6 +183,14 @@ class PwProblem(Calculus, MultiLayer):
                 self.win = np.cos(self.theta_d*pi/180)*sigma
                 self.result.tau.append((np.abs(self.X[-1])**2)*np.cos(self.theta_d*pi/180)*sigma)
                 self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
+        elif self.method == "TMM":
+            self.X = LA.solve(self.A, self.F)
+            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+            det = -self.X[0]+alpha*self.X[1]
+            self.result.R0.append(self.X[0])
+            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+            if self.termination == "transmission":
+                self.result.T0.append(self.X[-1])
         self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1]))
 
     def plot_solution(self):

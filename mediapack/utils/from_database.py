@@ -14,7 +14,7 @@
 import os
 import json
 
-from mediapack.eqf import EqFluidJCA, EqFluidJCAL
+from mediapack.eqf import EqFluidJCA#, EqFluidJCAL
 from mediapack.elastic import Elastic
 from mediapack.pem import PEM
 from mediapack.screen import Screen
@@ -22,7 +22,7 @@ from mediapack.fluid import Fluid
 
 
 __MEDIUMCLASSES_MAP = {
-    _.MEDIUM_TYPE: _ for _ in [EqFluidJCA, EqFluidJCAL, Elastic, PEM, Fluid, Screen]
+    _.MEDIUM_TYPE: _ for _ in [EqFluidJCA, Elastic, PEM, Fluid, Screen]
 }
 
 

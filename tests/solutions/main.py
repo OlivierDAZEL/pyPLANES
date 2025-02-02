@@ -16,12 +16,12 @@ plot_solution = [True, True, True, False, False, False]
 plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
-theta_d = 30.00000
+theta_d = 0.00000
 nb_layers = 1
 L = 2.e-2
 d = 2.0e-2
 lcar = d/10
-nb_bloch_waves = 3
+nb_bloch_waves = 1
 order = 3
 
 frequency = 3e1
@@ -29,7 +29,7 @@ frequency = 3e1
 
 name_project="solution"
 case = ["layer", "sandwich"][1]
-method_FEM = ["jap", "global"][0]
+method_FEM = ["jap", "global", "TMM"][2]
 termination = ["rigid", "transmission"][1]
 material = ["Air", "Wwood", "melamine", "rubber"][2]
 
@@ -54,37 +54,61 @@ recursive_method.resolution()
 characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
 characteristic_method.resolution()
 
+
+
+
+TMM_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="TMM", verbose=verbose, print_result=True)
+TMM_method.resolution()
+
+
+
+
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
 
 
-# plt.plot(frequency,np.real(global_method.result.T0), 'b')
-# plt.plot(frequency,np.real(recursive_method.result.T0), 'b.')
-# plt.plot(frequency,np.real(eTMM_method.result.T0), 'm+')
-# # plt.plot(frequency,np.imag(global_method.result.T0), 'r')
-# # plt.plot(frequency,np.imag(recursive_method.result.T0), 'r.')
-# # plt.plot(frequency,np.imag(eTMM_method.result.T0), 'm+')
 
+print(f"R GM ={global_method.result.R0}")
+print(f"R RM ={recursive_method.result.R0}")
+print(f"R CM ={characteristic_method.result.R0}")
+print(f"R TM ={TMM_method.result.R0}")
+print(f"R FEM={eTMM_method.result.R0}")
 
-# plt.show()
-# exit()
-
-# print(eTMM_method.layers)
-# print(eTMM_method.interfaces)
-# exit()
-
-
-# eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
-# eTMM_method.resolution()
-
-# rTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method="characteristics")
-# rTMM_method.resolution()
 
 print(f"T GM ={global_method.result.T0}")
 print(f"T RM ={recursive_method.result.T0}")
 print(f"T CM ={characteristic_method.result.T0}")
+print(f"T TM ={TMM_method.result.T0}")
 print(f"T FEM={eTMM_method.result.T0}")
-# print(f"R CFE={rTMM_method.result.R0}")
+
+
+# # plt.plot(frequency,np.real(global_method.result.T0), 'b')
+# # plt.plot(frequency,np.real(recursive_method.result.T0), 'b.')
+# # plt.plot(frequency,np.real(eTMM_method.result.T0), 'm+')
+# # # plt.plot(frequency,np.imag(global_method.result.T0), 'r')
+# # # plt.plot(frequency,np.imag(recursive_method.result.T0), 'r.')
+# # # plt.plot(frequency,np.imag(eTMM_method.result.T0), 'm+')
+
+
+# # plt.show()
+# # exit()
+
+# # print(eTMM_method.layers)
+# # print(eTMM_method.interfaces)
+# # exit()
+
+
+# # eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
+# # eTMM_method.resolution()
+
+# # rTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method="characteristics")
+# # rTMM_method.resolution()
+
+# print(f"T GM ={global_method.result.T0}")
+# print(f"T RM ={recursive_method.result.T0}")
+# print(f"T CM ={characteristic_method.result.T0}")
+# print(f"T FEM={eTMM_method.result.T0}")
+# # print(f"R CFE={rTMM_method.result.R0}")
 
 # print(f"xxxxxxxxxxxx")
 # print(f"\t\tER RM={np.abs(recursive_method.result.R0[0]-global_method.result.R0[0])}")
