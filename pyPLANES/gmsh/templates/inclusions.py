@@ -78,9 +78,26 @@ def one_inclusion_rigid(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pe
 
 
 
-
-
 def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):
+
+
+#    D                        C
+#    +------------------------+
+#    |                        |
+#    |            n           |   
+#    |           ***          |  
+#    |         *     *        |
+#    |        *       *       |
+# #  |      w*   c     *e     |
+#    |        *       *       |
+#    |         *     *        |
+#    |           ***          |
+#    |            s           |
+#    |                        |
+#    +------------------------+
+#    A                        B
+   
+
 
     gmsh.initialize()
     vertice_A = gmsh.model.geo.addPoint(0, 0, 0, lcar)
@@ -207,6 +224,74 @@ def one_inclusion_bicomposite(name_mesh, L=2e-2, d=2e-2, a=0.008, r_i=0.0078, lc
 
     gmsh.model.geo.synchronize()
      # Generate mesh:
+    gmsh.model.mesh.generate()
+    gmsh.model.mesh.setOrder(2)
+    affine_transform = np.eye(4)
+    affine_transform[0,3] = d # taken on the first elements because they are all equal
+    affine_transform = list(affine_transform.flatten())
+    gmsh.model.mesh.setPeriodic(1,[line_BC],[line_DA],affine_transform)
+    gmsh.write(f"msh/{name_mesh}.geo_unrolled")
+    gmsh.write(f"msh/{name_mesh}.msh")
+    gmsh.finalize()
+
+
+def one_inclusion_square(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):
+
+
+#    D                        C
+#    +------------------------+
+#    |      d           c     |
+#    |      +-----------+     |
+#    |      |           |     |
+#    |      |           |     |
+#    |      |           |     |
+#    |      +-----------+     |
+#    |      a           b     |
+#    +------------------------+
+#    A                        B
+
+
+
+
+
+    gmsh.initialize()
+    vertice_A = gmsh.model.geo.addPoint(0, 0, 0, lcar)
+    vertice_B = gmsh.model.geo.addPoint(L, 0, 0, lcar) 
+    vertice_C = gmsh.model.geo.addPoint(L, d, 0, lcar)
+    vertice_D = gmsh.model.geo.addPoint(0, d, 0, lcar)
+    line_AB = gmsh.model.geo.addLine(vertice_A, vertice_B)
+    line_BC = gmsh.model.geo.addLine(vertice_B, vertice_C)
+    line_CD = gmsh.model.geo.addLine(vertice_C, vertice_D)
+    line_DA = gmsh.model.geo.addLine(vertice_D, vertice_A)
+    line_loop = gmsh.model.geo.addCurveLoop([line_AB, line_BC, line_CD, line_DA])
+    
+
+    vertice_a = gmsh.model.geo.addPoint(L/2-a/2, d/2-a/2, 0, lcar)
+    vertice_b = gmsh.model.geo.addPoint(L/2+a/2, d/2-a/2, 0, lcar)
+    vertice_c = gmsh.model.geo.addPoint(L/2+a/2, d/2+a/2, 0, lcar)
+    vertice_d = gmsh.model.geo.addPoint(L/2-a/2, d/2+a/2, 0, lcar)
+    line_ab = gmsh.model.geo.addLine(vertice_a, vertice_b)
+    line_bc = gmsh.model.geo.addLine(vertice_b, vertice_c)
+    line_cd = gmsh.model.geo.addLine(vertice_c, vertice_d)
+    line_da = gmsh.model.geo.addLine(vertice_d, vertice_a)  
+    
+    inclusion_loop = gmsh.model.geo.addCurveLoop([line_ab, line_bc, line_cd, line_da])
+    
+    core = gmsh.model.geo.addPlaneSurface([line_loop, inclusion_loop])
+    inclusion = gmsh.model.geo.addPlaneSurface([inclusion_loop])
+
+
+    gmsh.model.addPhysicalGroup(1, [line_AB], name="condition=bottom")
+    gmsh.model.addPhysicalGroup(1, [line_CD], name="condition=top") 
+    gmsh.model.addPhysicalGroup(1, [line_BC, line_DA], name="condition=Periodicity")
+    gmsh.model.addPhysicalGroup(2,[core], name="mat="+mat_core)
+    gmsh.model.addPhysicalGroup(2, [inclusion], name="mat="+mat_inclusion)
+    gmsh.model.addPhysicalGroup(1, [line_AB, line_BC, line_DA, line_CD], name="typ=1D")
+    gmsh.model.addPhysicalGroup(2, [core, inclusion], name="typ=2D")
+    gmsh.model.addPhysicalGroup(1, [line_AB, line_BC, line_DA, line_CD], name="method=FEM")
+    gmsh.model.addPhysicalGroup(2, [core, inclusion], name="method=FEM")
+    gmsh.model.geo.synchronize()
+    #  # Generate mesh:
     gmsh.model.mesh.generate()
     gmsh.model.mesh.setOrder(2)
     affine_transform = np.eye(4)

@@ -13,7 +13,7 @@ from pyPLANES.core.result import Results, Result, Test
 
 
 plot_solution = [True, True, True, False, False, False]
-plot_solution = [False]*6
+# plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 0.00000
@@ -22,16 +22,16 @@ L = 2.e-2
 d = 2.0e-2
 lcar = d/10
 nb_bloch_waves = 1
-order = 3
+order = 2
 
-frequency = 3e1
+frequency = 3e3
 # frequency = np.linspace(200, 1e3, 30)
 
 name_project="solution"
-case = ["layer", "sandwich"][1]
-method_FEM = ["jap", "global", "TMM"][2]
-termination = ["rigid", "transmission"][1]
-material = ["Air", "Wwood", "melamine", "rubber"][2]
+case = ["layer", "sandwich"][0]
+method_FEM = ["jap", "global", "TMM"][0]
+termination = ["rigid", "transmission"][0]
+material = ["Air", "Wwood", "melamine", "rubber"][0]
 
 
 
@@ -48,38 +48,33 @@ if case == "sandwich":
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()
 
-recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
-recursive_method.resolution()
+# recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
+# recursive_method.resolution()
 
-characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
-characteristic_method.resolution()
-
-
+# characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
+# characteristic_method.resolution()
 
 
-TMM_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="TMM", verbose=verbose, print_result=True)
-TMM_method.resolution()
-
-
-
+# TMM_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="TMM", verbose=verbose, print_result=True)
+# TMM_method.resolution()
 
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
 
 
 
-print(f"R GM ={global_method.result.R0}")
-print(f"R RM ={recursive_method.result.R0}")
-print(f"R CM ={characteristic_method.result.R0}")
-print(f"R TM ={TMM_method.result.R0}")
-print(f"R FEM={eTMM_method.result.R0}")
+# print(f"R GM ={global_method.result.R0}")
+# print(f"R RM ={recursive_method.result.R0}")
+# print(f"R CM ={characteristic_method.result.R0}")
+# print(f"R TM ={TMM_method.result.R0}")
+# print(f"R FEM={eTMM_method.result.R0}")
 
 
-print(f"T GM ={global_method.result.T0}")
-print(f"T RM ={recursive_method.result.T0}")
-print(f"T CM ={characteristic_method.result.T0}")
-print(f"T TM ={TMM_method.result.T0}")
-print(f"T FEM={eTMM_method.result.T0}")
+# print(f"T GM ={global_method.result.T0}")
+# print(f"T RM ={recursive_method.result.T0}")
+# print(f"T CM ={characteristic_method.result.T0}")
+# print(f"T TM ={TMM_method.result.T0}")
+# print(f"T FEM={eTMM_method.result.T0}")
 
 
 # # plt.plot(frequency,np.real(global_method.result.T0), 'b')

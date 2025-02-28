@@ -68,6 +68,7 @@ class Result():
             self.Method = None
             self.Server = platform.node()
             self.h = []
+            self.cond_number = []
             
             label = kwargs.get("label", False)
             if label:
@@ -133,6 +134,8 @@ class Result():
                 self.n_dof = d["n_dof"]
             if "lcar" in keys:
                 self.lcar = d["lcar"]
+            if "cond_number" in keys:
+                self.cond_number = np.array(d["cond_number"])
 
     def save(self,file, append_file):
         d = dict()

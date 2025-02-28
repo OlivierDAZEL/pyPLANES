@@ -27,6 +27,7 @@ import datetime
 import time
 import os.path
 import numpy as np
+import sys, os, platform
 
 import pyvtk 
 
@@ -78,8 +79,6 @@ def load_material(db, key=None):
             return None
         else:
             raise NameError("Invalid Material {}".format(db))
-
-
 
 def run_pymls(**kwargs):
     name_project = kwargs.get("name_project", "unnamed_project")
@@ -264,6 +263,12 @@ def export_paraview(self):
     vtk = pyvtk.VtkData(pyvtk.UnstructuredGrid(self.vtk_points,triangle=self.vtk_triangle), pyvtk.PointData(pyvtk.Scalars(pressure,name='Pressure')))
     vtk.tofile("vtk/"+self.name_project + "-{}".format(self.export_paraview))
     self.export_paraview +=1
+
+def finalize():
+    name_server = platform.node()
+    if name_server == "helmholtz":
+        mail = "echo \"  \" | mailx -s \"Calculation over on \"" + name_server + " olivier.dazel@univ-lemans.fr "
+        os.system(mail)
 
 
 class Alphacell():

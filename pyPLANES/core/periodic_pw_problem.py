@@ -191,6 +191,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
     def solve(self):
         Calculus.solve(self)
         if self.method == "Global Method":
+            self.result.cond_number.append(LA.cond(self.A))
             self.X = LA.solve(self.A, self.F)
             R = self.X[:self.nb_waves]
             self.result.R0.append(R[0])
@@ -204,6 +205,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 abs -= self.result.T[-1]
             self.result.abs.append(abs)
         elif self.method == "TMM":
+            self.result.cond_number.append(LA.cond(self.A))
             self.X = LA.solve(self.A, self.F)
             R = self.X[:self.nb_waves]
             self.result.R0.append(R[0])
@@ -253,7 +255,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.result.abs.append(abs)
 
     def plot_solution(self):
-        if self.method ["Recursive Method", "TMM"]:
+        if self.method in ["Recursive Method", "TMM"]:
             if not(isinstance(self.X_0_minus,np.ndarray)):
                 X_minus = np.array([self.X_0_minus]) # Information vector at incident interface  x^-
             else:
