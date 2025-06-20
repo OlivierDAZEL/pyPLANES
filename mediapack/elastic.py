@@ -63,7 +63,8 @@ class Elastic(Medium):
         if self.lambda_ is None:
             self.lambda_ = (self.E*self.nu)/((1+self.nu)*(1-2*self.nu))
         if self.mu is None:
-            self.mu = (self.E)/(2*(1+self.nu))
+            self.mu = (self.E) / (2 * (1 + self.nu))
+
 
     def update_frequency(self, omega):
         self.omega = omega

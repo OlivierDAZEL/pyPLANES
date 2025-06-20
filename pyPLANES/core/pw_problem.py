@@ -65,7 +65,11 @@ class PwProblem(Calculus, MultiLayer):
             self.order_chebychev = kwargs.get("order_chebychev", 20)
             
         assert "ml" in kwargs
+
+        
+
         ml = kwargs.get("ml")
+
 
         MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM, material_database=self.material_database)
 

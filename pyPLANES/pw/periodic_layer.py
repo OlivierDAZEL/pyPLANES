@@ -37,7 +37,7 @@ from pyPLANES.fem.fem_entities_surfacic import *
 from pyPLANES.fem.fem_entities_volumic import *
 # from pyPLANES.fem.fem_entities_pw import IncidentPwFem, TransmissionPwFem
 
-from scipy.sparse.linalg.dsolve import linsolve
+from scipy.sparse.linalg import spsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.fem.fem_preprocess import fem_preprocess
@@ -180,7 +180,8 @@ class PeriodicLayerBase(Mesh):
         self.linear_system_2_numpy()
 
         D_ii = csr_matrix((self.A_v, (self.A_i, self.A_j)), shape=(self.n_dof+1, self.n_dof+1))[1:,1:]
-        D_ii = self.P_periodicity.H@D_ii@self.P_periodicity
+        P_t = self.P_periodicity.conjugate()
+        D_ii = self.P_periodicity.transpose()@D_ii@self.P_periodicity
 
         self.A_i, self.A_j, self.A_v = [], [], []
         RR = [] # Initialisation of the list of the R will be [R_b R_t]
@@ -250,9 +251,9 @@ class PeriodicLayerBase(Mesh):
             # Creation of the D_ix, minus sign <- transposition +normal 
             DD_ix.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
         
-        D_ix = np.hstack([self.P_periodicity.H@D_i.todense() for D_i in DD_ix])
+        D_ix = np.hstack([self.P_periodicity.transpose()@D_i.todense() for D_i in DD_ix])
 
-        RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
+        RR = -spsolve(D_ii, D_ix).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
         self.R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
         self.R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
@@ -269,6 +270,8 @@ class PeriodicLayerBase(Mesh):
 
         self.M_b = M_b
         self.M_t = M_t
+        TM = -LA.solve(M_b, M_t)
+
 
 
     def update_TM(self, omega):
@@ -359,7 +362,7 @@ class PeriodicLayerBase(Mesh):
             # R_t and R_b
         
         D_ix = np.hstack([D_i.todense() for D_i in DD_ix])
-        RR = -linsolve.spsolve(D_ii, D_ix).reshape((self.n_dof, 2*2*_ent.nb_dof_per_node*self.nb_waves))
+        RR = -spsolve(D_ii, D_ix).reshape((self.n_dof, 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
         self.R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
         self.R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
@@ -378,7 +381,6 @@ class PeriodicLayerBase(Mesh):
         self.M_t = M_t
 
         self.TM = -LA.solve(M_b, M_t)
-        # print(self.TM)
 
     def update_Omega(self, Om, omega, method="Recursive Method"):
         self.Omega_minus = Om # To plot the solution

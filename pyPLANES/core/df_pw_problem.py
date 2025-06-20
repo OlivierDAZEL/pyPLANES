@@ -47,29 +47,45 @@ class DfPwProblem(PwProblem):
         self.neval = 0# number of evaluation of the function
         self.DF_method = kwargs.get("DF_method", "scipy")
         self.verbose = kwargs.get("verbose", False)
-        self.epsrel = kwargs.get("epsrel", 1.49e-8)
-        self.epsabs = kwargs.get("epsabs", 1.49e-8)
+        self.epsrel = kwargs.get("epsrel", 1.49e-3)
+        self.epsabs = kwargs.get("epsabs", 1.49e-3)
         
         
     def __str__(self):
         return colored(f"I={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations"
-
         
     def update_frequency(self, omega):
         PwProblem.update_frequency(self, omega)
         self.f = omega/(2*np.pi)
-        
-        
+         
     def resolution_kernel(self):
         """  Resolution of the problem """
+        D = 0.5 # Denominator in the TL 
         if self.alive_bar:
+            tau = [None] * len(self.frequencies)
+            neval = [None] * len(self.frequencies)
+            final_error = [None] * len(self.frequencies)
             with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
-                mlkkklmk
+                for i, f in enumerate(self.frequencies):
+                    bar()
+                    self.f = f
+                    self.result.f.append(self.f)
+                    def func(theta):
+                        self.theta_d = theta*180/pi
+                        self.update_frequency(2*np.pi*self.f)
+                        self.create_linear_system(2*np.pi*self.f)
+                        self.solve()
+                        return np.sin(theta)*np.cos(theta)*self.result.tau[-1]/D                
+                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel, epsabs=self.epsabs)
+                    tau[i] = Tau
+                    neval[i] = infodict['neval']
+                    final_error[i] = abserror
+
         else:
             tau = [None] * len(self.frequencies)
             neval = [None] * len(self.frequencies)
             final_error = [None] * len(self.frequencies)
-            D = 0.5 # Denominator in the TL 
+            
             for i, f in enumerate(self.frequencies):
                 self.neval = 0
                 self.f = f
@@ -96,28 +112,20 @@ class DfPwProblem(PwProblem):
                     # To be removed at the end                    
                     Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=1e-8)
                     print(colored(f"I_ref  ={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
-
                     Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel)
                     print(colored(f"I_scipy={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
-
                     integral = Integral(func, epsrel=self.epsrel, epsabs=self.epsabs)
                     integral.plot_error_on_intervals()
                     integral.plot_polynomials()
                     if not integral.test_convergence():
                         integral.step_1()
-
-                        # print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
-
-                        plt.show()
-                        exit()
                         integral.refine()
-
-                    print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
-                    print(integral.I_c)
-                    integral.plot_error_on_intervals()
-                    integral.plot_polynomials()
-                    plt.show()
-                    exit()
+                    # print(colored(f"I      ={integral.I_r:.10E}","green") + " with " + colored(f"{integral.neval}", "red") + " evaluations")
+                    # print(integral.I_c)
+                    # integral.plot_error_on_intervals()
+                    # integral.plot_polynomials()
+                    # plt.show()
+                    # exit()
                     tau[i], neval[i] = integral.I_r, integral.neval
 
                 elif type(self.DF_method) is tuple:
@@ -131,15 +139,15 @@ class DfPwProblem(PwProblem):
 
 
 
-                self.result.R0 = []
-                self.result.T0 = []
-                self.result.Z_prime = []
-                self.result.R = []
-                self.result.T = []
-                self.result.abs =[]
-            self.result.tau = tau
-            self.result.neval = neval
-            self.result.final_error = final_error
+        self.result.R0 = []
+        self.result.T0 = []
+        self.result.Z_prime = []
+        self.result.R = []
+        self.result.T = []
+        self.result.abs =[]
+        self.result.tau = tau
+        self.result.neval = neval
+        self.result.final_error = final_error
 
     def resolution(self):
         """  Resolution of the problem """
@@ -151,6 +159,8 @@ class DfPwProblem(PwProblem):
         self.frequencies = reference_frequencies
         self.resolution_kernel()
         R = -10*np.log10(self.result.tau)
+
+
         ref = reference_curve
         diff = ref - R
         negative_difference = -np.sum(diff[diff<0])
@@ -167,14 +177,16 @@ class DfPwProblem(PwProblem):
         d["R_w"] = R_w
         d["C"] = C
         d["C_tr"] = C_tr
-        # Read the previous jsoln file
-        with open(self.file_names+".json") as fp:
-            d0 = json.load(fp)
-        # Merge the two dictionaries
-        d0.update(d)
+        d["TL"] = list(R)
+        d["f"] = list(self.result.f)
+        # # Read the previous json file
+        # with open(self.file_names+".json") as fp:
+        #     d0 = json.load(fp)
+        # # Merge the two dictionaries
+        # d0.update(d)
         # Overwrite the previous json file
         with open(self.file_names+".json", "w") as json_file:
-            json.dump(d0, json_file)
+            json.dump(d, json_file)
             json_file.write("\n")
         
     def map_tau(self):

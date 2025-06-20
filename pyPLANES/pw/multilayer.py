@@ -54,9 +54,11 @@ class MultiLayer():
                 d = _l.d
                 self.layers.append(_l)
             elif isinstance(_l,(list,tuple)):
-                mat,d = _l
-                assert isinstance(mat,str) & np.isscalar(d)
-                if self.material_database is None:
+                mat, d = _l
+                assert isinstance(mat, (str, Medium)) & np.isscalar(d)
+                if isinstance(mat, Medium):
+                    load_mat = mat
+                elif self.material_database is None:
                     load_mat = load_material(mat)
                 else:
                     load_mat = load_material(self.material_database, mat)

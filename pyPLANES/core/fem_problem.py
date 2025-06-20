@@ -35,7 +35,8 @@ from pyPLANES.core.calculus import Calculus
 from pyPLANES.fem.fem_entities_surfacic import *
 from pyPLANES.fem.fem_entities_volumic import *
 
-from scipy.sparse.linalg.dsolve import linsolve
+
+from scipy.sparse.linalg import spsolve
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
 
 from pyPLANES.fem.fem_preprocess import fem_preprocess
@@ -152,7 +153,7 @@ class FemBase(Mesh, Calculus):
         # Resolution of the sparse linear system
         if self.verbose:
             print("Resolution of the linear system")
-        X = linsolve.spsolve(A, F)
+        X = spsolve(A, F)
         X = np.insert(X, 0, 0)
         if self.condensation:
            # Concatenation of the slave dofs at the end of the vector

@@ -23,6 +23,7 @@
 #
 
 from numpy.lib.scimath import sqrt
+import scipy.special as sp
 
 from .medium import Medium
 from .air import Air
@@ -133,14 +134,8 @@ class EqFluidJCA(EqFluid):
         super().__init__(**params)
 
     def __str__(self):
-        medium = Medium.__str__(self)
-        txt = "\nEquivalent fluid model : JKD\n"
-        txt += f"phi = {self.phi}\n"
-        txt += f"sigma = {self.sigma}\n"
-        txt += f"alpha = {self.alpha}\n"
-        txt += f"Lambda = {self.Lambda}\n"
-        txt += f"Lambda_prime = {self.Lambda_prime}\n"
-        return medium+txt
+        txt = self.name  + " // Equivalent fluid : JKD "
+        return txt
 
     def _compute_missing(self):
         """ Computes the required constant parameters missing from the definition
@@ -172,7 +167,57 @@ class EqFluidJCA(EqFluid):
         self.K_eq_til = (Air.gamma*Air.P/self.phi)/(Air.gamma-(Air.gamma-1)/self.alpha_prime_til)
 
         self.c_eq_til = sqrt(self.K_eq_til/self.rho_eq_til)
+        self.k = omega/self.c_eq_til
 
+
+class EqFluidJZK(EqFluidJCA):
+    MEDIUM_TYPE = 'eqf'
+    MODEL = 'fluid'
+    EXPECTED_PARAMS = [
+        ('phi', float),  # Porosity
+        ('sigma', float),  # Flow resistivity
+        ('alpha', float),  # Tortuosity
+        ('Lambda_prime', float),  # Thermal characteristic length
+        ('Lambda', float),  # Viscous characteristic length
+    ]
+
+    OPT_PARAMS = [
+        ('rho_1', float),  # Mass of solid per unit volume of aggregate
+        ('nu', float),  # poisson ratio
+        ('E', float),  # Young's modulus
+        ('eta', float)  # viscosity
+    ]
+
+    def __init__(self, **params):
+        self.phi = None
+        self.sigma = None
+        self.alpha = None
+        self.Lambda_prime = None
+        self.Lambda = None
+
+        super().__init__(**params)
+
+    def update_frequency(self, omega):
+        """ Computes the JZK parameters (see Notes on the class).
+
+        Parameters
+        ----------
+
+        omega :
+            Circular frequency of interest
+        """
+
+        #  Johnson et al model for rho_eq_til
+        self.omega_0 = self.sigma*self.phi/(Air.rho*self.alpha)
+        self.omega_infty = (self.sigma*self.phi*self.Lambda)**2/(4*Air.mu*Air.rho*self.alpha**2)
+        self.F_JKD = sqrt(1+1j*omega/self.omega_infty)
+        self.rho_eq_til = (Air.rho*self.alpha/self.phi)*(1+(self.omega_0/(1j*omega))*self.F_JKD)
+
+        u = 8*self.alpha*Air.rho*omega/(self.sigma*self.phi)
+        x = sqrt(-1j * Air.Pr) * u
+        self.K_eq_til = 1 - 2 * (Air.gamma - 1) * sp.jn(1, x) / (x * (sp.jn(0, x)))
+        self.K_eq_til *= (Air.gamma*Air.P/self.phi)
+        self.c_eq_til = sqrt(self.K_eq_til/self.rho_eq_til)
         self.k = omega/self.c_eq_til
 
 

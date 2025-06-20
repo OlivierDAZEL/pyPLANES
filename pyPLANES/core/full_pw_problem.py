@@ -42,8 +42,6 @@ class FullPwProblem(Calculus, GeneralMultiLayer, Studs, PWSolver):
         # General variables
         Calculus.__init__(self, **kwargs)
         self.result.Solver = type(self).__name__
-
-
         # Windowing
         self.window = kwargs.get("window", False)
         if self.window is not False:

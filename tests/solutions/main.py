@@ -16,12 +16,12 @@ plot_solution = [True, True, True, False, False, False]
 # plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
-theta_d = 0.00000
+theta_d = 40.00000
 nb_layers = 1
 L = 2.e-2
 d = 2.0e-2
 lcar = d/10
-nb_bloch_waves = 1
+nb_bloch_waves = 0
 order = 2
 
 frequency = 3e3
@@ -29,7 +29,7 @@ frequency = 3e3
 
 name_project="solution"
 case = ["layer", "sandwich"][0]
-method_FEM = ["jap", "global", "TMM"][0]
+method_FEM = ["jap", "global", "TMM"][1]
 termination = ["rigid", "transmission"][0]
 material = ["Air", "Wwood", "melamine", "rubber"][0]
 
