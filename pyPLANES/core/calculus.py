@@ -95,6 +95,7 @@ class Calculus():
        
 
         outfiles_directory = "out"
+
         if not path.exists(outfiles_directory):
                 mkdir(outfiles_directory) 
 

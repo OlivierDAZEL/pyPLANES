@@ -272,8 +272,6 @@ class PeriodicLayerBase(Mesh):
         self.M_t = M_t
         TM = -LA.solve(M_b, M_t)
 
-
-
     def update_TM(self, omega):
         self.create_bulk_matrices()
         self.apply_periodicity_on_Dii()
@@ -387,9 +385,34 @@ class PeriodicLayerBase(Mesh):
         if self.verbose: 
             print("Creation of the Transfer Matrix of the FEM layer")
         self.update_TM(omega)
+        
         m = self.nb_waves_in_medium*self.nb_waves
-        Om = self.TM@Om
+        # Om = self.TM@Om
+        # Xi = np.eye(m)
+
+        m = self.nb_waves_in_medium*self.nb_waves
         Xi = np.eye(m)
+        for M in [self.M_t, -LA.inv(self.M_b)]: # Inverse order for multiplication   
+            lambda_, Phi = LA.eig(M)
+            _index = np.argsort(np.abs(lambda_))
+            lambda_ = lambda_[_index]
+            Phi = Phi[:, _index]
+            Phi_inv = LA.inv(Phi)
+            _list = [0.]*(m-1)+[1.] +[(lambda_[m+i]/lambda_[m-1]) for i in range(0, m)]
+            Lambda = np.diag(np.array(_list))
+            alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
+            xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
+            _list = [(lambda_[m-1]/lambda_[i]) for i in range(m-1)] + [1.]
+            xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
+            Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
+            for i in range(m-1):
+                Om[:,i] += Phi[:, i]
+            Xi = (1/lambda_[m-1])*(xi_prime_lambda@Xi)
+        return Om, Xi
+
+
+
+
         return Om, Xi
 
     def add_stabilisation_terms(self):
