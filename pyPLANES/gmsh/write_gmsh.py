@@ -156,23 +156,23 @@ class GmshModelpyPLANES():
         # vertice_D = gmsh.model.geo.addPoint(0,1,0,1.0)
         for name_point, coord in self.dic_vertices.items():
             vertices[name_point] = eval(f"gmsh.model.geo.addPoint({coord[0]},{coord[1]},0,{self.lcar})")
-        print(vertices)
+        # print(vertices)
         lines = dict()
         # Creation of the curves
         for line in self.list_curves:
             lines[''.join(line)]= eval(f"gmsh.model.geo.addLine(vertices['{line[0]}'],vertices['{line[1]}'])")
-        print(lines)
+        # print(lines)
         line_loops = dict()
         surfaces = dict()
         # Creation of the surfaces
         for s in self.list_surfaces:
-            print(s.string_lineloop)
+            # print(s.string_lineloop)
             line_loops[s.line_loop] = eval(f"gmsh.model.geo.addCurveLoop({s.string_lineloop})")
             surfaces[s.name] = eval(f"gmsh.model.geo.addPlaneSurface([line_loops['{s.line_loop}']])")
             # exec(f"surface_{s.name} = gmsh.model.geo.addPlaneSurface([line_loop_{s.line_loop}])")
 
-        print(line_loops)
-        print(surfaces)
+        # print(line_loops)
+        # print(surfaces)
 
         # Remove duplicate materials and assign them to the right surfaces
         list_materials = [s.material for s in self.list_surfaces]

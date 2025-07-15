@@ -19,7 +19,7 @@ verbose = [True, False][1]
 theta_d = 40.00000
 nb_layers = 1
 L = 2.e-2
-d = 2.0e-2
+d = 2.e-2
 lcar = d/10
 nb_bloch_waves = 0
 order = 2
@@ -28,12 +28,10 @@ frequency = 3e3
 # frequency = np.linspace(200, 1e3, 30)
 
 name_project="solution"
-case = ["layer", "sandwich"][0]
-method_FEM = ["jap", "global", "TMM"][1]
+case = ["layer", "sandwich"][1]
+method_FEM = ["jap", "global", "TMM"][0]
 termination = ["rigid", "transmission"][0]
-material = ["Air", "Wwood", "melamine", "rubber"][0]
-
-
+material = ["Air", "Wwood", "melamine", "rubber"][2]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -47,9 +45,11 @@ if case == "sandwich":
 
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True)
 global_method.resolution()
+print(f"R_global   ={global_method.result.R0[0]}")
 
-# recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
-# recursive_method.resolution()
+recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
+recursive_method.resolution()
+print(f"R_recursive={recursive_method.result.R0[0]}")
 
 # characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
 # characteristic_method.resolution()
@@ -60,6 +60,7 @@ global_method.resolution()
 
 eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
 eTMM_method.resolution()
+print(f"R_eTMM     ={eTMM_method.result.R0[0]}")
 
 
 

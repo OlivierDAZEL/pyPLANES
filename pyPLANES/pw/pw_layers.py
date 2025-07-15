@@ -223,12 +223,13 @@ class PwGeneric():
             Xi = np.eye(Om.shape[1])
             return Om, Xi
         elif method == "Recursive Method":
+            m = self.nb_waves_in_medium*self.nb_waves
             self.order_lam()
             Phi = self.SV
             lambda_ = self.lam
 
             Phi_inv = LA.inv(Phi)
-            m = self.nb_waves_in_medium*self.nb_waves
+
             _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
             Lambda = np.diag(np.array(_list))
             alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)

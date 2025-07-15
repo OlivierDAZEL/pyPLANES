@@ -281,14 +281,13 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 if isinstance(_l, PeriodicLayer):
                     S_b = _l.Omega_plus @ q_plus
                     S_t = _l.Omega_minus @ q_minus
-
                     _l.plot_solution(S_b, S_t)
                 else:                
                     _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q_minus)
         elif self.method == "Global Method":
             for _l in self.layers[1:]:
                 if isinstance(_l, PeriodicLayer):
-                    S_b = self.X[_l.dofs_bottom]
-                    S_t = self.X[_l.dofs_top]
+                    S_b = self.X[_l.dofs_bottom-self.nb_waves]
+                    S_t = self.X[_l.dofs_top-self.nb_waves]
                     _l.plot_solution(S_b, S_t)
                     # _l.plot_solution_global(self.plot,self.X[_l.dofs-1])  

@@ -1,1 +1,1 @@
-{"Method": null, "real(R0)": [-0.5923750669832746], "imag(R0)": [-0.8056623238159777], "Server": "ODs-MacBook-Pro.local", "Solver": "PwProblem", "real(Z_prime)": [-8.326672684688674e-17], "imag(Z_prime)": [-0.5059500996472459], "abs": [-4.440892098500626e-16], "f": [3000.0], "h": null}
+{"Method": null, "real(R0)": [0.9764643072137804], "imag(R0)": [0.13817109984722992], "Server": "SC-LAUM-P096.local", "Solver": "PwProblem", "real(Z_prime)": [1.3960778967650973], "imag(Z_prime)": [14.06666552469258], "abs": [0.027426203904518554], "f": [3000.0], "h": null}

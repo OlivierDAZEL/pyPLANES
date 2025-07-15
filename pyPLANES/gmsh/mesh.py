@@ -46,7 +46,7 @@ class GmshMesh(Mesh):
         super().__init__(*args, **kwargs)
 
     def load_msh_file(self):
-        self.verbose = True
+        self.verbose = False
         gmsh.initialize()
         gmsh.option.setNumber("General.Terminal", 0)
         gmsh.open(self.msh_file)
