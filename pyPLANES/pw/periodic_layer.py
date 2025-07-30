@@ -284,123 +284,19 @@ class PeriodicLayerBase(Mesh):
            
         Xi = np.eye(m)
 
-        U, Sigma, Vh = np.linalg.svd(self.TM)
-        TM = U@np.diag(Sigma)@Vh
+        # U, Sigma, Vh = np.linalg.svd(self.TM)
+        # TM = U@np.diag(Sigma)@Vh
+        # U_b, Sigma_b, Vh_b = LA.svd(self.M_b)
+        # U_t, Sigma_t, Vh_t = LA.svd(self.M_t)
+        # Mbi = Vh_b.conj().T@np.diag(1/Sigma_b)@U_b.conj().T
+        # Mt = U_t@np.diag(Sigma_t)@Vh_t
+        # TM = -Mbi@Mt
 
-
-        U_b, Sigma_b, Vh_b = np.linalg.svd(self.M_b)
-        U_t, Sigma_t, Vh_t = np.linalg.svd(self.M_t)
-
-
-        Mbi = Vh_b.conj().T@np.diag(1/Sigma_b)@U_b.conj().T
-        Mt = U_t@np.diag(Sigma_t)@Vh_t
-        TM = -Mbi@Mt
-
-
-        # test=np.isclose(self.TM, TM)
-        # print("zzzzzz")
-        # print(f"|M|={LA.norm(self.TM)}")
-        # print(f"|M|={LA.norm(TM)}")
-        # indices =np.where(test==False)
-        # print(indices)
-        # for _,i in enumerate(indices[0]):
-        #     j = indices[1][_]
-        #     print(f" TM[{i},{j}]={TM[i,j]}")
-        #     print(f"sTM[{i},{j}]={self.TM[i,j]}")
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.plot(np.log10(Sigma))
-        # plt.plot(-np.log10(1/Sigma),"r.")[::-1]
-        # plt.savefig("Sigma.pdf")
-        # exit()     
-        # exit()
-
-        # Om =self.TM@Om
-        Om = TM@Om
-        
-
-        # def is_unary(A):
-        #     t = np.allclose(A @ np.conj(np.transpose(A)), np.eye(A.shape[0]))
-        #     if t == False:
-        #         print("dfgdfgdgfdgf")
-        #         exit()
-        #     return(t)
-        # print(f"Is u unary? {is_unary(U)}")
-        # print(f"Is vh unary? {is_unary(Vh)}")
-        
-
-        # import matplotlib.pyplot as plt
-        # plt.figure()
-        # plt.imshow(np.real(TM))
-        # plt.colorbar()
-        # plt.savefig("TM_real.pdf")
-        # plt.figure()
-        # plt.imshow(np.real(self.TM))
-        # plt.colorbar()
-        # plt.savefig("selfTM_real.pdf")
-        # plt.figure()
-        # plt.imshow(np.imag(TM))
-        # plt.colorbar()
-        # plt.savefig("TM_imag.pdf")
-        # plt.figure()
-        # plt.imshow(np.imag(self.TM))
-        # plt.colorbar()
-        # plt.savefig("selfTM_imag.pdf")
-
-
-
-        # plt.figure()
-        # plt.imshow(np.log10(np.abs(self.TM)))
-        # plt.colorbar()
-        # plt.savefig("TM_abs.pdf")
-
-        # plt.figure()
-        # plt.imshow(np.log10(np.abs(TM-self.TM)))
-        # plt.colorbar()
-        # plt.savefig("TM_error.pdf")
-
-        # exit()
-
-
-
-        # for i in range(2*m):
-        #     for j in range(2*m):
-        #         # print(f".    TM[{i},{j}]={TM[i,j]}")
-        #         # print(f"self.TM[{i},{j}]={self.TM[i,j]}")
-        #         print(f"erro[{i},{j}]={np.log10(np.abs((TM[i,j]-self.TM[i,j])/self.TM[i,j]))}")
-                
-        # exit()
-        
-
-
-        # for M in [self.TM]:#[self.M_t, -LA.inv(self.M_b)]: # Inverse order for multiplication   
-
-        #     U, Sigma, Vh = LA.svd(M)
-        #     U_l = U[:,:m].reshape((2*m,m))
-        #     U_r = U[:,m:].reshape((2*m,m))
-        #     Vh_l = Vh[:m,:].reshape((m,2*m))
-        #     Vh_r = Vh[m:,:].reshape((m,2*m))
-        #     Sigma_l = Sigma[:m]
-        #     Sigma_r = Sigma[m:]
-        #     sigma_mp1 = Sigma[m]
-        #     alpha_prime = U_r@np.diag(Sigma_r/sigma_mp1)@Vh_r # Eq (21)
-        #     xi_prime = Vh_l @ Om # Eq (23)
-        #     U_hat = alpha_prime@Om@LA.inv(xi_prime)@np.diag(sigma_mp1/Sigma_l) # U_hat
-        #     Om = U_hat+U_l
-        #     # import matplotlib.pyplot as plt
-        #     # plt.figure()
-        #     # plt.semilogy(Sigma_r/sigma_mp1)
-        #     # plt.semilogy(sigma_mp1/Sigma_l)
-        #     # plt.savefig("toto.pdf")
-        #     # exit()
-            
+        Om =self.TM@Om
+        # Om = TM@Om
 
         return Om, Xi
 
-
-
-
-        return Om, Xi
 
     def add_stabilisation_terms(self):
         # Stabilisation terms 

@@ -117,7 +117,14 @@ class MultiLayer():
         return out 
 
     def add_excitation_and_termination(self, termination):
-        # Interface associated to the termination
+        if self.method == "Z":
+            if termination == "rigid":
+                self.layers[-1].backing = True
+
+
+
+        # Termination of the multilayer
+
         if termination in ["trans", "transmission","Transmission"]:
             self.interfaces.append(SemiInfinite(self.layers[-1]))
         else: # Case of a rigid backing 
@@ -127,9 +134,11 @@ class MultiLayer():
                 self.interfaces.append(PemBacking(self.layers[-1]))
             elif self.layers[-1].medium.MEDIUM_TYPE == "elastic":
                 self.interfaces.append(ElasticBacking(self.layers[-1]))
-        
-        incident_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
+            self.layers[-1].backing = True
+            
 
+        # Addition of the incident interface
+        incident_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
         if self.layers[0].medium.MEDIUM_TYPE in ["fluid", "eqf"]:
             self.interfaces.insert(0,FluidFluidInterface(incident_layer ,self.layers[0]))
         elif self.layers[0].medium.MEDIUM_TYPE == "pem":
@@ -138,6 +147,9 @@ class MultiLayer():
             self.interfaces.insert(0,FluidElasticInterface(incident_layer, self.layers[0]))
             # # Addition of a fictious Air-Layer for the interface.
             # self.interfaces[0].layers[0] = incident_layer
+
+        # Addition of an incident layer and computation of the number of dofs
+
         if self.method == "Global Method":
             self.layers.insert(0, incident_layer)
             self.nb_dofs = 0
@@ -157,8 +169,14 @@ class MultiLayer():
                 self.interfaces[-1].dofs = np.arange(self.nb_dofs, self.nb_dofs+1)
                 self.nb_dofs += 1
 
- 
- 
+        if self.method == "Z":
+            for i_l, _l in enumerate(self.layers):
+                _l.indices_Q = _l.indices_v
+                if isinstance(_l, PemLayer) and isinstance(self.interfaces[i_l], PemElasticInterface):
+                    lkjlkjlk
+
+
+
     def update_frequency(self, omega, kx):
         self.kx = kx
         for _l in self.layers:

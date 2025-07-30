@@ -24,6 +24,7 @@
 
 import numpy as np
 import numpy.linalg as LA
+import scipy.linalg as sla
 
 import matplotlib.pyplot as plt
 from mediapack import Fluid, Air
@@ -58,6 +59,9 @@ class PwGeneric():
         self.SV = None
         self.SVp = None
         self.TM = None
+        self.indices_Q = None
+        self.indices_v = None
+        self.indices_sigma = None
 
     def update_frequency(self, omega):
         pass
@@ -67,7 +71,6 @@ class PwGeneric():
 
     def A2SV(self, S):
         pass 
-        
         
     def transfert_matrix_analytic(self, omega, direction=1):
         pass
@@ -288,6 +291,30 @@ class PwGeneric():
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
 
+    def update_Z(self, Z):
+        # m = self.nb_waves_in_medium*self.nb_waves
+        if self.backing == True:
+            Q_hat = self.Q_sigma
+        elif self.backing == False:
+            Q_hat = self.Q_v+self.Q_sigma@Z
+        yLambda = np.diag(np.exp(-self.lam*self.d))
+
+
+
+        # QQ = self.Q @ sla.block_diag([np.eye(1), Z])
+        # self.Q_hat = self.Q[self.indices_Q, :]
+
+
+
+
+
+        Z = self.P_sigma @ yLambda @ Q_hat @LA.inv(self.P_v@yLambda@Q_hat)
+
+
+        return Z
+
+
+
 class PwLayer(PwGeneric):
     """
     Base class for Plane Wave layer definition and manipulation
@@ -322,7 +349,10 @@ class PwLayer(PwGeneric):
         self.nb_fields_SV = None
         self.nb_waves_in_medium = None
         self.kx = None
+        self.indices_v = None
+        self.indices_sigma =None
         
+
     def __str__(self):
         pass
 
@@ -330,7 +360,12 @@ class PwLayer(PwGeneric):
         self.kx = kx
         self.medium.update_frequency(omega)
         self.carac.update_frequency(omega)
-        
+        if isinstance(kx, np.ndarray):
+            self.nb_waves = len(kx)
+        else:
+            self.nb_waves = 1
+
+
 class FluidLayer(PwLayer):
     
     # S={0:u_y , 1:p}
@@ -339,6 +374,9 @@ class FluidLayer(PwLayer):
         PwLayer.__init__(self, mat, d, **kwargs)
         self.nb_waves_in_medium = 1
         self.nb_fields_SV = 2
+        self.indices_v = [0]
+        self.indices_sigma = [1]
+        self.method_waves = fluid_waves_TMM
 
     def __str__(self):
         out = "\t Fluid Layer / " #+ self.medium.name
@@ -346,13 +384,21 @@ class FluidLayer(PwLayer):
 
     def update_frequency(self, omega, kx=[0]):
         PwLayer.update_frequency(self, omega, kx)
-        self.medium.update_frequency(omega)
-        if isinstance(kx, np.ndarray):
-            self.nb_waves = len(kx)
-        else:
-            self.nb_waves = 1
-        self.SV, self.lam = fluid_waves_TMM(self.medium, kx)
+
+        self.SV, self.lam = self.method_waves(self.medium, kx)
+        self.SI = LA.inv(self.SV)
+        # self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((1,2))
+        # self.P_sigma = self.SV[self.indices_sigma, :].reshape((1,2))
+        # self.Q_v = self.SI[:, self.indices_v].reshape((2,1))/(1j*omega)
+        # self.Q_sigma = self.SI[:, self.indices_sigma].reshape((2,1))
+
+        # self.P = self.SV[self.indices_v+self.indices_sigma, :]
+        # self.P[self.nb_waves_in_medium, :] /= 1j*omega
+        # self.Q = LA.inv(self.P)
         
+
+
+
     def state_matrix(self, omega):
         kx = self.kx
         if self.medium.MEDIUM_TYPE == 'eqf':
@@ -424,6 +470,18 @@ class FluidLayer(PwLayer):
             plt.plot(self.x[1]+x_f, np.abs(pr), 'r+' ,label="abs(charac)")
             plt.plot(self.x[1]+x_f, np.imag(pr), 'm+',label="imag(charac)")
 
+    def plot_solution_TMM(self, plot, X, nb_points=25):
+        q = LA.solve(self.SV, self.TM@X)
+        x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
+        pr, ut = 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(2*self.nb_waves):        
+            pr += self.SV[1, i_dim]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+            ut += self.SV[0, i_dim]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+        if plot[2]:
+            plt.figure("Pressure")
+            plt.plot(self.x[0]+x_f, np.abs(pr), 'r+' ,label="abs(TMM)")
+            plt.plot(self.x[0]+x_f, np.imag(pr), 'm+',label="imag(TMM)")
+
 class PemLayer(PwLayer):
 
     def __init__(self, mat, d, **kwargs):
@@ -431,6 +489,10 @@ class PemLayer(PwLayer):
         self.nb_waves_in_medium = 3
         self.nb_fields_SV = 6
         self.typ = "Biot98"
+
+        self.indices_v = [5, 1, 2]
+        self.indices_sigma = [0, 3, 4]
+
 
     def __str__(self):
         out = "\t Poroelastic Layer / " + self.medium.name
@@ -440,6 +502,14 @@ class PemLayer(PwLayer):
         PwLayer.update_frequency(self, omega, kx)
         self.SV, self.lam = PEM_waves_TMM(self.medium, self.kx)
         self.nb_waves = len(self.kx)
+
+        self.SV, self.lam = PEM_waves_TMM(self.medium, kx)
+        self.SI = LA.inv(self.SV)
+        self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((3, 6))
+        self.P_sigma = self.SV[self.indices_sigma, :].reshape((3,6))
+        self.Q_v = self.SI[:, self.indices_v].reshape((6,3))/(1j*omega)
+        self.Q_sigma = self.SI[:, self.indices_sigma].reshape((6,3))
+
 
     def state_matrix(self, omega):
         # self.medium.update_frequency(omega)
@@ -481,8 +551,6 @@ class PemLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm')
 
     def plot_solution_recursive(self, plot, X, nb_points=10):
-
-
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
         for i_dim in range(6*self.nb_waves):
@@ -501,6 +569,28 @@ class PemLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm.')
+
+
+    def plot_solution_TMM(self, plot, X, nb_points=25):
+        q = LA.solve(self.SV, self.TM@X)
+        x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
+        ux, uy, pr = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(6*self.nb_waves):
+            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+            uy += self.SV[5, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+            pr += self.SV[4, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+        if plot[0]:
+            plt.figure("Solid displacement along y")
+            plt.plot(self.x[0]+x_f, np.abs(ux), 'r+')
+            plt.plot(self.x[0]+x_f, np.imag(ux), 'm+')
+        if plot[1]:
+            plt.figure("Solid displacement along x")
+            plt.plot(self.x[0]+x_f, np.abs(uy), 'r+')
+            plt.plot(self.x[0]+x_f, np.imag(uy), 'm+')
+        if plot[2]:
+            plt.figure("Pressure")
+            plt.plot(self.x[0]+x_f, np.abs(pr), 'r+')
+            plt.plot(self.x[0]+x_f, np.imag(pr), 'm+')
 
     def plot_solution_characteristics(self, plot, X, nb_points=25):
         x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)
@@ -529,6 +619,8 @@ class ElasticLayer(PwLayer):
         PwLayer.__init__(self, mat, d, **kwargs)
         self.nb_waves_in_medium = 2
         self.nb_fields_SV = 4
+        self.indices_v = [3, 1]
+        self.indices_sigma = [0, 2]
 
     def __str__(self):
         out = "\t Elastic Layer / " 
@@ -539,6 +631,18 @@ class ElasticLayer(PwLayer):
         self.medium.update_frequency(omega)
         self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
         self.nb_waves = len(kx)
+
+        self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
+        self.SI = LA.inv(self.SV)
+        self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((2,4))
+        self.P_sigma = self.SV[self.indices_sigma, :].reshape((2,4))
+        self.Q_v = self.SI[:, self.indices_v].reshape((4,2))/(1j*omega)
+        self.Q_sigma = self.SI[:, self.indices_sigma].reshape((4,2))
+
+
+
+
+
 
     def plot_solution_global(self, plot, X, nb_points=200):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
@@ -573,6 +677,22 @@ class ElasticLayer(PwLayer):
             plt.figure("Solid displacement along x")
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r.')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm.')
+
+    def plot_solution_TMM(self, plot, X, nb_points=10):
+        q = LA.solve(self.SV, self.TM@X)
+        x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
+        ux, uy = 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(4*self.nb_waves):
+            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+            uy += self.SV[3, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*q[i_dim]
+        if plot[0]:
+            plt.figure("Solid displacement along y")
+            plt.plot(self.x[0]+x_f, np.abs(ux), 'r+')
+            plt.plot(self.x[0]+x_f, np.imag(ux), 'm+')
+        if plot[1]:
+            plt.figure("Solid displacement along x")
+            plt.plot(self.x[0]+x_f, np.abs(uy), 'r+')
+            plt.plot(self.x[0]+x_f, np.imag(uy), 'm+')
 
     def plot_solution_characteristics(self, plot, X, nb_points=25):
         x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)

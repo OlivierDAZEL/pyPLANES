@@ -97,6 +97,9 @@ class Result():
             if "real(Z_prime)" in keys:
                 if "imag(Z_prime)" in keys:
                     self.Z_prime = np.array(d["real(Z_prime)"])+1j*np.array(d["imag(Z_prime)"])
+            if "real(Z)" in keys:
+                if "imag(Z)" in keys:
+                    self.Z = np.array(d["real(Z)"])+1j*np.array(d["imag(Z)"])
             if "real(T0)" in keys:
                 if "imag(T0)" in keys:
                     self.T0 = np.array(d["real(T0)"])+1j*np.array(d["imag(T0)"])
@@ -155,6 +158,9 @@ class Result():
                     elif m == "Z_prime":
                         d["real(Z_prime)"] = np.real(self.Z_prime).tolist()
                         d["imag(Z_prime)"] = np.imag(self.Z_prime).tolist()
+                    elif m == "Z":
+                        d["real(Z)"] = np.real(self.Z).tolist()
+                        d["imag(Z)"] = np.imag(self.Z).tolist()
                     elif m == "k":
                         nb_f = len(self.k)
                         nb_w = len(self.k[0])

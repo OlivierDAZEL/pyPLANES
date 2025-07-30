@@ -58,6 +58,8 @@ class PwProblem(Calculus, MultiLayer):
             self.method = "characteristics"
             if self.theta_d == 0:
                 self.theta_d = 1e-12
+        elif self.method.lower() in ["z", "impedance", "impedance method", "impedances"]:
+            self.method = "Z"
         else: 
             self.method = "Global Method"
         self.method_TM = kwargs.get("method_TM", "diag")
@@ -65,11 +67,7 @@ class PwProblem(Calculus, MultiLayer):
             self.order_chebychev = kwargs.get("order_chebychev", 20)
             
         assert "ml" in kwargs
-
-        
-
         ml = kwargs.get("ml")
-
 
         MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM, material_database=self.material_database)
 
@@ -151,11 +149,20 @@ class PwProblem(Calculus, MultiLayer):
                 i_eq = _int.update_M_TMM(self.A,i_eq)
             self.F = -self.A[:, 0]# - is for transposition
             self.A = np.delete(self.A, 0, axis=1)
+        elif self.method == "Z":
+            if self.termination == "transmission":
+                self.Z = self.interfaces[-1].Z()
+            else: # Rigid backing
+                self.Z = None
+
+            for i, _l in enumerate(self.layers[::-1]):
+                _l.Z_plus = _l.update_Z(self.Z)
+                self.Z = self.interfaces[-i-2].update_Z(_l.Z_plus)
+
+
         else:
             raise NameError("Unknow method")
         
-        
-
     def solve(self):
         Calculus.solve(self)
         if self.method in ["Recursive Method", "characteristics"]:
@@ -195,7 +202,11 @@ class PwProblem(Calculus, MultiLayer):
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
             if self.termination == "transmission":
                 self.result.T0.append(self.X[-1])
-        self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1]))
+        elif self.method == "Z":
+            self.result.R0.append((self.Z[0,0]-Air.Z/np.cos(self.theta_d*pi/180))/(self.Z[0,0]+Air.Z/np.cos(self.theta_d*pi/180)))
+            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+
+        self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1])/np.cos(self.theta_d*pi/180))
 
     def plot_solution(self):
         if self.method == "Global Method":
@@ -214,6 +225,10 @@ class PwProblem(Calculus, MultiLayer):
                 q = self.interfaces[i].Tau @ q # Transfert through the interface x^+
                 q = _l.Xi@q # Transfert through the layer x^-_{+1}
                 _l.plot_solution_characteristics(self.plot, _l.Omega_minus@q)
-
+        elif self.method == "TMM":
+            for _l in self.layers[1:]:
+                _l.plot_solution_TMM(self.plot, self.X[_l.dofs-1])
+        elif self.method == "Z":
+            pass
         else: 
             raise NameError("No method")
