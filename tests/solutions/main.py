@@ -17,11 +17,11 @@ plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
 theta_d = 0.00000
-nb_layers = 1
+nb_layers = 2
 L = 2.e-2
 d = 2.e-2
-lcar = d/10
-nb_bloch_waves = 0
+lcar = d/5
+nb_bloch_waves = 3
 order = 2
 
 frequency = 3e3
@@ -66,9 +66,9 @@ Z_method.resolution()
 print(f"R_Z        ={Z_method.result.Z_prime[0]*Air.Z}")
 
 
-# eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
-# eTMM_method.resolution()
-# print(f"R_eTMM     ={eTMM_method.result.R0[0]}")
+eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
+eTMM_method.resolution()
+print(f"R_eTMM     ={eTMM_method.result.Z_prime[0]*Air.Z}")
 
 
 

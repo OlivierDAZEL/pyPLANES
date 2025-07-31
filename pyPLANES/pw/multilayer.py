@@ -65,17 +65,17 @@ class MultiLayer():
                 if isinstance(load_mat, Medium):
                     mat = load_mat
                     if mat.MODEL in ["fluid", "eqf"]:
-                        self.layers.append(FluidLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                        self.layers.append(FluidLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM))
                     elif mat.MODEL == "pem":
-                        self.layers.append(PemLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                        self.layers.append(PemLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM))
                     elif mat.MODEL == "elastic":
-                        self.layers.append(ElasticLayer(mat, d, x_0=_x, method_TM=self.method_TM))
+                        self.layers.append(ElasticLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM))
                     elif mat.MODEL == "bell":
-                        self.layers.append(Bell(mat, d, x_0=_x, method_TM=self.method_TM, param=param))
+                        self.layers.append(Bell(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM, param=param))
                 else: # Case of a python file
                     mat, alpha = load_mat
                     if mat.MODEL == "inhomogeneous":
-                        self.layers.append(InhomogeneousLayer(mat, d, x_0=_x, method_TM=self.method_TM,state_matrix=alpha))
+                        self.layers.append(InhomogeneousLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM,state_matrix=alpha))
                     else: 
                         raise NameError("alpha matrix and not an inhomogenenous mat")
             else:
@@ -171,10 +171,11 @@ class MultiLayer():
 
         if self.method == "Z":
             for i_l, _l in enumerate(self.layers):
-                _l.indices_Q = _l.indices_v
+                _l.indices_nu = _l.indices_v
                 if isinstance(_l, PemLayer) and isinstance(self.interfaces[i_l], PemElasticInterface):
                     lkjlkjlk
-
+            if termination == "rigid":
+                self.layers[-1].indices_nu = self.layers[-1].indices_sigma
 
 
     def update_frequency(self, omega, kx):

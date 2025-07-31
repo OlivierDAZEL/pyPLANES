@@ -49,6 +49,7 @@ class PwGeneric():
         """
         self.d = d
         x_0 = kwargs.get("x_0", 0.0)
+        self.method = kwargs.get("method", None)
         self.method_TM = kwargs.get("method_TM", "diag")
         if self.method_TM in ["cheb_1", "cheb_2"]:
             self.order_chebychev = kwargs.get("order_chebychev", 20)
@@ -291,27 +292,25 @@ class PwGeneric():
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
 
-    def update_Z(self, Z):
+    def update_Zeta(self, Zeta):
         # m = self.nb_waves_in_medium*self.nb_waves
-        if self.backing == True:
-            Q_hat = self.Q_sigma
-        elif self.backing == False:
-            Q_hat = self.Q_v+self.Q_sigma@Z
+        # if self.backing == True:
+        #     Q_hat = self.Q_sigma
+        # elif self.backing == False:
+        #     Q_hat = self.Q_v+self.Q_sigma@Z
+
+        
+        # yLambda = np.diag(np.exp(-self.lam*self.d))
+
+        # Z = self.P_sigma @ yLambda @ Q_hat @LA.inv(self.P_v@yLambda@Q_hat)
+
+        Q_hat = self.Q@Zeta
         yLambda = np.diag(np.exp(-self.lam*self.d))
 
 
-
-        # QQ = self.Q @ sla.block_diag([np.eye(1), Z])
-        # self.Q_hat = self.Q[self.indices_Q, :]
-
-
-
-
-
-        Z = self.P_sigma @ yLambda @ Q_hat @LA.inv(self.P_v@yLambda@Q_hat)
-
-
-        return Z
+        Z = self.P[self.nb_waves_in_medium:] @ yLambda @ Q_hat @LA.inv(self.P[:self.nb_waves_in_medium]@yLambda@Q_hat)
+        Zeta = np.vstack([np.eye(self.nb_waves_in_medium), Z])
+        return Zeta
 
 
 
@@ -364,7 +363,14 @@ class PwLayer(PwGeneric):
             self.nb_waves = len(kx)
         else:
             self.nb_waves = 1
-
+        self.SV, self.lam = self.method_waves(self.medium, kx)
+        if self.method == "Z":
+            # reordering the physical fields
+            self.P = self.SV[self.indices_v+self.indices_sigma, :]
+            # replacing displacements by velocities
+            self.P[:self.nb_waves_in_medium, :] *= 1j*omega
+            self.Q = LA.inv(self.P)
+            
 
 class FluidLayer(PwLayer):
     
@@ -382,19 +388,9 @@ class FluidLayer(PwLayer):
         out = "\t Fluid Layer / " #+ self.medium.name
         return out
 
-    def update_frequency(self, omega, kx=[0]):
-        PwLayer.update_frequency(self, omega, kx)
+    # def update_frequency(self, omega, kx=[0]):
+    #     PwLayer.update_frequency(self, omega, kx)
 
-        self.SV, self.lam = self.method_waves(self.medium, kx)
-        self.SI = LA.inv(self.SV)
-        # self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((1,2))
-        # self.P_sigma = self.SV[self.indices_sigma, :].reshape((1,2))
-        # self.Q_v = self.SI[:, self.indices_v].reshape((2,1))/(1j*omega)
-        # self.Q_sigma = self.SI[:, self.indices_sigma].reshape((2,1))
-
-        # self.P = self.SV[self.indices_v+self.indices_sigma, :]
-        # self.P[self.nb_waves_in_medium, :] /= 1j*omega
-        # self.Q = LA.inv(self.P)
         
 
 
@@ -489,10 +485,9 @@ class PemLayer(PwLayer):
         self.nb_waves_in_medium = 3
         self.nb_fields_SV = 6
         self.typ = "Biot98"
-
         self.indices_v = [5, 1, 2]
         self.indices_sigma = [0, 3, 4]
-
+        self.method_waves = PEM_waves_TMM
 
     def __str__(self):
         out = "\t Poroelastic Layer / " + self.medium.name
@@ -621,6 +616,7 @@ class ElasticLayer(PwLayer):
         self.nb_fields_SV = 4
         self.indices_v = [3, 1]
         self.indices_sigma = [0, 2]
+        self.method_waves = elastic_waves_TMM
 
     def __str__(self):
         out = "\t Elastic Layer / " 

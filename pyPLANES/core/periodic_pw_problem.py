@@ -254,6 +254,10 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
                 abs -= self.result.T[-1]
             self.result.abs.append(abs)
 
+        self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1])/np.cos(self.theta_d*pi/180))
+
+
+
     def plot_solution(self):
         if self.method in ["Recursive Method", "TMM"]:
             if not(isinstance(self.X_0_minus,np.ndarray)):

@@ -108,7 +108,6 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "characteristics":
             if self.termination == "transmission":
                 self.Omega, self.back_prop = self.interfaces[-1].Omegac()
-                # print("Omega_end=\n", self.Omega)
                 for i, _l in enumerate(self.layers[::-1]):
                     next_interface = self.interfaces[-i-2]
                     _l.Omega_minus = self.Omega
@@ -150,14 +149,11 @@ class PwProblem(Calculus, MultiLayer):
             self.F = -self.A[:, 0]# - is for transposition
             self.A = np.delete(self.A, 0, axis=1)
         elif self.method == "Z":
-            if self.termination == "transmission":
-                self.Z = self.interfaces[-1].Z()
-            else: # Rigid backing
-                self.Z = None
-
+            
+            self.Zeta = self.interfaces[-1].update_Zeta()
             for i, _l in enumerate(self.layers[::-1]):
-                _l.Z_plus = _l.update_Z(self.Z)
-                self.Z = self.interfaces[-i-2].update_Z(_l.Z_plus)
+                _l.Zeta_plus = _l.update_Zeta(self.Zeta)
+                self.Zeta = self.interfaces[-i-2].update_Zeta(_l.Zeta_plus)
 
 
         else:
@@ -203,7 +199,8 @@ class PwProblem(Calculus, MultiLayer):
             if self.termination == "transmission":
                 self.result.T0.append(self.X[-1])
         elif self.method == "Z":
-            self.result.R0.append((self.Z[0,0]-Air.Z/np.cos(self.theta_d*pi/180))/(self.Z[0,0]+Air.Z/np.cos(self.theta_d*pi/180)))
+            Z = self.Zeta[1,0]
+            self.result.R0.append((Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180)))
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
 
         self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1])/np.cos(self.theta_d*pi/180))
