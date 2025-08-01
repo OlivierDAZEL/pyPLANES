@@ -13,11 +13,11 @@ from pyPLANES.core.result import Results, Result, Test
 
 
 plot_solution = [True, True, True, False, False, False]
-plot_solution = [False]*6
+# plot_solution = [False]*6
 verbose = [True, False][1]
 # Parameters of the simulation
-theta_d = 0.00000
-nb_layers = 2
+theta_d = 40.00000
+nb_layers = 1
 L = 2.e-2
 d = 2.e-2
 lcar = d/5
@@ -31,7 +31,7 @@ name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global", "TMM"][0]
 termination = ["rigid", "transmission"][0]
-material = ["Air", "Wwood", "melamine", "rubber"][0]
+material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][0]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -47,18 +47,18 @@ global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_
 global_method.resolution()
 print(f"Z_global   ={global_method.result.Z_prime[0]*Air.Z}")
 
-recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
-recursive_method.resolution()
-# print(f"R_recursive={recursive_method.result.R0[0]}")
-print(f"Z_recursive={recursive_method.result.Z_prime[0]*Air.Z}")
+# recursive_method = PwProblem(ml=ml, name_project=name_project+"_JAP", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="JAP", verbose=verbose,print_result=True)
+# recursive_method.resolution()
+# print(f"Z_recursive={recursive_method.result.Z_prime[0]*Air.Z}")
+
 # characteristic_method = PwProblem(ml=ml, name_project=name_project, theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="characteristics", verbose=verbose, print_result=True)
 # characteristic_method.resolution()
 
 
-TMM_method = PwProblem(ml=ml, name_project=name_project+"_TMM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="TMM", verbose=verbose, print_result=True)
-TMM_method.resolution()
-# print(f"R_TMM      ={TMM_method.result.R0[0]}")
-print(f"Z_TMM      ={TMM_method.result.Z_prime[0]*Air.Z}")
+# TMM_method = PwProblem(ml=ml, name_project=name_project+"_TMM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="TMM", verbose=verbose, print_result=True)
+# TMM_method.resolution()
+# # print(f"R_TMM      ={TMM_method.result.R0[0]}")
+# print(f"Z_TMM      ={TMM_method.result.Z_prime[0]*Air.Z}")
 
 
 Z_method = PwProblem(ml=ml, name_project=name_project+"_Z", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="Z", verbose=verbose, print_result=True)
@@ -66,9 +66,9 @@ Z_method.resolution()
 print(f"R_Z        ={Z_method.result.Z_prime[0]*Air.Z}")
 
 
-eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
-eTMM_method.resolution()
-print(f"R_eTMM     ={eTMM_method.result.Z_prime[0]*Air.Z}")
+# eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
+# eTMM_method.resolution()
+# print(f"R_eTMM     ={eTMM_method.result.Z_prime[0]*Air.Z}")
 
 
 

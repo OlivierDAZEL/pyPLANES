@@ -1,1 +1,1 @@
-{"Method": null, "real(R0)": [-0.2981835600331225], "imag(R0)": [0.9545085460727807], "Server": "sc-laum-p096.home", "Solver": "PwProblem", "real(Z_prime)": [-1.9458054594595139e-16], "imag(Z_prime)": [0.7352647002003528], "abs": [-4.440892098500626e-16], "f": [3000.0], "h": null}
+{"Method": null, "real(R0)": [-0.34357938238008834], "imag(R0)": [-0.535242891055063], "Server": "sc-laum-p096.home", "Solver": "PwProblem", "real(Z_prime)": [0.3716269677496335], "imag(Z_prime)": [-0.6680816004848251], "abs": [0.595468255578335], "f": [3000.0], "h": null}

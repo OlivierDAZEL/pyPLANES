@@ -226,6 +226,10 @@ class PwProblem(Calculus, MultiLayer):
             for _l in self.layers[1:]:
                 _l.plot_solution_TMM(self.plot, self.X[_l.dofs-1])
         elif self.method == "Z":
-            pass
+            print((self.Zeta))
+            
+
+
+            exit()
         else: 
             raise NameError("No method")

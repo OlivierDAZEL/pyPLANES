@@ -293,22 +293,30 @@ class PwGeneric():
         self.lam = self.lam[_index]
 
     def update_Zeta(self, Zeta):
-        # m = self.nb_waves_in_medium*self.nb_waves
-        # if self.backing == True:
-        #     Q_hat = self.Q_sigma
-        # elif self.backing == False:
-        #     Q_hat = self.Q_v+self.Q_sigma@Z
-
-        
-        # yLambda = np.diag(np.exp(-self.lam*self.d))
-
-        # Z = self.P_sigma @ yLambda @ Q_hat @LA.inv(self.P_v@yLambda@Q_hat)
-
         Q_hat = self.Q@Zeta
-        yLambda = np.diag(np.exp(-self.lam*self.d))
+        lambda_d = -self.lam*self.d
+        # i_max = np.argmax(np.real(lambda_d))   
+        # lambda_d -= lambda_d[i_max]
 
 
-        Z = self.P[self.nb_waves_in_medium:] @ yLambda @ Q_hat @LA.inv(self.P[:self.nb_waves_in_medium]@yLambda@Q_hat)
+        U_l = np.vstack([np.eye(self.nb_waves_in_medium), np.zeros((self.nb_waves_in_medium, self.nb_waves_in_medium))])
+        U_r = np.vstack([ np.zeros((self.nb_waves_in_medium, self.nb_waves_in_medium)), np.eye(self.nb_waves_in_medium)])
+
+
+        Sigma = np.exp(lambda_d)
+        Sigma_mp1 = Sigma[self.nb_waves_in_medium]
+        Sigma_l = Sigma[:self.nb_waves_in_medium]
+        Sigma_r = Sigma[self.nb_waves_in_medium:]
+
+
+        alpha_prime = U_r @ np.diag(Sigma_r/Sigma_mp1)@ U_r.T
+        xi_prime = U_l.T@Q_hat
+
+        U_hat = alpha_prime@Q_hat@LA.inv(xi_prime)@np.diag(Sigma_mp1/Sigma_l)
+        Q_b = U_l + U_hat
+
+        Z = self.P[self.nb_waves_in_medium:]  @ Q_b @LA.inv(self.P[:self.nb_waves_in_medium]@Q_b)
+
         Zeta = np.vstack([np.eye(self.nb_waves_in_medium), Z])
         return Zeta
 
