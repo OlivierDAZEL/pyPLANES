@@ -31,6 +31,7 @@ from mediapack import Fluid, Air
 from numpy import pi, sqrt
 
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, elastic_waves_TMM, PEM_waves_TMM
+from pyPLANES.pw.pw_polarisation import fluid_waves_PQ, elastic_waves_PQ, PEM_waves_PQ
 from pyPLANES.pw.characteristics import Characteristics
 
 from scipy.linalg import expm, block_diag
@@ -292,35 +293,24 @@ class PwGeneric():
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
 
-    def update_Zeta(self, Zeta):
+    def update_Zeta_Xi(self, Zeta, Xi):
         Q_hat = self.Q@Zeta
+
+        Q_hat_plus  = Q_hat[:self.nb_waves_in_medium, :]
+        Q_hat_minus = Q_hat[self.nb_waves_in_medium:, :]
+
+        P_v = self.P[self.nb_waves_in_medium:, :] 
+
+
         lambda_d = -self.lam*self.d
-        # i_max = np.argmax(np.real(lambda_d))   
-        # lambda_d -= lambda_d[i_max]
+        e_minus = np.diag(np.exp(lambda_d[self.nb_waves_in_medium:]))
 
-
-        U_l = np.vstack([np.eye(self.nb_waves_in_medium), np.zeros((self.nb_waves_in_medium, self.nb_waves_in_medium))])
-        U_r = np.vstack([ np.zeros((self.nb_waves_in_medium, self.nb_waves_in_medium)), np.eye(self.nb_waves_in_medium)])
-
-
-        Sigma = np.exp(lambda_d)
-        Sigma_mp1 = Sigma[self.nb_waves_in_medium]
-        Sigma_l = Sigma[:self.nb_waves_in_medium]
-        Sigma_r = Sigma[self.nb_waves_in_medium:]
-
-
-        alpha_prime = U_r @ np.diag(Sigma_r/Sigma_mp1)@ U_r.T
-        xi_prime = U_l.T@Q_hat
-
-        U_hat = alpha_prime@Q_hat@LA.inv(xi_prime)@np.diag(Sigma_mp1/Sigma_l)
-        Q_b = U_l + U_hat
-
-        Z = self.P[self.nb_waves_in_medium:]  @ Q_b @LA.inv(self.P[:self.nb_waves_in_medium]@Q_b)
+        Q_check =np.vstack([np.eye(self.nb_waves_in_medium), e_minus@Q_hat_minus@LA.inv(Q_hat_plus)@e_minus])
+        Z = self.P[self.nb_waves_in_medium:]  @ Q_check @LA.inv(self.P[:self.nb_waves_in_medium]@Q_check)
 
         Zeta = np.vstack([np.eye(self.nb_waves_in_medium), Z])
-        return Zeta
-
-
+        Xi = Xi@LA.inv(Q_hat_plus)@e_minus@LA.inv(self.P[:self.nb_waves_in_medium]@Q_check)
+        return Zeta, Xi
 
 class PwLayer(PwGeneric):
     """
@@ -366,19 +356,19 @@ class PwLayer(PwGeneric):
     def update_frequency(self, omega, kx):
         self.kx = kx
         self.medium.update_frequency(omega)
-        self.carac.update_frequency(omega)
+        if self.method == "characteristics":
+            self.carac.update_frequency(omega)
         if isinstance(kx, np.ndarray):
             self.nb_waves = len(kx)
         else:
             self.nb_waves = 1
-        self.SV, self.lam = self.method_waves(self.medium, kx)
+
         if self.method == "Z":
             # reordering the physical fields
-            self.P = self.SV[self.indices_v+self.indices_sigma, :]
-            # replacing displacements by velocities
-            self.P[:self.nb_waves_in_medium, :] *= 1j*omega
-            self.Q = LA.inv(self.P)
-            
+            self.P, self.Q, self.lam  = self.method_PQ(self.medium, kx, omega)
+        else:
+            self.SV, self.lam = self.method_waves(self.medium, kx)
+
 
 class FluidLayer(PwLayer):
     
@@ -391,17 +381,11 @@ class FluidLayer(PwLayer):
         self.indices_v = [0]
         self.indices_sigma = [1]
         self.method_waves = fluid_waves_TMM
+        self.method_PQ = fluid_waves_PQ
 
     def __str__(self):
         out = "\t Fluid Layer / " #+ self.medium.name
         return out
-
-    # def update_frequency(self, omega, kx=[0]):
-    #     PwLayer.update_frequency(self, omega, kx)
-
-        
-
-
 
     def state_matrix(self, omega):
         kx = self.kx
@@ -496,7 +480,7 @@ class PemLayer(PwLayer):
         self.indices_v = [5, 1, 2]
         self.indices_sigma = [0, 3, 4]
         self.method_waves = PEM_waves_TMM
-
+        self.method_PQ = PEM_waves_PQ
     def __str__(self):
         out = "\t Poroelastic Layer / " + self.medium.name
         return out
@@ -625,6 +609,7 @@ class ElasticLayer(PwLayer):
         self.indices_v = [3, 1]
         self.indices_sigma = [0, 2]
         self.method_waves = elastic_waves_TMM
+        self.method_PQ = elastic_waves_PQ
 
     def __str__(self):
         out = "\t Elastic Layer / " 
@@ -636,16 +621,12 @@ class ElasticLayer(PwLayer):
         self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
         self.nb_waves = len(kx)
 
-        self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
-        self.SI = LA.inv(self.SV)
-        self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((2,4))
-        self.P_sigma = self.SV[self.indices_sigma, :].reshape((2,4))
-        self.Q_v = self.SI[:, self.indices_v].reshape((4,2))/(1j*omega)
-        self.Q_sigma = self.SI[:, self.indices_sigma].reshape((4,2))
-
-
-
-
+        # self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
+        # self.SI = LA.inv(self.SV)
+        # self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((2,4))
+        # self.P_sigma = self.SV[self.indices_sigma, :].reshape((2,4))
+        # self.Q_v = self.SI[:, self.indices_v].reshape((4,2))/(1j*omega)
+        # self.Q_sigma = self.SI[:, self.indices_sigma].reshape((4,2))
 
 
     def plot_solution_global(self, plot, X, nb_points=200):

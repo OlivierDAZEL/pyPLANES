@@ -23,6 +23,7 @@
 #
 
 import numpy as np
+from numpy import linalg as LA
 
 def PEM_waves_TMM(mat, kx):
     ''' S={0: hat{sigma}_{xy}, 1:u_y^s, 2:u_y^t, 3:hat{sigma}_{yy}, 4:p, 5:u_x^s}'''
@@ -53,12 +54,15 @@ def PEM_waves_TMM(mat, kx):
 
 
         Phi[0+6*_w:6+6*_w, 0+6*_w] = np.array([-2*1j*mat.N*ky[0]*_kx, ky[0], mat.mu_1*ky[0], alpha_1, 1j*delta[0]**2*mat.K_eq_til*mat.mu_1, _kx], dtype=complex)
+        
         Phi[0+6*_w:6+6*_w, 3+6*_w] = np.array([ 2*1j*mat.N*ky[0]*_kx,-ky[0],-mat.mu_1*ky[0], alpha_1, 1j*delta[0]**2*mat.K_eq_til*mat.mu_1, _kx], dtype=complex)
 
-        Phi[0+6*_w:6+6*_w, 1+6*_w] = np.array([-2*1j*mat.N*ky[1]*_kx, ky[1], mat.mu_2*ky[1],alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, _kx], dtype=complex)
+        Phi[0+6*_w:6+6*_w, 1+6*_w] = np.array([-2*1j*mat.N*ky[1]*_kx, ky[1], mat.mu_2*ky[1], alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, _kx], dtype=complex)
+
         Phi[0+6*_w:6+6*_w, 4+6*_w] = np.array([ 2*1j*mat.N*ky[1]*_kx,-ky[1],-mat.mu_2*ky[1],alpha_2, 1j*delta[1]**2*mat.K_eq_til*mat.mu_2, _kx], dtype=complex)
 
         Phi[0+6*_w:6+6*_w, 2+6*_w] = np.array([1j*mat.N*(ky[2]**2-_kx**2), _kx, mat.mu_3*_kx, alpha_3, 0., -ky[2]], dtype=complex)
+        
         Phi[0+6*_w:6+6*_w, 5+6*_w] = np.array([1j*mat.N*(ky[2]**2-_kx**2), _kx, mat.mu_3*_kx, -alpha_3, 0., ky[2]], dtype=complex)
 
         lam[0+6*_w:3+6*_w] =  -1j*ky
@@ -66,6 +70,48 @@ def PEM_waves_TMM(mat, kx):
 
 
     return Phi, lam
+
+def PEM_waves_PQ(mat, kx, omega):
+    kx = kx[0]
+
+    Phi, lam = PEM_waves_TMM(mat, np.array([kx]))
+    P = Phi[[5, 1, 2, 0, 3, 4], :]
+    P[:3,:] *= 1j*omega
+    Q = LA.inv(P)
+
+
+
+
+    PP = np.zeros((6, 6), dtype=complex)
+    lam = np.zeros(6, dtype=complex)
+    # Wave numbers along y
+    k_1 = np.sqrt(mat.delta_1**2-kx**2)
+    k_2 = np.sqrt(mat.delta_2**2-kx**2)
+    k_3 = np.sqrt(mat.delta_3**2-kx**2)
+    
+    x_1 = -2*1j*mat.N*k_1*kx
+    x_2 = -2*1j*mat.N*k_2*kx
+    x_3 = 1j*mat.N*(k_3**2-kx**2)
+    
+    y_1 = -1j*mat.A_hat*mat.delta_1**2-1j*2*mat.N*k_1**2
+    y_2 = -1j*mat.A_hat*mat.delta_2**2-1j*2*mat.N*k_2**2
+    y_3 = -2*1j*mat.N*k_3*kx
+
+    p_1 = 1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1
+    p_2 = 1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2
+    
+    jom = 1j*omega
+
+    P[:,0] = [jom*kx, jom*k_1, jom*mat.mu_1*k_1, x_1, y_1, p_1]
+    P[:,1] = [jom*kx, jom*k_2, jom*mat.mu_2*k_2, x_2, y_2, p_2]
+    P[:,2] = [-jom*k_3, jom*kx, jom*mat.mu_3*kx, x_3, y_3, 0]
+    P[:,3] = [jom*kx, -jom*k_1, -jom*mat.mu_1*k_1, -x_1, y_1, p_1]
+    P[:,4] = [jom*kx, -jom*k_2, -jom*mat.mu_2*k_2, -x_2, y_2, p_2]
+    P[:,5] = [jom*k_3, jom*kx, jom*mat.mu_3*kx, x_3, -y_3, 0]
+
+
+
+    return P, Q, lam
 
 def elastic_waves_TMM(mat, kx):
     ''' S={0:sigma_{xy}, 1: u_y, 2 sigma_{yy}, 3 u_x}'''
@@ -98,6 +144,36 @@ def elastic_waves_TMM(mat, kx):
         lam[2+4*_w:4+4*_w] =  1j*ky
 
     return Phi, lam
+
+
+def elastic_waves_PQ(mat, kx, omega):
+    ''' 
+    S={0: v_x, 1: v_y, 2: sigma_{xy}, 3: sigma_{yy}}
+    '''
+
+    kx = kx[0]
+    # P = np.zeros((4,4), dtype=complex)
+    # lam = np.zeros(4, dtype=complex)
+
+    # lam_p = np.sqrt(-mat.delta_p**2+kx**2)
+    # lam_s = np.sqrt(-mat.delta_s**2+kx**2)
+    # ky_p = -1j*lam_p
+    # ky_s = -1j*lam_s
+
+
+    # ky = np.array([ky_p, ky_s])
+    # alpha_p = -1j*mat.lambda_*mat.delta_p**2 - 2j*mat.mu*ky[0]**2
+    # alpha_s = 2j*mat.mu*ky[1]*kx
+
+
+    Phi, lam = elastic_waves_TMM(mat, np.array([kx]))
+    P = Phi[[3, 1, 0, 2], :]
+    P[:2,:] *= 1j*omega
+
+    Q = LA.inv(P)
+
+    return P, Q, lam
+
 
 def fluid_waves_TMM(mat, kx):
     """
@@ -146,3 +222,40 @@ def fluid_waves_TMM(mat, kx):
     lam[::2] = -1j*ky
     lam[1::2] = 1j*ky
     return Phi, lam
+
+def fluid_waves_PQ(mat, kx, omega):
+    """
+    Polarisation  S={0:v_y , 1:p} and jky propagation terms
+
+    Parameters
+    ----------
+    mat : mediapack medium 
+    kx : numpy array of the transversal wave numbers. Its length corresponds to the number n_w of Bloch waves for the periodic medium (equal to 1 in the case of an infinite extend layers)
+
+    Returns
+    -------
+    Phi : numpy matrix of dimension (2*n_w x 2*n_w) with the polarisation (block-matrix)
+    lam : numpy vectors of length 2*n_w with the 1j*ky/ For each pair the first one is going in the positive y direction
+
+    """
+
+    kx =kx[0]
+    if mat.MEDIUM_TYPE == 'eqf':
+        Z = np.sqrt(mat.K_eq_til*mat.rho_eq_til)
+        lamda = np.sqrt(-mat.k**2+kx**2+0j)
+        ky = -1j*lamda
+    elif mat.MEDIUM_TYPE == 'fluid':
+        Z = np.sqrt(mat.K*mat.rho)
+        # ky = np.sqrt(mat.k**2-kx**2+0j)
+        lamda = np.sqrt(-mat.k**2+kx**2+0j)
+        ky = -1j*lamda
+    else:
+        raise ValueError('Provided material is not a fluid')
+
+    Z_ = Z*mat.k/ky
+    P = np.array([[1, 1], [Z_, -Z_]], dtype=complex)
+
+    Q = np.array([[1/2, 1/(2*Z_)], [1/2, -1/(2*Z_)]], dtype=complex)
+
+    lam = np.array([-1j*ky, 1j*ky], dtype=complex)
+    return P, Q, lam

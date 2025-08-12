@@ -149,12 +149,13 @@ class PwProblem(Calculus, MultiLayer):
             self.F = -self.A[:, 0]# - is for transposition
             self.A = np.delete(self.A, 0, axis=1)
         elif self.method == "Z":
-            
-            self.Zeta = self.interfaces[-1].update_Zeta()
+            self.Zeta, self.Xi = self.interfaces[-1].update_Zeta_Xi()
+            # print(self.Xi, "xi")
             for i, _l in enumerate(self.layers[::-1]):
-                _l.Zeta_plus = _l.update_Zeta(self.Zeta)
-                self.Zeta = self.interfaces[-i-2].update_Zeta(_l.Zeta_plus)
-
+                _l.Zeta_plus,_l.Xi_plus = _l.update_Zeta_Xi(self.Zeta, self.Xi)
+                # print(_l.Xi_plus, "xi_plus")
+                self.Zeta, self.Xi = self.interfaces[-i-2].update_Zeta_Xi(_l.Zeta_plus, _l.Xi_plus)
+                # print(self.Xi, "xi")
 
         else:
             raise NameError("Unknow method")
@@ -199,8 +200,20 @@ class PwProblem(Calculus, MultiLayer):
             if self.termination == "transmission":
                 self.result.T0.append(self.X[-1])
         elif self.method == "Z":
-            Z = self.Zeta[1,0]
-            self.result.R0.append((Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180)))
+            Z = self.Zeta[1,0]#/self.Zeta[0,0]
+            R0 = (Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180))
+            # print(R0,"r0")
+            v = (self.ky[0]/self.k_air)*(1-R0)/Air.Z
+            # print(v, "v")
+            self.result.R0.append(R0)
+            if self.termination == "transmission":
+                # print(self.Xi[0,0], "xi")
+                # print(np.exp(-1j*self.k_air*self.layers[0].d), "exp")
+                v *= self.Xi[0,0]
+                # print(v, "v*xi")
+                T0 = v*Air.Z*(self.k_air/self.ky[0])
+                self.result.T0.append(T0)
+
             self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
 
         self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1])/np.cos(self.theta_d*pi/180))
@@ -226,10 +239,6 @@ class PwProblem(Calculus, MultiLayer):
             for _l in self.layers[1:]:
                 _l.plot_solution_TMM(self.plot, self.X[_l.dofs-1])
         elif self.method == "Z":
-            print((self.Zeta))
-            
-
-
-            exit()
+            pass
         else: 
             raise NameError("No method")
