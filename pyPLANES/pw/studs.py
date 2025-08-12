@@ -57,10 +57,6 @@ class Stud():
         self.K[3,2] = -self.K[0,2]
         self.K[3,5] = -self.K[0,5]
 
-
-        
-
-
     def __str__(self):
         str = f"Stud associated to layer {self.layer}"
         return str

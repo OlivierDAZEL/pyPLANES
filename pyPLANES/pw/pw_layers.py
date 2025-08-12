@@ -301,9 +301,7 @@ class PwGeneric():
 
         P_v = self.P[self.nb_waves_in_medium:, :] 
 
-
-        lambda_d = -self.lam*self.d
-        e_minus = np.diag(np.exp(lambda_d[self.nb_waves_in_medium:]))
+        e_minus = np.diag(np.exp(-self.lam[self.nb_waves_in_medium:]*self.d))
 
         Q_check =np.vstack([np.eye(self.nb_waves_in_medium), e_minus@Q_hat_minus@LA.inv(Q_hat_plus)@e_minus])
         Z = self.P[self.nb_waves_in_medium:]  @ Q_check @LA.inv(self.P[:self.nb_waves_in_medium]@Q_check)

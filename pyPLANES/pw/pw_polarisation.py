@@ -73,22 +73,14 @@ def PEM_waves_TMM(mat, kx):
 
 def PEM_waves_PQ(mat, kx, omega):
     kx = kx[0]
-
-    Phi, lam = PEM_waves_TMM(mat, np.array([kx]))
-    P = Phi[[5, 1, 2, 0, 3, 4], :]
-    P[:3,:] *= 1j*omega
-    Q = LA.inv(P)
+    jom = 1j*omega
 
 
-
-
-    PP = np.zeros((6, 6), dtype=complex)
-    lam = np.zeros(6, dtype=complex)
-    # Wave numbers along y
     k_1 = np.sqrt(mat.delta_1**2-kx**2)
     k_2 = np.sqrt(mat.delta_2**2-kx**2)
     k_3 = np.sqrt(mat.delta_3**2-kx**2)
-    
+    lam = np.array([-1j*k_1, -1j*k_2, -1j*k_3, 1j*k_1, 1j*k_2, 1j*k_3], dtype=complex)
+
     x_1 = -2*1j*mat.N*k_1*kx
     x_2 = -2*1j*mat.N*k_2*kx
     x_3 = 1j*mat.N*(k_3**2-kx**2)
@@ -100,14 +92,49 @@ def PEM_waves_PQ(mat, kx, omega):
     p_1 = 1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1
     p_2 = 1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2
     
-    jom = 1j*omega
+    P = np.zeros((6, 6), dtype=complex)
+    Q = np.zeros((6, 6), dtype=complex)
 
-    P[:,0] = [jom*kx, jom*k_1, jom*mat.mu_1*k_1, x_1, y_1, p_1]
-    P[:,1] = [jom*kx, jom*k_2, jom*mat.mu_2*k_2, x_2, y_2, p_2]
-    P[:,2] = [-jom*k_3, jom*kx, jom*mat.mu_3*kx, x_3, y_3, 0]
-    P[:,3] = [jom*kx, -jom*k_1, -jom*mat.mu_1*k_1, -x_1, y_1, p_1]
-    P[:,4] = [jom*kx, -jom*k_2, -jom*mat.mu_2*k_2, -x_2, y_2, p_2]
-    P[:,5] = [jom*k_3, jom*kx, jom*mat.mu_3*kx, x_3, -y_3, 0]
+    P[0, :] = [jom*kx, jom*kx, -jom*k_3, jom*kx, jom*kx, jom*k_3]
+    P[1, :] = [jom*k_1, jom*k_2, jom*kx, -jom*k_1, -jom*k_2, jom*kx]
+    P[2, :] = [jom*mat.mu_1*k_1, jom*mat.mu_2*k_2, jom*mat.mu_3*kx, -jom*mat.mu_1*k_1, -jom*mat.mu_2*k_2, jom*mat.mu_3*kx]
+    P[3,:] = [x_1, x_2, x_3, -x_1, -x_2, x_3]
+    P[4,:] = [y_1, y_2, y_3, y_1, y_2, -y_3]
+    P[5,:] = [p_1, p_2, 0, p_1, p_2, 0]
+
+
+    A = mat.delta_1**2*mat.delta_2**2*k_3*(2*mat.N+mat.A_hat)*mat.K_eq_til*(mat.mu_2-mat.mu_1)
+    B = 1j*mat.N*mat.delta_3**2*k_1*k_2*(mat.mu_1-mat.mu_2)
+    Q[0,:] = [-p_2*2*mat.N*kx*k_3/(2*A*omega), 
+              -mat.N*k_2*(2*mat.mu_3*kx**2+mat.mu_2*(k_3**2-kx**2))/(2*B*omega), 
+              k_2*mat.N*mat.delta_3**2/(2*B*omega),
+              -(k_2*kx*(mat.mu_3-mat.mu_2)) /(2*B),
+              k_3*p_2/(2*A), 1j*k_3*mat.delta_2**2*(2*mat.N+mat.A_hat)/(2*A)]
+    Q[1,:] = [p_1*2*mat.N*kx*k_3/(2*A*omega), 
+              mat.N*k_1*(2*mat.mu_3*kx**2+mat.mu_1*(k_3**2-kx**2))/(2*B*omega), 
+              -k_1*mat.N*mat.delta_3**2/(2*B*omega),
+              k_1*kx*(mat.mu_3-mat.mu_1) /(2*B),
+              -k_3*p_1/(2*A), -1j*k_3*mat.delta_1**2*(2*mat.N+mat.A_hat)/(2*A)]
+    Q[2,:] = [-1j*(p_1*y_2-p_2*y_1)/(2*A*omega), 
+              -2*mat.N*k_1*k_2*kx*(mat.mu_2-mat.mu_1)/(2*B*omega), 
+              0,
+              -k_1*k_2*(mat.mu_2-mat.mu_1) /(2*B),
+              kx*(p_2-p_1)/(2*A), -kx*(y_2-y_1)/(2*A)]
+    Q[3,:] = [-1j*p_2*y_3/(2*A*omega), 
+              mat.N*k_2*(2*mat.mu_3*kx**2+mat.mu_2*(k_3**2-kx**2))/(2*B*omega), 
+              -k_2*mat.N*mat.delta_3**2/(2*B*omega),
+              k_2*kx*(mat.mu_3-mat.mu_2) /(2*B),
+              k_3*p_2/(2*A), 1j*k_3*mat.delta_2**2*(2*mat.N+mat.A_hat)/(2*A)]
+    Q[4,:] = [1j*p_1*y_3/(2*A*omega), 
+              -mat.N*k_1*(2*mat.mu_3*kx**2+mat.mu_1*(k_3**2-kx**2))/(2*B*omega), 
+              k_1*mat.N*mat.delta_3**2/(2*B*omega),
+              -k_1*kx*(mat.mu_3-mat.mu_1) /(2*B),
+              -k_3*p_1/(2*A), -1j*k_3*mat.delta_1**2*(2*mat.N+mat.A_hat)/(2*A)]
+    Q[5,:] = [1j*(p_1*y_2-p_2*y_1)/(2*A*omega), 
+              -2*mat.N*k_1*k_2*kx*(mat.mu_2-mat.mu_1)/(2*B*omega), 
+              0,
+              -k_1*k_2*(mat.mu_2-mat.mu_1) /(2*B),
+              -kx*(p_2-p_1)/(2*A), kx*(y_2-y_1)/(2*A)]
 
 
 
@@ -145,35 +172,39 @@ def elastic_waves_TMM(mat, kx):
 
     return Phi, lam
 
-
 def elastic_waves_PQ(mat, kx, omega):
     ''' 
     S={0: v_x, 1: v_y, 2: sigma_{xy}, 3: sigma_{yy}}
     '''
 
     kx = kx[0]
-    # P = np.zeros((4,4), dtype=complex)
-    # lam = np.zeros(4, dtype=complex)
+    jom = 1j*omega
 
-    # lam_p = np.sqrt(-mat.delta_p**2+kx**2)
-    # lam_s = np.sqrt(-mat.delta_s**2+kx**2)
-    # ky_p = -1j*lam_p
-    # ky_s = -1j*lam_s
+    k_p = np.sqrt(mat.delta_p**2-kx**2)
+    k_s = np.sqrt(mat.delta_s**2-kx**2)
+    lam = np.array([-1j*k_p, -1j*k_s, 1j*k_p, 1j*k_s], dtype=complex)
 
+    x_p = -2j*mat.mu*k_p*kx
+    y_p = -1j*mat.lambda_*mat.delta_p**2 - 2j*mat.mu*k_p**2
+    x_s = 1j*mat.mu*(k_s**2 - kx**2)
+    y_s = -2j*mat.mu*k_s*kx
 
-    # ky = np.array([ky_p, ky_s])
-    # alpha_p = -1j*mat.lambda_*mat.delta_p**2 - 2j*mat.mu*ky[0]**2
-    # alpha_s = 2j*mat.mu*ky[1]*kx
+    P = np.zeros((4, 4), dtype=complex)
+    Q = np.zeros((4, 4), dtype=complex)
 
+    P[0,:] = [jom*kx, -jom*k_s, jom*kx, jom*k_s]
+    P[1,:] = [jom*k_p, jom*kx, -jom*k_p, jom*kx]
+    P[2,:] = [x_p, x_s, -x_p, x_s]
+    P[3,:] = [y_p, y_s, y_p, -y_s]
 
-    Phi, lam = elastic_waves_TMM(mat, np.array([kx]))
-    P = Phi[[3, 1, 0, 2], :]
-    P[:2,:] *= 1j*omega
+    Q[0,:] = [-y_s/jom/k_s, x_s/jom/k_p, -kx/k_p, -1]
+    Q[1,:] = [y_p/jom/k_s, -x_p/jom/k_p, 1, -kx/k_s]
+    Q[2,:] = [-y_s/jom/k_s, -x_s/jom/k_p, +kx/k_p, -1]
+    Q[3,:] = [-y_p/jom/k_s, -x_p/jom/k_p, 1, kx/k_s]
 
-    Q = LA.inv(P)
+    Q = Q/(2j*omega**2*mat.rho)
 
     return P, Q, lam
-
 
 def fluid_waves_TMM(mat, kx):
     """
