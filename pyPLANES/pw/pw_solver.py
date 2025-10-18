@@ -5,14 +5,6 @@ from scipy.special import jv
 from numpy import exp, cos, sin, sqrt, pi
 from mediapack import Air
 
-        # Ks = 5E06
-        # Ms = 0
-        # hs= 0.5
-        # Lp = 0.1
-        # Lh = 0.51
-        # Lv = 1.22
-
-
 
 class PWSolver():
     def __init__(self, **kwargs):

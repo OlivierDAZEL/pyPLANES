@@ -12,8 +12,6 @@ from mediapack import Air
         # Lh = 0.51
         # Lv = 1.22
 
-
-
 class Studs():
     def __init__(self, **kwargs):
         self.studs = []
@@ -51,7 +49,7 @@ class Stud():
         self.layer_t = ml[self.layer-1]
         self.K = np.zeros((6,6), dtype=complex)
         
-        K =1e18
+        K = 1e20
         self.K[0,2] = -K
         self.K[0,5] = K
         self.K[3,2] = -self.K[0,2]

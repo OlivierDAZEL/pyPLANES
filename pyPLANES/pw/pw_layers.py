@@ -294,12 +294,38 @@ class PwGeneric():
         self.lam = self.lam[_index]
 
     def update_Zeta_Xi(self, Zeta, Xi):
+
+        P_v_plus = self.P[:self.nb_waves_in_medium, :self.nb_waves_in_medium]
+        P_v_mnus = self.P[:self.nb_waves_in_medium, self.nb_waves_in_medium:]
+        P_s_plus = self.P[self.nb_waves_in_medium:, :self.nb_waves_in_medium]
+        P_s_mnus = self.P[self.nb_waves_in_medium:, self.nb_waves_in_medium:]
+
+        Q_v_plus = self.Q[:self.nb_waves_in_medium, :self.nb_waves_in_medium]
+        Q_s_plus = self.Q[:self.nb_waves_in_medium, self.nb_waves_in_medium:]
+        Q_v_mnus = self.Q[self.nb_waves_in_medium:, :self.nb_waves_in_medium]
+        Q_s_mnus = self.Q[self.nb_waves_in_medium:, self.nb_waves_in_medium:]
+
+        delta_l = np.diag([1,-1,-1])
+        delta_r = np.diag([1,1,-1])
+
+        # print(np.allclose(P_v_mnus,delta_l@P_v_plus@delta_r))
+        # print(np.allclose(P_s_mnus,-delta_l@P_s_plus@delta_r))
+        # print(np.allclose(Q_v_mnus,delta_r@Q_v_plus@delta_l))
+        # print(np.allclose(Q_s_mnus,-delta_r@Q_s_plus@delta_l))
+
+
+        # print(P_v_plus@Q_v_plus)
+        # exit()
+
+
+        
+
+
+
         Q_hat = self.Q@Zeta
 
         Q_hat_plus  = Q_hat[:self.nb_waves_in_medium, :]
         Q_hat_minus = Q_hat[self.nb_waves_in_medium:, :]
-
-        P_v = self.P[self.nb_waves_in_medium:, :] 
 
         e_minus = np.diag(np.exp(-self.lam[self.nb_waves_in_medium:]*self.d))
 
@@ -366,7 +392,6 @@ class PwLayer(PwGeneric):
             self.P, self.Q, self.lam  = self.method_PQ(self.medium, kx, omega)
         else:
             self.SV, self.lam = self.method_waves(self.medium, kx)
-
 
 class FluidLayer(PwLayer):
     

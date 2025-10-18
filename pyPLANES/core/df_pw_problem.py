@@ -104,6 +104,7 @@ class DfPwProblem(PwProblem):
                     final_error[i] = abserror
                     if self.verbose: 
                         print(colored(f"I_scipy={Tau:.10E}","green") + " with " + colored(f"{infodict['neval']}", "red") + " evaluations")
+                        
                 elif self.DF_method == "chebpy":
                     chebpy.chebfun(lambda theta: func(theta), [0, 10])
                     hjk

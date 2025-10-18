@@ -103,8 +103,9 @@ def PEM_waves_PQ(mat, kx, omega):
     P[5,:] = [p_1, p_2, 0, p_1, p_2, 0]
 
 
-    A = mat.delta_1**2*mat.delta_2**2*k_3*(2*mat.N+mat.A_hat)*mat.K_eq_til*(mat.mu_2-mat.mu_1)
+    A = mat.delta_1**2*mat.delta_2**2*k_3*mat.P_hat*mat.K_eq_til*(mat.mu_2-mat.mu_1)
     B = 1j*mat.N*mat.delta_3**2*k_1*k_2*(mat.mu_1-mat.mu_2)
+
     Q[0,:] = [-p_2*2*mat.N*kx*k_3/(2*A*omega), 
               -mat.N*k_2*(2*mat.mu_3*kx**2+mat.mu_2*(k_3**2-kx**2))/(2*B*omega), 
               k_2*mat.N*mat.delta_3**2/(2*B*omega),
@@ -135,8 +136,6 @@ def PEM_waves_PQ(mat, kx, omega):
               0,
               -k_1*k_2*(mat.mu_2-mat.mu_1) /(2*B),
               -kx*(p_2-p_1)/(2*A), kx*(y_2-y_1)/(2*A)]
-
-
 
     return P, Q, lam
 
