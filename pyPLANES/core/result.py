@@ -80,7 +80,6 @@ class Result():
             elif isinstance(_in, str):
                 d = json.load(open(_in+".json", 'r'))
             keys = [*d]
-            # print(keys)
             if "f" in keys:
                 self.f = d["f"]
             if "h" in keys:
@@ -139,6 +138,8 @@ class Result():
                 self.lcar = d["lcar"]
             if "cond_number" in keys:
                 self.cond_number = np.array(d["cond_number"])
+
+
 
     def save(self,file, append_file):
         d = dict()

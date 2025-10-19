@@ -22,27 +22,20 @@
 # copies or substantial portions of the Software.
 #
 
-import datetime
+
 from os import path, mkdir, rename
 
 import json
 import os
 import time
-import timeit
 import numpy as np
 from numpy import pi
 
-from termcolor import colored
 import matplotlib.pyplot as plt
 
-# from scipy.sparse.linalg.dsolve import linsolve
-from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, linalg as sla
-
-from mediapack import Air
 from pyPLANES.core.result import Result
 from alive_progress import alive_bar
 
-Air = Air()
 
 class Calculus():
     """
@@ -91,9 +84,9 @@ class Calculus():
 
         # Create the calculus core attributes
         self.result = Result(**kwargs) # Result of the calculation
+
         self.init_frequencies(kwargs.get("frequencies", False)) # Frequency list
        
-
         outfiles_directory = "out"
 
         if not path.exists(outfiles_directory):
@@ -104,7 +97,7 @@ class Calculus():
             self.file_names += "_" + self.sub_project
         # self.info_file_name = self.file_names + ".info.txt"
         # self.open_info_file()
-        self.start_time = time.time()
+        self.start_time = time.process_time()
         self.alive_bar = kwargs.get("alive_bar", None)
         if self.alive_bar == None:
             self.alive_bar = False
@@ -121,7 +114,12 @@ class Calculus():
                 # Check if a generic materials.json database exists
         elif os.path.exists("materials.json"):
             self.material_database = json.load(open("materials.json"))
-        
+
+
+    def info(self, message):
+        if self.verbose:
+            print(message)
+
     def resolution(self):
         """  Resolution of the problem """
         if self.alive_bar:
@@ -133,68 +131,38 @@ class Calculus():
                     self.solve()
                     self.plot_solutions()
         else:
-            if self.verbose:
-                print("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
+            self.info("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
             for f in self.frequencies:
                 self.f = f
                 self.result.f.append(self.f)
                 self.solve()
                 self.plot_solutions()
 
+
+        self.end_time = time.process_time()
+        self.result.calculation_time = self.end_time - self.start_time
         self.result.save(self.file_names,self.save_append)
-
-    def results_to_json(self):
-        pass
-
-    def save_json(self):
-        name_file = self.file_names + ".json"
-        with open(name_file, self.save_append) as json_file:
-                json.dump(self.Result, json_file)
-                json_file.write("\n")
-        
-    def open_info_file(self):
-        """  Initialise out files """    
-        # self.txt_file = open(self.txt_file_name, 'w')
-        self.info_file = open(self.info_file_name, 'w')
-        self.info_file.write("Output File from pyPLANES\n")
-        self.info_file.write("Generated on {}\n".format(self.name_server))
-        self.info_file.write("Calculus started at %s.\n"%(datetime.datetime.now()))
-        self.start_time = time.time()
 
     def create_linear_system(self, omega):
         """
         Create the linear system
         """
-        if self.verbose:
-            print("Creation of the linear system for f={}".format(omega/(2*pi)))
+        self.info("Creation of the linear system for f={}".format(omega/(2*pi)))
 
     def solve(self):
         """ Resolution of the linear system"""
-        if self.verbose:
-            print("Resolution of the linear system")
+        self.info("Resolution of the linear system")
         omega = 2*pi*self.f
         self.update_frequency(omega)
         self.create_linear_system(omega)
 
-    def plot_solutions(self):
-        
+    def plot_solutions(self):        
         if any(self.plot):
             self.plot_solution()
         if any(self.export_plots):
             if self.export_plots[5]:
                 plt.figure("Pressure map")
                 plt.savefig("Pressure")
-
-    def close_info_file(self):
-        """  Close out files at the end of the calculus """
-        self.info_file.close()
-        # rename the info file so as to include the name of the method in the name of the text part
-        new_name = self.info_file_name.split(".")
-        new_name.insert(1, self.out_file_method)
-        rename(self.info_file_name, ".".join(new_name))
-
-    def plot_solution(self):
-        pass
 
     def init_frequencies(self, frequency):
         """
@@ -228,8 +196,3 @@ class Calculus():
             self.frequencies = np.array([1e3], dtype=float)
         
         return frequency
-
-    def update_frequency(self, omega):
-        pass
-
-

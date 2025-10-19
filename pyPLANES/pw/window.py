@@ -6,7 +6,7 @@ from numpy import exp, cos, sin, sqrt, pi
 from mediapack import Air
 
 class Window():
-    def __init__(self, L_x=1., L_y=1., **kwargs):
+    def __init__(self, L_x, L_y, method="Yu", **kwargs):
         self.L_x = L_x 
         self.L_y= L_y
         self.S = L_x*L_y
@@ -14,7 +14,7 @@ class Window():
         self.rho_0 = Air.rho
         self.c_0 = Air.c
         self.update_frequency(2*pi*1000)
-        self.method = None
+        self.method = method
 
     def update_frequency(self, omega):
         self.omega = omega

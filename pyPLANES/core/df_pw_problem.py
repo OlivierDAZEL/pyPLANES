@@ -33,9 +33,7 @@ from scipy import integrate
 
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.utils.io import reference_frequencies, reference_curve, reference_C, reference_C_tr
-from scipy.interpolate import lagrange
 from pyPLANES.quadrature.integral import Integral
-
 
 
 class DfPwProblem(PwProblem):
@@ -69,12 +67,15 @@ class DfPwProblem(PwProblem):
                 for i, f in enumerate(self.frequencies):
                     bar()
                     self.f = f
-                    self.result.f.append(self.f)
+                    self.update_frequency(2*np.pi*f)
+                    self.result.f.append(f)
                     def func(theta):
                         self.theta_d = theta*180/pi
-                        self.update_frequency(2*np.pi*self.f)
                         self.create_linear_system(2*np.pi*self.f)
+                        print(self.result)
                         self.solve()
+                        
+
                         return np.sin(theta)*np.cos(theta)*self.result.tau[-1]/D                
                     Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel, epsabs=self.epsabs)
                     tau[i] = Tau

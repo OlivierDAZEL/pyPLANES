@@ -40,12 +40,14 @@ class PwProblem(Calculus, MultiLayer):
     def __init__(self, **kwargs):
         Calculus.__init__(self, **kwargs)
         self.result.Solver = type(self).__name__
-        # self.Results["R0"], self.Results["T0"] = [], [] 
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
+        # Window 
         self.window = kwargs.get("window", False)
         if self.window is not False:
-            self.window = Window(self.window[0], self.window[1])
+            window_method = kwargs.get("window_method", "Yu")
+            self.window = Window(self.window[0], self.window[1], window_method)
+
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
             if self.theta_d == 0:
@@ -82,7 +84,6 @@ class PwProblem(Calculus, MultiLayer):
         self.R, self.T = None, None
 
     def update_frequency(self, omega):
-        Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
         self.kx = self.k_air*np.array([np.sin(self.theta_d*np.pi/180)])
         self.ky = self.k_air*np.array([np.cos(self.theta_d*np.pi/180)])
@@ -150,12 +151,9 @@ class PwProblem(Calculus, MultiLayer):
             self.A = np.delete(self.A, 0, axis=1)
         elif self.method == "Z":
             self.Zeta, self.Xi = self.interfaces[-1].update_Zeta_Xi()
-            # print(self.Xi, "xi")
             for i, _l in enumerate(self.layers[::-1]):
                 _l.Zeta_plus,_l.Xi_plus = _l.update_Zeta_Xi(self.Zeta, self.Xi)
-                # print(_l.Xi_plus, "xi_plus")
                 self.Zeta, self.Xi = self.interfaces[-i-2].update_Zeta_Xi(_l.Zeta_plus, _l.Xi_plus)
-                # print(self.Xi, "xi")
 
         else:
             raise NameError("Unknow method")
@@ -168,55 +166,65 @@ class PwProblem(Calculus, MultiLayer):
                 self.Omega = self.interfaces[0].carac_bottom.P@self.Omega
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]
-            self.result.R0.append((self.Omega[0]+alpha*self.Omega[1])/det)
-            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+            R0 = (self.Omega[0]+alpha*self.Omega[1])/det
+            abs = 1-np.abs(R0)**2
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                self.result.T0.append(Omega_end[0])
-                self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
+                T0 = Omega_end[0]
+                abs -= np.abs(T0)**2
+
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
-            self.result.R0.append(self.X[0])
-            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+            R0 = self.X[0]
+            abs = 1-np.abs(R0)**2
             if self.termination == "transmission":
-                self.result.T0.append(self.X[-1])
-                if self.window:
-                    self.window.update_frequency(2*pi*self.f)
-                    sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
-                else:
-                    sigma = 1/np.cos(self.theta_d*pi/180)
+                T0 = self.X[-1]
+                abs -= np.abs(T0)**2
+                
 
-                self.tau_c = self.X[-1]
-                self.win = np.cos(self.theta_d*pi/180)*sigma
-                self.result.tau.append((np.abs(self.X[-1])**2)*np.cos(self.theta_d*pi/180)*sigma)
-                self.result.abs[-1] -= np.abs(self.result.T0[-1])**2
+
         elif self.method == "TMM":
-            self.X = LA.solve(self.A, self.F)
-            alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
-            det = -self.X[0]+alpha*self.X[1]
-            self.result.R0.append(self.X[0])
-            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
-            if self.termination == "transmission":
-                self.result.T0.append(self.X[-1])
+            if LA.det(self.A)!=0:
+                self.X = LA.solve(self.A, self.F)
+                alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
+                det = -self.X[0]+alpha*self.X[1]
+                R0 = self.X[0]
+                abs = 1-np.abs(R0)**2
+                if self.termination == "transmission":
+                    T0 = self.X[-1]
+                    abs -= np.abs(T0)**2
+            else:
+                R0 = np.nan
+                abs = np.nan
+                if self.termination == "transmission":
+                    T0 = np.nan
+                    
         elif self.method == "Z":
-            Z = self.Zeta[1,0]#/self.Zeta[0,0]
+            Z = self.Zeta[1,0]
             R0 = (Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180))
-            # print(R0,"r0")
             v = (self.ky[0]/self.k_air)*(1-R0)/Air.Z
-            # print(v, "v")
-            self.result.R0.append(R0)
+            abs = 1-np.abs(R0)**2
             if self.termination == "transmission":
-                # print(self.Xi[0,0], "xi")
-                # print(np.exp(-1j*self.k_air*self.layers[0].d), "exp")
                 v *= self.Xi[0,0]
-                # print(v, "v*xi")
                 T0 = v*Air.Z*(self.k_air/self.ky[0])
-                self.result.T0.append(T0)
+                abs -= np.abs(T0)**2
 
-            self.result.abs.append(1-np.abs(self.result.R0[-1])**2)
+        self.result.R0.append(R0)
+        self.result.Z_prime.append((R0+1)/(1-R0)/np.cos(self.theta_d*pi/180))
+        self.result.abs.append(abs)
+        if self.termination == "transmission":
+            self.result.T0.append(T0)
 
-        self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1])/np.cos(self.theta_d*pi/180))
+        # Window correction
+        if self.window:
+            self.window.update_frequency(2*pi*self.f)
+            sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
+        else:
+            sigma = 1/np.cos(self.theta_d*pi/180)
+        self.win = np.cos(self.theta_d*pi/180)*sigma
+        self.result.tau.append((np.abs(T0)**2)*np.cos(self.theta_d*pi/180)*sigma)
+
 
     def plot_solution(self):
         if self.method == "Global Method":
