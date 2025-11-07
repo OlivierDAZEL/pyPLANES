@@ -301,7 +301,7 @@ class PwGeneric():
 
     @staticmethod
     # @jit(nopython=True)
-    def update_Zeta_Xi_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields, slave_fields):
+    def update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields, slave_fields):
 
         Q_hat_plus  = Q_hat[:n, :]
         Q_hat_minus = Q_hat[n:, :]
@@ -311,14 +311,7 @@ class PwGeneric():
         Q_check =np.vstack([np.eye(n), e_minus@Q_hat_minus@Q_hat_plus_inv@e_minus])
         PmQ_m1 = LA.inv(P_m@Q_check)
 
-        # Q_check[n:,:n] = e_minus@Q_hat_minus@Q_hat_plus_inv@e_minus
-        # PmQ_m1 = LA.inv(P_m[:n,:] +P_m[n:,:]@Q_check)
-
         H = P_s  @ Q_check @ PmQ_m1
-
-        # zeta = np.zeros((2*n, n), dtype=complex)
-        # zeta[master_fields,:] = np.eye(n)
-        # zeta[slave_fields,:] = YZ
 
         Xi  = Xi@Q_hat_plus_inv@e_minus@PmQ_m1
 
@@ -326,13 +319,11 @@ class PwGeneric():
 
 
 
-    def update_Zeta_Xi(self, Zeta, Xi):
+    def update_H(self, H, Xi):
 
-        Z = Zeta.copy()
         Zeta = np.zeros((2*self.nb_waves_in_medium, self.nb_waves_in_medium), dtype=complex)
         Zeta[self.master_fields_top,:] = np.eye(self.nb_waves_in_medium)
-        Zeta[self.slave_fields_top,:] = Z
-
+        Zeta[self.slave_fields_top,:] = H
 
         n = self.nb_waves_in_medium
         Q_hat = self.Q@Zeta
@@ -341,7 +332,7 @@ class PwGeneric():
         slave_fields_bottom = self.slave_fields_bottom
         P_m = self.P[self.master_fields_bottom,:]
         P_s = self.P[self.slave_fields_bottom,:]
-        return self.update_Zeta_Xi_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields_bottom, slave_fields_bottom)
+        return self.update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields_bottom, slave_fields_bottom)
 
 
 

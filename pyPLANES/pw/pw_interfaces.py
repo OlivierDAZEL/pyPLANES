@@ -179,8 +179,6 @@ class PwInterface():
 
         return Omega, M_X
 
-    # def update_Zeta_Xi(self, Zeta):
-    #     pass
 
 class FluidFluidInterface(PwInterface):
     """
@@ -203,8 +201,8 @@ class FluidFluidInterface(PwInterface):
         out = "\t Fluid-fluid interface"
         return out
     
-    def update_Zeta_Xi(self, Zeta, Xi):
-        return Zeta, Xi
+    def update_H(self, H, Xi):
+        return H, Xi
 
 class FluidElasticInterface(PwInterface):
     """
@@ -228,10 +226,10 @@ class FluidElasticInterface(PwInterface):
         out = "\t Fluid-Elastic interface"
         return out
 
-    def update_Zeta_Xi(self, Zeta, Xi):
-        zeta = np.array([-Zeta[1,0]]).reshape((1,1))
+    def update_H(self, H, Xi):
+        H = np.array([-H[1,0]]).reshape((1,1))
         Xi = Xi@np.array([1.,0.]).reshape((2,1))
-        return zeta, Xi
+        return H, Xi
 
 class FluidPemInterface(PwInterface):   
     """
@@ -266,10 +264,10 @@ class FluidPemInterface(PwInterface):
         out = "\t Fluid-PEM interface"
         return out
 
-    def update_Zeta_Xi(self, Zeta, Xi):
-        zeta = np.array([Zeta[2,0]]).reshape((1,1))
+    def update_H(self, H, Xi):
+        h = np.array([H[2,0]]).reshape((1,1))
         Xi = Xi@np.array([1,0,0]).reshape((3,1))
-        return zeta, Xi
+        return h, Xi
 
 class ElasticFluidInterface(PwInterface):
     """
@@ -293,10 +291,10 @@ class ElasticFluidInterface(PwInterface):
         out = "\t Elastic-Fluid interface"
         return out
     
-    def update_Zeta_Xi(self, Zeta, Xi):
-        zeta= np.array([[0, 0],[0, -Zeta[0, 0]]])
+    def update_H(self, H, Xi):
+        H = np.array([[0, 0],[0, -H[0, 0]]])
         Xi = Xi@np.array([0, 1]).reshape(1,2)
-        return zeta, Xi
+        return H, Xi
 
 class ElasticElasticInterface(PwInterface):
     """
@@ -321,8 +319,8 @@ class ElasticElasticInterface(PwInterface):
         out = "\t Elastic-Elastic interface"
         return out
 
-    def update_Zeta_Xi(self, Zeta, Xi):
-        return Zeta, Xi
+    def update_H(self, H, Xi):
+        return H, Xi
 
 class ElasticPemInterface(PwInterface):
     """
@@ -395,17 +393,17 @@ class ElasticPemInterface(PwInterface):
 
         return PwInterface.transfert(self, Om_)
 
-    def update_Zeta_Xi(self, Zeta, Xi):
+    def update_H(self, H, Xi):
 
-        zeta = np.zeros((2,2),dtype=complex) 
+        h = np.zeros((2,2),dtype=complex) 
         # sigma_xy^-= sigma_xy^+   
-        zeta[0,0] = Zeta[0,0] 
-        zeta[0,1] = Zeta[0,1]+Zeta[0,2]
+        h[0,0] = H[0,0] 
+        h[0,1] = H[0,1]+H[0,2]
         # sigma_yy^-= sigma_yy^+ - p    
-        zeta[1,0] = Zeta[1,0]-Zeta[2,0] 
-        zeta[1,1] = (Zeta[1,1]+Zeta[1,2]) - (Zeta[2,1]+Zeta[2,2]) 
+        h[1,0] = H[1,0]-H[2,0] 
+        h[1,1] = (H[1,1]+H[1,2]) - (H[2,1]+H[2,2]) 
         Xi = Xi@np.array([[1, 0], [0, 1], [0, 1]])
-        return zeta, Xi
+        return h, Xi
 
 class PemFluidInterface(PwInterface):
     """
@@ -442,13 +440,11 @@ class PemFluidInterface(PwInterface):
         out = "\t PEM-Fluid interface"
         return out
 
-    def update_Zeta_Xi(self, Zeta, Xi):
-        zeta = np.zeros((3,3),dtype=complex)
-        zeta[2, 2] = Zeta[0,0]        
+    def update_H(self, H, Xi):
+        h = np.zeros((3,3),dtype=complex)
+        h[2, 2] = H[0,0]        
         Xi = Xi@np.array([0, 0, 1]).reshape(1,3)
-
-
-        return zeta, Xi
+        return h, Xi
 
 class PemElasticInterface(PwInterface):
     """
@@ -511,11 +507,8 @@ class PemElasticInterface(PwInterface):
         out = "\t PEM-Elastic interface"
         return out
 
-    def update_Zeta_Xi(self, H, Xi):
-        # Z = Zeta[2:,:]
-        # U = np.array([[1,0,0],[0,1,0],[0,1,0]])
+    def update_H(self, H, Xi):
         H = np.array([[0, 1, 0], [H[0,0], H[0,1], 0], [H[1,0], H[1,1], 1]])
-        # Zeta = np.vstack([U, Z]).reshape((6,3))
         Xi = Xi@ np.array([[1, 0, 0],[0, 1, 0]])
         return H, Xi
 
@@ -563,8 +556,8 @@ class PemPemInterface(PwInterface):
 
         return (mat_pem_0@mat_pem_1)@Om, Tau
     
-    def update_Zeta_Xi(self, Zeta, Xi):
-        return Zeta, Xi
+    def update_H(self, H, Xi):
+        return H, Xi
 
 class RigidBacking(PwInterface):
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
@@ -600,10 +593,10 @@ class RigidBacking(PwInterface):
     def Omegac(self, nb_bloch_waves=0):
         pass 
     
-    def update_Zeta_Xi(self):
-        Zeta = np.zeros((self.number_relations,self.number_relations))
+    def update_H(self):
+        H = np.zeros((self.number_relations,self.number_relations))
         Xi = np.eye(self.number_relations)
-        return Zeta, Xi
+        return H, Xi
 
 class FluidRigidBacking(RigidBacking):
     """
@@ -889,19 +882,19 @@ class SemiInfinite(PwInterface):
         i_eq += self.number_relations*self.nb_waves
         return i_eq
     
-    def update_Zeta_Xi(self):
+    def update_H(self):
         """
-        Returns the Zeta matrix for the semi-infinite boundary
+        Returns the H matrix for the semi-infinite boundary
         """
 
-        Zeta = np.array([(Air.Z*(self.k/self.ky[0]))]).reshape(1,1)
+        H = np.array([(Air.Z*(self.k/self.ky[0]))]).reshape(1,1)
         Xi = np.eye(1)
 
         if self.type_last_layer in ["fluid", "eqf"]:
-            return FluidFluidInterface.update_Zeta_Xi(self, Zeta, Xi)            
+            return FluidFluidInterface.update_H(self, H, Xi)            
         elif self.type_last_layer == "pem":
-            return PemFluidInterface.update_Zeta_Xi(self, Zeta, Xi)
+            return PemFluidInterface.update_H(self, H, Xi)
         elif self.type_last_layer == "elastic":
-            return ElasticFluidInterface.update_Zeta_Xi(self, Zeta, Xi)
+            return ElasticFluidInterface.update_H(self, H, Xi)
         else:
             raise NameError("Unknown layer type")

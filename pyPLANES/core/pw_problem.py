@@ -146,16 +146,10 @@ class PwProblem(Calculus, MultiLayer):
             self.F = -self.A[:, 0]# - is for transposition
             self.A = np.delete(self.A, 0, axis=1)
         elif self.method == "Z":
-            self.Zeta, self.Xi = self.interfaces[-1].update_Zeta_Xi()
-            # print(f"Initial Zeta: \n{self.Zeta}")
-            # print(f"Initial Xi.     : \n{self.Xi}")
+            self.H, self.Xi = self.interfaces[-1].update_H()
             for i, _l in enumerate(self.layers[::-1]):
-                _l.Zeta_plus,_l.Xi_plus = _l.update_Zeta_Xi(self.Zeta, self.Xi)
-                # print(f"Layer {i} Zeta after layer: \n{_l.Zeta_plus}")
-                # print(f"Layer {i} Xi after layer: \n{_l.Xi_plus}")
-                self.Zeta, self.Xi = self.interfaces[-i-2].update_Zeta_Xi(_l.Zeta_plus, _l.Xi_plus)
-                # print(f"Layer {i} Zeta after interface: \n{self.Zeta}")
-                # print(f"Layer {i} Xi after interface: \n{self.Xi}")
+                self.H,self.Xi = _l.update_H(self.H,self.Xi)
+                self.H, self.Xi = self.interfaces[-i-2].update_H(self.H,self.Xi)
         else:
             raise NameError("Unknow method")
 
@@ -200,9 +194,8 @@ class PwProblem(Calculus, MultiLayer):
                     self.T0 = np.nan
                     
         elif self.method == "Z":
-            
-            Z = self.Zeta[0,0]
 
+            Z = self.H[0,0]
 
             self.R0 = (Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180))
             self.abs = 1-np.abs(self.R0)**2
