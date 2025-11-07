@@ -94,7 +94,7 @@ class FullPwProblem(Calculus, GeneralMultiLayer, Studs, PWSolver):
 
 
     def update_frequency(self, omega, i_w=0):
-        Calculus.update_frequency(self, omega)
+        # Calculus.update_frequency(self, omega)
         self.k_air = omega/Air.c
         self.kx = self.k_air*np.sin(self.theta_d*np.pi/180)*np.cos(self.phi_d*np.pi/180)
         if self.period is not None:

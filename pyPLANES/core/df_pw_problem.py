@@ -21,13 +21,15 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
+import time
+
 import numpy as np
 import numpy.linalg as LA
 import json
 from termcolor import colored
 from numpy import pi
 import matplotlib.pyplot as plt
-from mediapack import Air, Fluid
+
 from alive_progress import alive_bar
 from scipy import integrate
 
@@ -45,8 +47,8 @@ class DfPwProblem(PwProblem):
         self.neval = 0# number of evaluation of the function
         self.DF_method = kwargs.get("DF_method", "scipy")
         self.verbose = kwargs.get("verbose", False)
-        self.epsrel = kwargs.get("epsrel", 1.49e-3)
-        self.epsabs = kwargs.get("epsabs", 1.49e-3)
+        self.epsrel = kwargs.get("epsrel", 1.49e-2)
+        self.epsabs = kwargs.get("epsabs", 1.49e-2)
         
         
     def __str__(self):
@@ -71,13 +73,15 @@ class DfPwProblem(PwProblem):
                     self.result.f.append(f)
                     def func(theta):
                         self.theta_d = theta*180/pi
+                        self.update_frequency(2*np.pi*self.f)
                         self.create_linear_system(2*np.pi*self.f)
-                        print(self.result)
-                        self.solve()
-                        
-
-                        return np.sin(theta)*np.cos(theta)*self.result.tau[-1]/D                
-                    Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel, epsabs=self.epsabs)
+                        self.solve_kernel()
+                        return np.sin(theta)*np.cos(theta)*self.tau/D                
+                    outputs = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel, epsabs=self.epsabs)
+                    if len(outputs)==3:
+                        Tau, abserror, infodict = outputs
+                    else:
+                        Tau, abserror, infodict, message = outputs
                     tau[i] = Tau
                     neval[i] = infodict['neval']
                     final_error[i] = abserror
@@ -95,8 +99,8 @@ class DfPwProblem(PwProblem):
                     self.theta_d = theta*180/pi
                     self.update_frequency(2*np.pi*self.f)
                     self.create_linear_system(2*np.pi*self.f)
-                    self.solve()
-                    return np.sin(theta)*np.cos(theta)*self.result.tau[-1]/D
+                    self.solve_kernel()
+                    return np.sin(theta)*np.cos(theta)*self.tau/D
     
                 if self.DF_method == "scipy":
                     Tau, abserror, infodict = integrate.quad(func, 0, pi/2,full_output=1,epsrel=self.epsrel, epsabs=self.epsabs)
@@ -153,15 +157,29 @@ class DfPwProblem(PwProblem):
 
     def resolution(self):
         """  Resolution of the problem """
+        self.start_time = time.process_time()
+        from cProfile import Profile
+        from pstats import Stats
+        pr = Profile()
+        pr.enable()
+
+
         self.resolution_kernel()
-        
+
+        pr.disable()
+        # pr.print_stats(10, sort='time')
+        stats = Stats(pr)
+        stats.sort_stats('tottime').print_stats(15)
+        # stats.print_callers('elastic_waves_TMM')
+
+        self.end_time = time.process_time()
+        self.result.calculation_time = self.end_time - self.start_time
         self.result.save(self.file_names, self.save_append)
 
     def compute_indicators(self):
         self.frequencies = reference_frequencies
         self.resolution_kernel()
         R = -10*np.log10(self.result.tau)
-
 
         ref = reference_curve
         diff = ref - R
@@ -218,7 +236,6 @@ class DfPwProblem(PwProblem):
         plt.colorbar()
         plt.show()
 
-
     def integrand(self,f, theta_list, **kwargs):
         """  Resolution of the problem """
         self.f = f
@@ -248,8 +265,7 @@ class DfPwProblem(PwProblem):
                 self.solve()
                 tau_list.append(self.result.tau[-1]*np.sin(theta)*np.cos(theta))
         return tau_list
-        # if theta_c is not None:
-        #     plt.plot([theta_c, theta_c], [0, 1.1*np.max(tau_list)],"r--")
+
         
 
 

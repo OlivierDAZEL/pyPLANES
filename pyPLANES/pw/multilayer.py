@@ -81,6 +81,8 @@ class MultiLayer():
             else:
                 raise NameError("Invalid Material")
             _x += d
+
+
         # Creation of the list of interfaces
         self.interfaces = []
         for i_l, _layer in enumerate(self.layers[:-1]):
@@ -106,6 +108,9 @@ class MultiLayer():
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(ElasticElasticInterface(_layer,self.layers[i_l+1]))
 
+
+
+
     def __str__(self):
         out = "Interface #0\n"
         out += self.interfaces[0].__str__()+"\n"
@@ -120,8 +125,6 @@ class MultiLayer():
         if self.method == "Z":
             if termination == "rigid":
                 self.layers[-1].backing = True
-
-
 
         # Termination of the multilayer
 
@@ -170,12 +173,13 @@ class MultiLayer():
                 self.nb_dofs += 1
 
         if self.method == "Z":
-            for i_l, _l in enumerate(self.layers):
-                _l.indices_nu = _l.indices_v
-                if isinstance(_l, PemLayer) and isinstance(self.interfaces[i_l], PemElasticInterface):
-                    lkjlkjlk
-            if termination == "rigid":
-                self.layers[-1].indices_nu = self.layers[-1].indices_sigma
+            for i_l, _l in enumerate(self.layers):                
+                interface_bottom = self.interfaces[i_l]
+                interface_top = self.interfaces[i_l+1]
+                _l.master_fields_bottom = interface_bottom.master_fields_top   
+                _l.slave_fields_bottom = interface_bottom.slave_fields_top 
+                _l.master_fields_top= interface_top.master_fields_bottom   
+                _l.slave_fields_top = interface_top.slave_fields_bottom
 
 
     def update_frequency(self, omega, kx):

@@ -28,7 +28,6 @@ from numpy import pi
 import matplotlib.pyplot as plt
 from mediapack import Air, Fluid
 
-
 from pyPLANES.core.calculus import Calculus
 from pyPLANES.pw.multilayer import MultiLayer
 from pyPLANES.pw.window import Window
@@ -42,11 +41,7 @@ class PwProblem(Calculus, MultiLayer):
         self.result.Solver = type(self).__name__
         self.theta_d = kwargs.get("theta_d", 0.0)
         self.method = kwargs.get("method", "Global Method")
-        # Window 
-        self.window = kwargs.get("window", False)
-        if self.window is not False:
-            window_method = kwargs.get("window_method", "Yu")
-            self.window = Window(self.window[0], self.window[1], window_method)
+
 
         if self.method.lower() in ["recursive", "jap", "recursive method"]:
             self.method = "Recursive Method"
@@ -70,18 +65,19 @@ class PwProblem(Calculus, MultiLayer):
             
         assert "ml" in kwargs
         ml = kwargs.get("ml")
-
         MultiLayer.__init__(self, ml=ml, method=self.method , method_TM=self.method_TM, material_database=self.material_database)
+
+        # Window 
+        self.window = kwargs.get("window", False)
+        if self.window is not False:
+            window_method = kwargs.get("window_method", "Yu")
+            self.window = Window(self.window[0], self.window[1], window_method)
 
         if self.method_TM in ["cheb_1"]:
             for l in self.layers:
                 l.order_chebychev = self.order_chebychev 
         self.termination = kwargs.get("termination", "rigid")
         self.add_excitation_and_termination(self.termination)
-
-        # Calculus variable (for pylint)
-        self.kx, self.ky, self.k = None, None, None
-        self.R, self.T = None, None
 
     def update_frequency(self, omega):
         self.k_air = omega/Air.c
@@ -151,80 +147,93 @@ class PwProblem(Calculus, MultiLayer):
             self.A = np.delete(self.A, 0, axis=1)
         elif self.method == "Z":
             self.Zeta, self.Xi = self.interfaces[-1].update_Zeta_Xi()
+            # print(f"Initial Zeta: \n{self.Zeta}")
+            # print(f"Initial Xi.     : \n{self.Xi}")
             for i, _l in enumerate(self.layers[::-1]):
                 _l.Zeta_plus,_l.Xi_plus = _l.update_Zeta_Xi(self.Zeta, self.Xi)
+                # print(f"Layer {i} Zeta after layer: \n{_l.Zeta_plus}")
+                # print(f"Layer {i} Xi after layer: \n{_l.Xi_plus}")
                 self.Zeta, self.Xi = self.interfaces[-i-2].update_Zeta_Xi(_l.Zeta_plus, _l.Xi_plus)
-
+                # print(f"Layer {i} Zeta after interface: \n{self.Zeta}")
+                # print(f"Layer {i} Xi after interface: \n{self.Xi}")
         else:
             raise NameError("Unknow method")
+
+    def solve_kernel(self):
         
-    def solve(self):
-        Calculus.solve(self)
         if self.method in ["Recursive Method", "characteristics"]:
             self.Omega = self.Omega.reshape(2)
             if self.method == "characteristics":
                 self.Omega = self.interfaces[0].carac_bottom.P@self.Omega
             alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
             det = -self.Omega[0]+alpha*self.Omega[1]
-            R0 = (self.Omega[0]+alpha*self.Omega[1])/det
-            abs = 1-np.abs(R0)**2
+            self.R0 = (self.Omega[0]+alpha*self.Omega[1])/det
+            self.abs = 1-np.abs(self.R0)**2
             self.X_0_minus = 2*alpha/det
             if self.termination == "transmission":
                 Omega_end = (self.back_prop*self.X_0_minus).flatten()
-                T0 = Omega_end[0]
-                abs -= np.abs(T0)**2
+                self.T0 = Omega_end[0]
+                self.abs -= np.abs(self.T0)**2
 
         elif self.method == "Global Method":
             self.X = LA.solve(self.A, self.F)
-            R0 = self.X[0]
-            abs = 1-np.abs(R0)**2
+            self.R0 = self.X[0]
+            self.abs = 1-np.abs(self.R0)**2
             if self.termination == "transmission":
-                T0 = self.X[-1]
-                abs -= np.abs(T0)**2
-                
-
+                self.T0 = self.X[-1]
+                self.abs -= np.abs(self.T0)**2
 
         elif self.method == "TMM":
             if LA.det(self.A)!=0:
                 self.X = LA.solve(self.A, self.F)
                 alpha = 1j*(self.ky[0]/self.k_air)/(2*pi*self.f*Air.Z)
                 det = -self.X[0]+alpha*self.X[1]
-                R0 = self.X[0]
-                abs = 1-np.abs(R0)**2
+                self.R0 = self.X[0]
+                self.abs = 1-np.abs(self.R0)**2
                 if self.termination == "transmission":
-                    T0 = self.X[-1]
-                    abs -= np.abs(T0)**2
+                    self.T0 = self.X[-1]
+                    self.abs -= np.abs(self.T0)**2
             else:
-                R0 = np.nan
-                abs = np.nan
+                self.R0 = np.nan
+                self.abs = np.nan
                 if self.termination == "transmission":
-                    T0 = np.nan
+                    self.T0 = np.nan
                     
         elif self.method == "Z":
-            Z = self.Zeta[1,0]
-            R0 = (Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180))
-            v = (self.ky[0]/self.k_air)*(1-R0)/Air.Z
-            abs = 1-np.abs(R0)**2
+            
+            Z = self.Zeta[0,0]
+
+
+            self.R0 = (Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180))
+            self.abs = 1-np.abs(self.R0)**2
             if self.termination == "transmission":
-                v *= self.Xi[0,0]
-                T0 = v*Air.Z*(self.k_air/self.ky[0])
-                abs -= np.abs(T0)**2
+                v = (1+self.R0) / Z # master velocity at the incident interface
+                v*= self.Xi[0,0] # master velocity at the termination interface
+                self.T0 = v*Air.Z/np.cos(self.theta_d*pi/180)
+                self.abs -= np.abs(self.T0)**2
 
-        self.result.R0.append(R0)
-        self.result.Z_prime.append((R0+1)/(1-R0)/np.cos(self.theta_d*pi/180))
-        self.result.abs.append(abs)
+
         if self.termination == "transmission":
-            self.result.T0.append(T0)
+            # Window correction
+            if self.window:
+                self.window.update_frequency(2*pi*self.f)
+                sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
+            else:
+                sigma = 1/np.cos(self.theta_d*pi/180)
+            self.win = np.cos(self.theta_d*pi/180)*sigma
+            self.tau = (np.abs(self.T0)**2)*np.cos(self.theta_d*pi/180)*sigma
 
-        # Window correction
-        if self.window:
-            self.window.update_frequency(2*pi*self.f)
-            sigma = self.window.sigma_average_Yu(self.k_air*np.sin(self.theta_d*pi/180))
-        else:
-            sigma = 1/np.cos(self.theta_d*pi/180)
-        self.win = np.cos(self.theta_d*pi/180)*sigma
-        self.result.tau.append((np.abs(T0)**2)*np.cos(self.theta_d*pi/180)*sigma)
-
+    def solve(self):
+        # print("Frequency: {:.2f} Hz".format(self.f))
+        Calculus.solve(self)
+        self.solve_kernel()
+ 
+        self.result.R0.append(self.R0)
+        self.result.Z_prime.append((self.R0+1)/(1-self.R0)/np.cos(self.theta_d*pi/180))
+        self.result.abs.append(self.abs)
+        if self.termination == "transmission":
+            self.result.T0.append(self.T0)
+            self.result.tau.append(self.tau)
 
     def plot_solution(self):
         if self.method == "Global Method":

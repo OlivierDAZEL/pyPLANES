@@ -23,7 +23,7 @@
 #
 
 
-from os import path, mkdir, rename
+from os import path, mkdir
 
 import json
 import os
@@ -88,16 +88,13 @@ class Calculus():
         self.init_frequencies(kwargs.get("frequencies", False)) # Frequency list
        
         outfiles_directory = "out"
-
         if not path.exists(outfiles_directory):
                 mkdir(outfiles_directory) 
 
         self.file_names = outfiles_directory + "/" + self.name_project
         if self.sub_project:
             self.file_names += "_" + self.sub_project
-        # self.info_file_name = self.file_names + ".info.txt"
-        # self.open_info_file()
-        self.start_time = time.process_time()
+
         self.alive_bar = kwargs.get("alive_bar", None)
         if self.alive_bar == None:
             self.alive_bar = False
@@ -115,13 +112,14 @@ class Calculus():
         elif os.path.exists("materials.json"):
             self.material_database = json.load(open("materials.json"))
 
-
     def info(self, message):
         if self.verbose:
             print(message)
 
     def resolution(self):
         """  Resolution of the problem """
+
+        self.start_time = time.process_time()
         if self.alive_bar:
             with alive_bar(len(self.frequencies), title="pyPLANES Resolution") as bar:
                 for f in self.frequencies:
@@ -138,9 +136,9 @@ class Calculus():
                 self.solve()
                 self.plot_solutions()
 
-
         self.end_time = time.process_time()
         self.result.calculation_time = self.end_time - self.start_time
+
         self.result.save(self.file_names,self.save_append)
 
     def create_linear_system(self, omega):

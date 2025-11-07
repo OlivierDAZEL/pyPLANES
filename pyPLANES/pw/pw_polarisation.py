@@ -75,7 +75,6 @@ def PEM_waves_PQ(mat, kx, omega):
     kx = kx[0]
     jom = 1j*omega
 
-
     k_1 = np.sqrt(mat.delta_1**2-kx**2)
     k_2 = np.sqrt(mat.delta_2**2-kx**2)
     k_3 = np.sqrt(mat.delta_3**2-kx**2)
@@ -254,6 +253,8 @@ def fluid_waves_TMM(mat, kx):
     return Phi, lam
 
 def fluid_waves_PQ(mat, kx, omega):
+
+
     """
     Polarisation  S={0:v_y , 1:p} and jky propagation terms
 
@@ -288,4 +289,63 @@ def fluid_waves_PQ(mat, kx, omega):
     Q = np.array([[1/2, 1/(2*Z_)], [1/2, -1/(2*Z_)]], dtype=complex)
 
     lam = np.array([-1j*ky, 1j*ky], dtype=complex)
+    return P, Q, lam
+
+
+
+def PEM_waves_normal(mat, omega):
+
+    # jom = 1j*omega
+    # kx =0.
+
+    # k_1 = np.sqrt(mat.delta_1**2-kx**2)
+    # k_2 = np.sqrt(mat.delta_2**2-kx**2)
+    # k_3 = np.sqrt(mat.delta_3**2-kx**2)
+    # lam = np.array([-1j*k_1, -1j*k_2, -1j*k_3, 1j*k_1, 1j*k_2, 1j*k_3], dtype=complex)
+
+    # x_1 = -2*1j*mat.N*k_1*kx
+    # x_2 = -2*1j*mat.N*k_2*kx
+    # x_3 = 1j*mat.N*(k_3**2-kx**2)
+    
+    # y_1 = -1j*mat.A_hat*mat.delta_1**2-1j*2*mat.N*k_1**2
+    # y_2 = -1j*mat.A_hat*mat.delta_2**2-1j*2*mat.N*k_2**2
+    # y_3 = -2*1j*mat.N*k_3*kx
+
+    # p_1 = 1j*mat.delta_1**2*mat.K_eq_til*mat.mu_1
+    # p_2 = 1j*mat.delta_2**2*mat.K_eq_til*mat.mu_2
+    
+
+    # P = np.zeros((6, 6), dtype=complex)
+    # Q = np.zeros((6, 6), dtype=complex)
+
+    # P[0, :] = [jom*kx, jom*kx, -jom*k_3, jom*kx, jom*kx, jom*k_3]
+    # P[1, :] = [jom*k_1, jom*k_2, jom*kx, -jom*k_1, -jom*k_2, jom*kx]
+    # P[2, :] = [jom*mat.mu_1*k_1, jom*mat.mu_2*k_2, jom*mat.mu_3*kx, -jom*mat.mu_1*k_1, -jom*mat.mu_2*k_2, jom*mat.mu_3*kx]
+    # P[3,:] = [x_1, x_2, x_3, -x_1, -x_2, x_3]
+    # P[4,:] = [y_1, y_2, y_3, y_1, y_2, -y_3]
+    # P[5,:] = [p_1, p_2, 0, p_1, p_2, 0]
+
+    # PP = P.copy()
+
+    # PP = np.delete(PP, [0,3], axis=0)
+    # PP = np.delete(PP, [2,5], axis=1)
+
+    P = np.zeros((4, 4), dtype=complex)
+    Q = np.zeros((4, 4), dtype=complex)
+
+    P[0, :] = np.array([1]*4)
+    P[1, :] = np.array([mat.mu_1, mat.mu_2, mat.mu_1, mat.mu_2])
+    P[2,:] =  np.array([-mat.Z_1_s, -mat.Z_2_s, mat.Z_1_s, mat.Z_2_s])
+    P[3,:] = np.array([mat.Z_1_p, mat.Z_2_p, -mat.Z_1_p, -mat.Z_2_p])
+ 
+    QQ = LA.inv(P)
+
+    Q = np.zeros((4, 4), dtype=complex)
+    Q[0,:] = [-mat.mu_2, 1,   mat.mu_2/mat.Z_1_s,  mat.mu_1/mat.Z_1_p]
+    Q[1,:] = [ mat.mu_1, -1, -mat.mu_1/mat.Z_2_s, -mat.mu_2/mat.Z_2_p]
+    Q[2,:] = [-mat.mu_2, 1,  -mat.mu_2/mat.Z_1_s, -mat.mu_1/mat.Z_1_p]
+    Q[3,:] = [ mat.mu_1, -1,  mat.mu_1/mat.Z_2_s,  mat.mu_2/mat.Z_2_p]
+    Q *= 1/(2*(mat.mu_1 - mat.mu_2))
+
+    lam = np.array([-1j*k_1, -1j*k_2, 1j*k_1, 1j*k_2], dtype=complex)
     return P, Q, lam

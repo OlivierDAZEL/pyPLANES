@@ -31,7 +31,7 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.periodic_layer import PeriodicLayer
 from pyPLANES.pw.pw_layers import PwLayer, FluidLayer
-from pyPLANES.pw.characteristics import Characteristics
+# from pyPLANES.pw.characteristics import Characteristics
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, PEM_waves_TMM, elastic_waves_TMM
 from scipy.linalg import block_diag
 
@@ -47,19 +47,23 @@ class PwInterface():
         self.pw_method = None
         self.C_bottom, self.C_top = None, None
         self.C_bottomc, self.C_topc = None, None
-        if isinstance(self.layers[0],PwLayer):
-            self.carac_bottom = Characteristics(self.layers[0].medium)
-        elif isinstance(self.layers[0],PeriodicLayer):
-            self.carac_bottom = Characteristics(self.layers[0].medium[1])
-            self.carac_bottom.typ = self.layers[0].pwfem_entities[1].typ
-        if layer2 != None:
-            if isinstance(self.layers[1],PwLayer):
-                self.carac_top = Characteristics(self.layers[1].medium)
-            elif isinstance(self.layers[1],PeriodicLayer):
-                self.carac_top = Characteristics(self.layers[1].medium[0])
-                self.carac_top.typ = self.layers[1].pwfem_entities[1].typ
-        else:
-            self.carac_top = None
+        self.master_fields_bottom = None
+        self.slave_fields_bottom = None
+        self.master_fields_top = None
+        self.slave_fields_top = None    
+        # if isinstance(self.layers[0],PwLayer):
+        #     self.carac_bottom = Characteristics(self.layers[0].medium)
+        # elif isinstance(self.layers[0],PeriodicLayer):
+        #     self.carac_bottom = Characteristics(self.layers[0].medium[1])
+        #     self.carac_bottom.typ = self.layers[0].pwfem_entities[1].typ
+        # if layer2 != None:
+        #     if isinstance(self.layers[1],PwLayer):
+        #         self.carac_top = Characteristics(self.layers[1].medium)
+        #     elif isinstance(self.layers[1],PeriodicLayer):
+        #         self.carac_top = Characteristics(self.layers[1].medium[0])
+        #         self.carac_top.typ = self.layers[1].pwfem_entities[1].typ
+        # else:
+        #     self.carac_top = None
         self.nb_waves = None
 
     def update_frequency(self, omega, kx=[0]):
@@ -68,9 +72,9 @@ class PwInterface():
             self.layers[0].medium.update_frequency(omega)
         if isinstance(self.layers[1],PwLayer):
             self.layers[1].medium.update_frequency(omega)
-        self.carac_bottom.update_frequency(omega)
-        if self.carac_top is not None:
-            self.carac_top.update_frequency(omega)
+        # self.carac_bottom.update_frequency(omega)
+        # if self.carac_top is not None:
+        #     self.carac_top.update_frequency(omega)
 
     def update_M_global(self, M, i_eq):
         periodic_layer = [isinstance(l, PeriodicLayer) for l in self.layers]
@@ -190,6 +194,10 @@ class FluidFluidInterface(PwInterface):
         self.C_top = -np.eye(self.number_relations)
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
+        self.master_fields_bottom = [0]
+        self.slave_fields_bottom = [1]  
+        self.master_fields_top = [0]
+        self.slave_fields_top = [1]
 
     def __str__(self):
         out = "\t Fluid-fluid interface"
@@ -207,23 +215,25 @@ class FluidElasticInterface(PwInterface):
         self.n_0 = 1
         self.n_1 = 2
         self.number_relations = 3
-        self.C_bottom = np.array([[0,0],[1,0],[0,1]])
+        self.C_bottom = np.array([[0.,0.],[1.,0.],[0.,1.]])
         self.C_top = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
+        self.master_fields_bottom = [0]
+        self.slave_fields_bottom = [1]  
+        self.master_fields_top = [1, 2]
+        self.slave_fields_top = [0, 3]
 
     def __str__(self):
         out = "\t Fluid-Elastic interface"
         return out
 
     def update_Zeta_Xi(self, Zeta, Xi):
-        Z = Zeta[2:,:]
-        Xi = Xi@np.array([-Z[0,1]/Z[0,0],1]).reshape((2,1))
-        Z = -(Z[1,1]-Z[0,1]*Z[1,0]/Z[0,0])
-        Zeta = np.array([1, Z]).reshape((2,1))
-        return Zeta, Xi
+        zeta = np.array([-Zeta[1,0]]).reshape((1,1))
+        Xi = Xi@np.array([1.,0.]).reshape((2,1))
+        return zeta, Xi
 
-class FluidPemInterface(PwInterface):
+class FluidPemInterface(PwInterface):   
     """
     Fluid-PEM interface 
     """
@@ -246,19 +256,20 @@ class FluidPemInterface(PwInterface):
                 self.C_bottomc = np.array([[1,0],[0,1], [0,1], [0, 0]])
                 self.C_topc = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
         self.pw_method = fluid_waves_TMM
+        self.master_fields_bottom = [0]
+        self.slave_fields_bottom = [1]  
+        self.master_fields_top = [2, 3, 4]
+        self.slave_fields_top = [0, 1, 5]
+        self.Xi = np.array([0,0,1]).reshape((3,1))
 
     def __str__(self):
         out = "\t Fluid-PEM interface"
         return out
 
     def update_Zeta_Xi(self, Zeta, Xi):
-        Z = Zeta[3:,:]
-        Z_v = Z[:2, :2]
-        v_s = -LA.solve(Z_v, Z[:2,-1])
-        Z = Z[2,:2]@v_s + Z[2,2]
-        Z = np.array([1,Z]).reshape((2,1))
-        Xi = Xi@np.vstack([v_s.reshape((2,1)), np.array([1]).reshape((1,1))])
-        return Z, Xi
+        zeta = np.array([Zeta[2,0]]).reshape((1,1))
+        Xi = Xi@np.array([1,0,0]).reshape((3,1))
+        return zeta, Xi
 
 class ElasticFluidInterface(PwInterface):
     """
@@ -272,18 +283,20 @@ class ElasticFluidInterface(PwInterface):
         self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
         self.C_top = np.array([[0,0],[1,0],[0,1]])
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-
         self.pw_method = elastic_waves_TMM
+        self.master_fields_bottom = [0, 1]
+        self.slave_fields_bottom = [2, 3]  
+        self.master_fields_top = [0]
+        self.slave_fields_top = [1]
 
     def __str__(self):
         out = "\t Elastic-Fluid interface"
         return out
     
     def update_Zeta_Xi(self, Zeta, Xi):
-        Z = Zeta[1,0]
+        zeta= np.array([[0, 0],[0, -Zeta[0, 0]]])
         Xi = Xi@np.array([0, 1]).reshape(1,2)
-        Zeta= np.array([[1,0],[0,1],[0, 0],[0, -Z]])
-        return Zeta, Xi
+        return zeta, Xi
 
 class ElasticElasticInterface(PwInterface):
     """
@@ -299,6 +312,10 @@ class ElasticElasticInterface(PwInterface):
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
         self.pw_method = elastic_waves_TMM
+        self.master_fields_bottom = [0, 1]
+        self.slave_fields_bottom = [2, 3] 
+        self.master_fields_top = [0, 1]
+        self.slave_fields_top = [2, 3]
 
     def __str__(self):
         out = "\t Elastic-Elastic interface"
@@ -353,6 +370,12 @@ class ElasticPemInterface(PwInterface):
                 self.C_topc =  self.C_top@LA.inv(M_01)
 
         self.pw_method = elastic_waves_TMM
+        self.master_fields_bottom = [0, 1]
+        self.slave_fields_bottom = [2, 3] 
+        self.master_fields_top = [0, 1, 2]
+        self.slave_fields_top = [3, 4, 5]
+
+
 
     def __str__(self):
         out = "\t Elastic-PEM interface"
@@ -373,13 +396,16 @@ class ElasticPemInterface(PwInterface):
         return PwInterface.transfert(self, Om_)
 
     def update_Zeta_Xi(self, Zeta, Xi):
-        Z = Zeta[3:,:]
-        Z = np.array([[Z[0,0], Z[0,1]+Z[0,2]], [Z[1,0]-Z[2,0], Z[1,1]+Z[1,2]-Z[2,1]-Z[2,2]]])
 
-        Zeta= np.vstack([np.eye(2), Z]).reshape((4,2))
-
+        zeta = np.zeros((2,2),dtype=complex) 
+        # sigma_xy^-= sigma_xy^+   
+        zeta[0,0] = Zeta[0,0] 
+        zeta[0,1] = Zeta[0,1]+Zeta[0,2]
+        # sigma_yy^-= sigma_yy^+ - p    
+        zeta[1,0] = Zeta[1,0]-Zeta[2,0] 
+        zeta[1,1] = (Zeta[1,1]+Zeta[1,2]) - (Zeta[2,1]+Zeta[2,2]) 
         Xi = Xi@np.array([[1, 0], [0, 1], [0, 1]])
-        return Zeta, Xi
+        return zeta, Xi
 
 class PemFluidInterface(PwInterface):
     """
@@ -407,17 +433,22 @@ class PemFluidInterface(PwInterface):
                 self.C_bottom = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
                 self.C_top = np.array([[1,0],[0,1], [0,1], [0, 0]])
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+        self.master_fields_bottom = [0, 1, 2]
+        self.slave_fields_bottom = [3, 4, 5]
+        self.master_fields_top = [0]
+        self.slave_fields_top = [1]
 
     def __str__(self):
         out = "\t PEM-Fluid interface"
         return out
 
     def update_Zeta_Xi(self, Zeta, Xi):
-        Z = Zeta[1,0]
-        Z = np.array([[0, 0, 0],[0, 0, 0], [0,0, Z]])
-        Zeta = np.vstack([np.eye(3), Z]).reshape((6,3))
+        zeta = np.zeros((3,3),dtype=complex)
+        zeta[2, 2] = Zeta[0,0]        
         Xi = Xi@np.array([0, 0, 1]).reshape(1,3)
-        return Zeta, Xi
+
+
+        return zeta, Xi
 
 class PemElasticInterface(PwInterface):
     """
@@ -469,18 +500,24 @@ class PemElasticInterface(PwInterface):
                 M_01[4,1]=1
                 M_01[5,4]=1                
                 self.C_bottomc =  self.C_bottom@LA.inv(M_01)
+        self.master_fields_bottom = [0, 1, 5]
+        self.slave_fields_bottom = [2, 3, 4]
+        self.master_fields_top = [0, 1]
+        self.slave_fields_top = [2, 3]
+
+
 
     def __str__(self):
         out = "\t PEM-Elastic interface"
         return out
 
-    def update_Zeta_Xi(self, Zeta, Xi):
-        Z = Zeta[2:,:]
-        U = np.array([[1,0,0],[0,1,0],[0,1,0]])
-        Z = np.array([[Z[0,0], Z[0,1], 0], [Z[1,0], Z[1,1], 1], [0, 0, 1]])
-        Zeta = np.vstack([U, Z]).reshape((6,3))
+    def update_Zeta_Xi(self, H, Xi):
+        # Z = Zeta[2:,:]
+        # U = np.array([[1,0,0],[0,1,0],[0,1,0]])
+        H = np.array([[0, 1, 0], [H[0,0], H[0,1], 0], [H[1,0], H[1,1], 1]])
+        # Zeta = np.vstack([U, Z]).reshape((6,3))
         Xi = Xi@ np.array([[1, 0, 0],[0, 1, 0]])
-        return Zeta, Xi
+        return H, Xi
 
 class PemPemInterface(PwInterface):
     """
@@ -496,6 +533,12 @@ class PemPemInterface(PwInterface):
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
         self.pw_method = PEM_waves_TMM
+        self.master_fields_bottom = [0, 1, 2]
+        self.slave_fields_bottom = [3, 4, 5]
+        self.master_fields_top = [0, 1, 2]
+        self.slave_fields_top = [3, 4, 5]
+
+
 
     def __str__(self):
         out = "\t PEM-PEM interface"
@@ -530,6 +573,7 @@ class RigidBacking(PwInterface):
         self.C = None
         self.number_relations = None
 
+
     def update_M_global(self, M, i_eq):
         if isinstance(self.layers[0], PeriodicLayer):
             index_rel = slice(i_eq, i_eq+self.number_relations*self.nb_waves)
@@ -557,7 +601,7 @@ class RigidBacking(PwInterface):
         pass 
     
     def update_Zeta_Xi(self):
-        Zeta = np.vstack([np.zeros((self.number_relations,self.number_relations)), np.eye(self.number_relations)]).reshape(2*self.number_relations,self.number_relations) 
+        Zeta = np.zeros((self.number_relations,self.number_relations))
         Xi = np.eye(self.number_relations)
         return Zeta, Xi
 
@@ -569,6 +613,9 @@ class FluidRigidBacking(RigidBacking):
         super().__init__(layer1,layer2, method)
         self.C = np.array([[1,0]]).reshape(1,2)
         self.number_relations = 1
+        self.master_fields_bottom = [1]
+        self.slave_fields_bottom  = [0]   
+
 
     def __str__(self):
         out = "\t Rigid backing"
@@ -586,8 +633,6 @@ class FluidRigidBacking(RigidBacking):
             out = np.kron(np.eye(nb_bloch_waves), out)
         return np.array(out, dtype=complex)
 
-
-
 class PemBacking(RigidBacking):
     """
     Rigid backing for a pem layer
@@ -601,7 +646,9 @@ class PemBacking(RigidBacking):
         self.C[1, 2] = 1.
         self.C[2, 5] = 1.
         self.number_relations = 3
-        
+        self.master_fields_bottom = [3, 4, 5]
+        self.slave_fields_bottom  = [0, 1, 2]        
+
     def __str__(self):
         out = "\t PEM Rigid backing"
         return out
@@ -637,7 +684,10 @@ class ElasticBacking(RigidBacking):
         self.C[0, 1] = 1.
         self.C[1, 3] = 1.
         self.number_relations = 2
-        
+        self.master_fields_bottom = [2, 3]
+        self.slave_fields_bottom  = [0, 1]     
+
+
     def __str__(self):
         out = "\t Elastic Rigid backing"
         return out
@@ -678,7 +728,6 @@ class SemiInfinite(PwInterface):
         elif isinstance(self.layers[0], PeriodicLayer):
             t = self.layers[0].medium[1].MEDIUM_TYPE
 
-
         if t in ["fluid", "eqf"]:
             self.typ = "fluid"
             self.n_0 = self.n_1 = 1
@@ -686,10 +735,16 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
+            self.number_relations = 3
+            self.master_fields_bottom = [0]
+            self.slave_fields_bottom  = [1]
             # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
             formulation = "Biot98"
+            self.master_fields_bottom = [0, 1, 2]
+            self.slave_fields_bottom  = [3, 4, 5]
+
             self.n_0 = 3
             self.n_1 = 1
             self.pw_method = PEM_waves_TMM
@@ -713,6 +768,8 @@ class SemiInfinite(PwInterface):
             self.typ ="elastic"
             self.n_0, self.n_1 = 2, 1
             self.number_relations = 3
+            self.master_fields_bottom = [0, 1]
+            self.slave_fields_bottom  = [2, 3]
             # \sigma_xy = 0, u_y = u_y^s, \sima_yy = -p
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
@@ -837,13 +894,13 @@ class SemiInfinite(PwInterface):
         Returns the Zeta matrix for the semi-infinite boundary
         """
 
-        Zeta = np.array([1, Air.Z*(self.k/self.ky[0])]).reshape((2,1))
+        Zeta = np.array([(Air.Z*(self.k/self.ky[0]))]).reshape(1,1)
         Xi = np.eye(1)
+
         if self.type_last_layer in ["fluid", "eqf"]:
-            return FluidFluidInterface.update_Zeta_Xi(self, Zeta, Xi)        
+            return FluidFluidInterface.update_Zeta_Xi(self, Zeta, Xi)            
         elif self.type_last_layer == "pem":
             return PemFluidInterface.update_Zeta_Xi(self, Zeta, Xi)
-            klj
         elif self.type_last_layer == "elastic":
             return ElasticFluidInterface.update_Zeta_Xi(self, Zeta, Xi)
         else:

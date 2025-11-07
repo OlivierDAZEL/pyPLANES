@@ -138,7 +138,8 @@ class Result():
                 self.lcar = d["lcar"]
             if "cond_number" in keys:
                 self.cond_number = np.array(d["cond_number"])
-
+            if "calculation_time" in keys:
+                self.calculation_time = d["calculation_time"]
 
 
     def save(self,file, append_file):

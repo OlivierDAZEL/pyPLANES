@@ -22,7 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-from numpy.lib.scimath import sqrt
+from numpy import sqrt
 import scipy.special as sp
 
 from .medium import Medium

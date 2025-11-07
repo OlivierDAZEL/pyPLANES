@@ -22,6 +22,8 @@
 # copies or substantial portions of the Software.
 #
 
+from numba import jit
+import io
 import numpy as np
 import numpy.linalg as LA
 import scipy.linalg as sla
@@ -32,7 +34,7 @@ from numpy import pi, sqrt
 
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, elastic_waves_TMM, PEM_waves_TMM
 from pyPLANES.pw.pw_polarisation import fluid_waves_PQ, elastic_waves_PQ, PEM_waves_PQ
-from pyPLANES.pw.characteristics import Characteristics
+# from pyPLANES.pw.characteristics import Characteristics
 
 from scipy.linalg import expm, block_diag
 from pyPLANES.utils.utils_spectral import chebyshev, chebyshev_nodes
@@ -64,6 +66,8 @@ class PwGeneric():
         self.indices_Q = None
         self.indices_v = None
         self.indices_sigma = None
+        self.master_fields = None
+        self.slave_fields = None
 
     def update_frequency(self, omega):
         pass
@@ -229,7 +233,9 @@ class PwGeneric():
             return Om, Xi
         elif method == "Recursive Method":
             m = self.nb_waves_in_medium*self.nb_waves
+            self.lam, self.SV = LA.eig(self.state_matrix(omega))
             self.order_lam()
+
             Phi = self.SV
             lambda_ = self.lam
 
@@ -293,48 +299,51 @@ class PwGeneric():
         self.SV = self.SV[:, _index]
         self.lam = self.lam[_index]
 
+    @staticmethod
+    # @jit(nopython=True)
+    def update_Zeta_Xi_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields, slave_fields):
+
+        Q_hat_plus  = Q_hat[:n, :]
+        Q_hat_minus = Q_hat[n:, :]
+
+        Q_hat_plus_inv = LA.inv(Q_hat_plus)
+        
+        Q_check =np.vstack([np.eye(n), e_minus@Q_hat_minus@Q_hat_plus_inv@e_minus])
+        PmQ_m1 = LA.inv(P_m@Q_check)
+
+        # Q_check[n:,:n] = e_minus@Q_hat_minus@Q_hat_plus_inv@e_minus
+        # PmQ_m1 = LA.inv(P_m[:n,:] +P_m[n:,:]@Q_check)
+
+        H = P_s  @ Q_check @ PmQ_m1
+
+        # zeta = np.zeros((2*n, n), dtype=complex)
+        # zeta[master_fields,:] = np.eye(n)
+        # zeta[slave_fields,:] = YZ
+
+        Xi  = Xi@Q_hat_plus_inv@e_minus@PmQ_m1
+
+        return H, Xi
+
+
+
     def update_Zeta_Xi(self, Zeta, Xi):
 
-        P_v_plus = self.P[:self.nb_waves_in_medium, :self.nb_waves_in_medium]
-        P_v_mnus = self.P[:self.nb_waves_in_medium, self.nb_waves_in_medium:]
-        P_s_plus = self.P[self.nb_waves_in_medium:, :self.nb_waves_in_medium]
-        P_s_mnus = self.P[self.nb_waves_in_medium:, self.nb_waves_in_medium:]
-
-        Q_v_plus = self.Q[:self.nb_waves_in_medium, :self.nb_waves_in_medium]
-        Q_s_plus = self.Q[:self.nb_waves_in_medium, self.nb_waves_in_medium:]
-        Q_v_mnus = self.Q[self.nb_waves_in_medium:, :self.nb_waves_in_medium]
-        Q_s_mnus = self.Q[self.nb_waves_in_medium:, self.nb_waves_in_medium:]
-
-        delta_l = np.diag([1,-1,-1])
-        delta_r = np.diag([1,1,-1])
-
-        # print(np.allclose(P_v_mnus,delta_l@P_v_plus@delta_r))
-        # print(np.allclose(P_s_mnus,-delta_l@P_s_plus@delta_r))
-        # print(np.allclose(Q_v_mnus,delta_r@Q_v_plus@delta_l))
-        # print(np.allclose(Q_s_mnus,-delta_r@Q_s_plus@delta_l))
+        Z = Zeta.copy()
+        Zeta = np.zeros((2*self.nb_waves_in_medium, self.nb_waves_in_medium), dtype=complex)
+        Zeta[self.master_fields_top,:] = np.eye(self.nb_waves_in_medium)
+        Zeta[self.slave_fields_top,:] = Z
 
 
-        # print(P_v_plus@Q_v_plus)
-        # exit()
-
-
-        
-
-
-
+        n = self.nb_waves_in_medium
         Q_hat = self.Q@Zeta
+        e_minus = np.diag(np.exp(-self.lam[n:]*self.d))
+        master_fields_bottom = self.master_fields_bottom
+        slave_fields_bottom = self.slave_fields_bottom
+        P_m = self.P[self.master_fields_bottom,:]
+        P_s = self.P[self.slave_fields_bottom,:]
+        return self.update_Zeta_Xi_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields_bottom, slave_fields_bottom)
 
-        Q_hat_plus  = Q_hat[:self.nb_waves_in_medium, :]
-        Q_hat_minus = Q_hat[self.nb_waves_in_medium:, :]
 
-        e_minus = np.diag(np.exp(-self.lam[self.nb_waves_in_medium:]*self.d))
-
-        Q_check =np.vstack([np.eye(self.nb_waves_in_medium), e_minus@Q_hat_minus@LA.inv(Q_hat_plus)@e_minus])
-        Z = self.P[self.nb_waves_in_medium:]  @ Q_check @LA.inv(self.P[:self.nb_waves_in_medium]@Q_check)
-
-        Zeta = np.vstack([np.eye(self.nb_waves_in_medium), Z])
-        Xi = Xi@LA.inv(Q_hat_plus)@e_minus@LA.inv(self.P[:self.nb_waves_in_medium]@Q_check)
-        return Zeta, Xi
 
 class PwLayer(PwGeneric):
     """
@@ -364,7 +373,7 @@ class PwLayer(PwGeneric):
         """
         PwGeneric.__init__(self, d, **kwargs)
         self.medium = mat
-        self.carac = Characteristics(self.medium)
+        # self.carac = Characteristics(self.medium)
         self.interfaces = [None, None]
         self.nb_waves_in_medium = None
         self.nb_fields_SV = None
@@ -510,15 +519,13 @@ class PemLayer(PwLayer):
 
     def update_frequency(self, omega, kx):
         PwLayer.update_frequency(self, omega, kx)
-        self.SV, self.lam = PEM_waves_TMM(self.medium, self.kx)
-        self.nb_waves = len(self.kx)
-
-        self.SV, self.lam = PEM_waves_TMM(self.medium, kx)
-        self.SI = LA.inv(self.SV)
-        self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((3, 6))
-        self.P_sigma = self.SV[self.indices_sigma, :].reshape((3,6))
-        self.Q_v = self.SI[:, self.indices_v].reshape((6,3))/(1j*omega)
-        self.Q_sigma = self.SI[:, self.indices_sigma].reshape((6,3))
+        # self.SV, self.lam = PEM_waves_TMM(self.medium, self.kx)
+        # self.nb_waves = len(self.kx)
+        # self.SI = LA.inv(self.SV)
+        # self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((3, 6))
+        # self.P_sigma = self.SV[self.indices_sigma, :].reshape((3,6))
+        # self.Q_v = self.SI[:, self.indices_v].reshape((6,3))/(1j*omega)
+        # self.Q_sigma = self.SI[:, self.indices_sigma].reshape((6,3))
 
 
     def state_matrix(self, omega):
@@ -641,15 +648,21 @@ class ElasticLayer(PwLayer):
     def update_frequency(self, omega, kx):
         PwLayer.update_frequency(self, omega, kx)
         self.medium.update_frequency(omega)
-        self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
-        self.nb_waves = len(kx)
-
         # self.SV, self.lam = elastic_waves_TMM(self.medium, kx)
-        # self.SI = LA.inv(self.SV)
-        # self.P_v = 1j*omega*self.SV[self.indices_v, :].reshape((2,4))
-        # self.P_sigma = self.SV[self.indices_sigma, :].reshape((2,4))
-        # self.Q_v = self.SI[:, self.indices_v].reshape((4,2))/(1j*omega)
-        # self.Q_sigma = self.SI[:, self.indices_sigma].reshape((4,2))
+        # self.nb_waves = len(kx)
+
+    def state_matrix(self, omega):
+        # self.medium.update_frequency(omega)
+        k_x =self.kx[0]
+        m = self.medium
+        A_hat = m.lambda_ 
+        P_hat = m.lambda_ + 2*m.mu
+        alpha = np.array([
+        [0, 0, 1j*k_x*A_hat/P_hat, -((A_hat**2-P_hat**2)/P_hat)*k_x**2-m.rho*omega**2],
+        [0, 0, 1/P_hat, 1j*k_x*A_hat/P_hat],
+        [1j*k_x, -m.rho*omega**2, 0, 0],
+        [1/m.mu, 1j*k_x, 0, 0]])
+        return alpha
 
 
     def plot_solution_global(self, plot, X, nb_points=200):
