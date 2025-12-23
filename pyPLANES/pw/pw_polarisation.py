@@ -347,5 +347,5 @@ def PEM_waves_normal(mat, omega):
     Q[3,:] = [ mat.mu_1, -1,  mat.mu_1/mat.Z_2_s,  mat.mu_2/mat.Z_2_p]
     Q *= 1/(2*(mat.mu_1 - mat.mu_2))
 
-    lam = np.array([-1j*k_1, -1j*k_2, 1j*k_1, 1j*k_2], dtype=complex)
+    lam = np.array([-1j*mat.delta_1, -1j*mat.delta_2, 1j*mat.delta_1, 1j*mat.delta_2], dtype=complex)
     return P, Q, lam
