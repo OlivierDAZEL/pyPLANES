@@ -55,8 +55,8 @@ class PwProblem(Calculus, MultiLayer):
             self.method = "characteristics"
             if self.theta_d == 0:
                 self.theta_d = 1e-12
-        elif self.method.lower() in ["z", "impedance", "impedance method", "impedances"]:
-            self.method = "Z"
+        elif self.method.lower() in ["h","z", "impedance", "impedance method", "impedances"]:
+            self.method = "H"
         else: 
             self.method = "Global Method"
         self.method_TM = kwargs.get("method_TM", "diag")
@@ -145,7 +145,7 @@ class PwProblem(Calculus, MultiLayer):
                 i_eq = _int.update_M_TMM(self.A,i_eq)
             self.F = -self.A[:, 0]# - is for transposition
             self.A = np.delete(self.A, 0, axis=1)
-        elif self.method == "Z":
+        elif self.method == "H":
             self.H, self.Xi = self.interfaces[-1].update_H()
             for i, _l in enumerate(self.layers[::-1]):
                 self.H,self.Xi = _l.update_H(self.H,self.Xi)
@@ -193,11 +193,11 @@ class PwProblem(Calculus, MultiLayer):
                 if self.termination == "transmission":
                     self.T0 = np.nan
                     
-        elif self.method == "Z":
+        elif self.method == "H":
 
             Z = self.H[0,0]
 
-            self.R0 = (Z-Air.Z/np.cos(self.theta_d*pi/180))/(Z+Air.Z/np.cos(self.theta_d*pi/180))
+            self.R0 = (Z*np.cos(self.theta_d*pi/180)-Air.Z)/(Z*np.cos(self.theta_d*pi/180)+Air.Z)
             self.abs = 1-np.abs(self.R0)**2
             if self.termination == "transmission":
                 v = (1+self.R0) / Z # master velocity at the incident interface
@@ -248,7 +248,7 @@ class PwProblem(Calculus, MultiLayer):
         elif self.method == "TMM":
             for _l in self.layers[1:]:
                 _l.plot_solution_TMM(self.plot, self.X[_l.dofs-1])
-        elif self.method == "Z":
+        elif self.method == "H":
             pass
         else: 
             raise NameError("No method")

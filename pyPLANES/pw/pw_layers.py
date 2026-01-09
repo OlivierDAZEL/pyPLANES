@@ -66,8 +66,8 @@ class PwGeneric():
         self.indices_Q = None
         self.indices_v = None
         self.indices_sigma = None
-        self.master_fields = None
-        self.slave_fields = None
+        self.parent_fields = None
+        self.child_fields = None
 
     def update_frequency(self, omega):
         pass
@@ -301,7 +301,7 @@ class PwGeneric():
 
     @staticmethod
     # @jit(nopython=True)
-    def update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields, slave_fields):
+    def update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi):
 
         Q_hat_plus  = Q_hat[:n, :]
         Q_hat_minus = Q_hat[n:, :]
@@ -321,18 +321,15 @@ class PwGeneric():
 
     def update_H(self, H, Xi):
 
-        Zeta = np.zeros((2*self.nb_waves_in_medium, self.nb_waves_in_medium), dtype=complex)
-        Zeta[self.master_fields_top,:] = np.eye(self.nb_waves_in_medium)
-        Zeta[self.slave_fields_top,:] = H
-
+        Omega = self.Omega_p+self.Omega_c@H
         n = self.nb_waves_in_medium
-        Q_hat = self.Q@Zeta
+        Q_hat = self.Q@Omega
         e_minus = np.diag(np.exp(-self.lam[n:]*self.d))
-        master_fields_bottom = self.master_fields_bottom
-        slave_fields_bottom = self.slave_fields_bottom
-        P_m = self.P[self.master_fields_bottom,:]
-        P_s = self.P[self.slave_fields_bottom,:]
-        return self.update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi, master_fields_bottom, slave_fields_bottom)
+
+        P_m = self.state2parent@self.P
+        P_s = self.state2child@self.P
+        
+        return self.update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi)
 
 
 
@@ -387,7 +384,7 @@ class PwLayer(PwGeneric):
         else:
             self.nb_waves = 1
 
-        if self.method == "Z":
+        if self.method == "H":
             # reordering the physical fields
             self.P, self.Q, self.lam  = self.method_PQ(self.medium, kx, omega)
         else:

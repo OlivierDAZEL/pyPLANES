@@ -122,7 +122,7 @@ class MultiLayer():
         return out 
 
     def add_excitation_and_termination(self, termination):
-        if self.method == "Z":
+        if self.method == "H":
             if termination == "rigid":
                 self.layers[-1].backing = True
 
@@ -172,14 +172,14 @@ class MultiLayer():
                 self.interfaces[-1].dofs = np.arange(self.nb_dofs, self.nb_dofs+1)
                 self.nb_dofs += 1
 
-        if self.method == "Z":
+        if self.method == "H":
             for i_l, _l in enumerate(self.layers):                
                 interface_bottom = self.interfaces[i_l]
                 interface_top = self.interfaces[i_l+1]
-                _l.master_fields_bottom = interface_bottom.master_fields_top   
-                _l.slave_fields_bottom = interface_bottom.slave_fields_top 
-                _l.master_fields_top= interface_top.master_fields_bottom   
-                _l.slave_fields_top = interface_top.slave_fields_bottom
+                _l.Omega_p= interface_top.Omega_p
+                _l.Omega_c= interface_top.Omega_c
+                _l.state2parent = interface_bottom.state2parent
+                _l.state2child = interface_bottom.state2child
 
 
     def update_frequency(self, omega, kx):
