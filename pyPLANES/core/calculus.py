@@ -81,7 +81,7 @@ class Calculus():
         self.save_append = kwargs.get("save_append", "w")
         self.plot = kwargs.get("plot_solution", [False]*6)
         self.export_plots = kwargs.get("export_plots", [False]*6)
-
+        self.energetic_balance = kwargs.get("energetic_balance", False)
         # Create the calculus core attributes
         self.result = Result(**kwargs) # Result of the calculation
 
@@ -128,6 +128,8 @@ class Calculus():
                     self.result.f.append(self.f)
                     self.solve()
                     self.plot_solutions()
+                    if self.energetic_balance:
+                        self.compute_energetic_balance()
         else:
             self.info("%%%%%%%%%%%%% Resolution of PLANES %%%%%%%%%%%%%%%%%")
             for f in self.frequencies:
@@ -135,6 +137,8 @@ class Calculus():
                 self.result.f.append(self.f)
                 self.solve()
                 self.plot_solutions()
+                if self.energetic_balance:
+                    self.compute_energetic_balance()
 
         self.end_time = time.process_time()
         self.result.calculation_time = self.end_time - self.start_time
@@ -161,6 +165,10 @@ class Calculus():
             if self.export_plots[5]:
                 plt.figure("Pressure map")
                 plt.savefig("Pressure")
+
+    def compute_energetic_balance(self):        
+        if any(self.energetic_balance):
+            self.compute_energetic_balance()
 
     def init_frequencies(self, frequency):
         """
@@ -194,3 +202,6 @@ class Calculus():
             self.frequencies = np.array([1e3], dtype=float)
         
         return frequency
+
+    def update_frequency(self, omega):
+        pass

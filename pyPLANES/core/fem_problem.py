@@ -209,6 +209,7 @@ class FemBase(Mesh, Calculus):
 
 class FemProblem(FemBase, GmshMesh):
     def __init__(self, **kwargs):
+        self.start_time = time.time()
         self.condensation = kwargs.get("condensation", True)
         GmshMesh.__init__(self, **kwargs)
         FemBase.__init__(self, **kwargs)

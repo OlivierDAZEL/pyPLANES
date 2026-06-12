@@ -291,8 +291,6 @@ def fluid_waves_PQ(mat, kx, omega):
     lam = np.array([-1j*ky, 1j*ky], dtype=complex)
     return P, Q, lam
 
-
-
 def PEM_waves_normal(mat, omega):
 
     # jom = 1j*omega

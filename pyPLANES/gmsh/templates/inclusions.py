@@ -78,7 +78,7 @@ def one_inclusion_rigid(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pe
 
 
 
-def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_1"):
+def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benchmark_1", mat_inclusion="pem_benchmark_11"):
 
 
 #    D                        C
@@ -140,7 +140,7 @@ def one_inclusion(name_mesh, L=2e-2, d=2e-2, a=0.008, lcar=1, mat_core="pem_benc
     gmsh.model.mesh.generate()
     gmsh.model.mesh.setOrder(2)
     affine_transform = np.eye(4)
-    affine_transform[0,3] = d # taken on the first elements because they are all equal
+    affine_transform[0,3] = L # taken on the first elements because they are all equal
     affine_transform = list(affine_transform.flatten())
     gmsh.model.mesh.setPeriodic(1,[line_BC],[line_DA],affine_transform)
     gmsh.write(f"msh/{name_mesh}.geo_unrolled")

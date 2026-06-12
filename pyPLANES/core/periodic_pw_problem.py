@@ -197,7 +197,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.result.R0.append(R[0])
             self.result.R.append(np.sum(np.real(self.ky)*np.abs(R**2))/np.real(self.ky[0]))
 
-            abs = 1-np.abs(self.result.R0[-1])**2
+            abs = 1-np.abs(self.result.R[-1])
             if self.termination == "transmission":
                 T =self.X[-self.nb_waves:]
                 self.result.T0.append(T[0])
@@ -255,8 +255,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             self.result.abs.append(abs)
 
         self.result.Z_prime.append((self.result.R0[-1]+1)/(1-self.result.R0[-1])/np.cos(self.theta_d*pi/180))
-
-
 
     def plot_solution(self):
         if self.method in ["Recursive Method", "TMM"]:

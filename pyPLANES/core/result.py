@@ -130,6 +130,8 @@ class Result():
                 self.order = d["order"]
             if "R" in keys:
                 self.R = d["R"]
+            if "T" in keys:
+                self.T = d["T"]
             if "period" in keys:
                 self.period = d["period"]
             if "n_dof" in keys:
@@ -140,12 +142,23 @@ class Result():
                 self.cond_number = np.array(d["cond_number"])
             if "calculation_time" in keys:
                 self.calculation_time = d["calculation_time"]
-
-
+            if "P_viscous_layer_0" in keys:
+                self.nb_layers = d["nb_layers"]
+                for i in range(self.nb_layers):
+                    setattr(self, "P_viscous_layer_{}".format(i), np.array(d["P_viscous_layer_{}".format(i)]))
+            if "P_thermal_layer_0" in keys:
+                self.nb_layers = d["nb_layers"]
+                for i in range(self.nb_layers):
+                    setattr(self, "P_thermal_layer_{}".format(i), np.array(d["P_thermal_layer_{}".format(i)]))
+            if "P_structural_layer_0" in keys:
+                self.nb_layers = d["nb_layers"]
+                for i in range(self.nb_layers):
+                    setattr(self, "P_structural_layer_{}".format(i), np.array(d["P_structural_layer_{}".format(i)]))
     def save(self,file, append_file):
         d = dict()
         members = [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
         for m in members:
+            
             if isinstance(self.__dict__[m], list):
                 if len(self.__dict__[m]) != 0:
                     if m == "R0":
@@ -163,6 +176,15 @@ class Result():
                     elif m == "Z":
                         d["real(Z)"] = np.real(self.Z).tolist()
                         d["imag(Z)"] = np.imag(self.Z).tolist()
+                    elif m == "P_viscous":
+                        for i, Pv in enumerate(self.P_viscous):
+                            d["P_viscous_layer_{}".format(i)] = Pv
+                    elif m == "P_thermal":
+                        for i, Pt in enumerate(self.P_thermal):
+                            d["P_thermal_layer_{}".format(i)] = Pt
+                    elif m == "P_structural":
+                        for i, Ps in enumerate(self.P_structural):
+                            d["P_structural_layer_{}".format(i)] = Ps
                     elif m == "k":
                         nb_f = len(self.k)
                         nb_w = len(self.k[0])
@@ -228,8 +250,7 @@ class Test():
         elif indicator == "T0":
             indicator_ref = np.imag(ref.T0)
             indicator_res = np.imag(res.T0)
-        # print(indicator_ref)
-        # print(indicator_res)
+
         self.error = LA.norm(indicator_ref-indicator_res)/len(indicator_ref)
     
     def check(self, print_resut=True):
@@ -242,9 +263,6 @@ class Test():
                 print("Error on " + self.indicator +"  {}".format(self.error) + "\t"*2 + "["+ colored("Fail", "red")  +"]")
             return False
         
-    
-        
-
 class Results():
     def __init__(self, file=False, **kwargs):
         self.list = []

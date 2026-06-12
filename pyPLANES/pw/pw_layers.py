@@ -38,6 +38,8 @@ from pyPLANES.pw.pw_polarisation import fluid_waves_PQ, elastic_waves_PQ, PEM_wa
 
 from scipy.linalg import expm, block_diag
 from pyPLANES.utils.utils_spectral import chebyshev, chebyshev_nodes
+from pyPLANES.utils.utils_PW import compute_exp
+
 
 class PwGeneric():
     def __init__(self, d, **kwargs):
@@ -63,11 +65,12 @@ class PwGeneric():
         self.SV = None
         self.SVp = None
         self.TM = None
-        self.indices_Q = None
-        self.indices_v = None
-        self.indices_sigma = None
-        self.parent_fields = None
-        self.child_fields = None
+        self.Omega_p = None
+        self.Omega_c = None
+        self.P_cal = None
+        self.C_cal = None
+        self.L_cal = None
+
 
     def update_frequency(self, omega):
         pass
@@ -301,7 +304,7 @@ class PwGeneric():
 
     @staticmethod
     # @jit(nopython=True)
-    def update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi):
+    def update_H_jit(n, Q_hat, e_minus,p , c):
 
         Q_hat_plus  = Q_hat[:n, :]
         Q_hat_minus = Q_hat[n:, :]
@@ -309,29 +312,25 @@ class PwGeneric():
         Q_hat_plus_inv = LA.inv(Q_hat_plus)
         
         Q_check =np.vstack([np.eye(n), e_minus@Q_hat_minus@Q_hat_plus_inv@e_minus])
-        PmQ_m1 = LA.inv(P_m@Q_check)
+        PmQ_m1 = LA.inv(p@Q_check)
 
-        H = P_s  @ Q_check @ PmQ_m1
+        H = c  @ Q_check @ PmQ_m1
+        # Xi  = Xi@Q_hat_plus_inv@e_minus@PmQ_m1
+        xi  = Q_hat_plus_inv@e_minus@PmQ_m1
 
-        Xi  = Xi@Q_hat_plus_inv@e_minus@PmQ_m1
+        return H, xi
 
-        return H, Xi
-
-
-
-    def update_H(self, H, Xi):
-
+    def HMM_update(self, H):
         Omega = self.Omega_p+self.Omega_c@H
         n = self.nb_waves_in_medium
         Q_hat = self.Q@Omega
         e_minus = np.diag(np.exp(-self.lam[n:]*self.d))
-
-        P_m = self.state2parent@self.P
-        P_s = self.state2child@self.P
+        p = self.P_cal@self.P
+        c = self.C_cal@self.P
         
-        return self.update_H_jit(n, Q_hat, e_minus,P_m, P_s, Xi)
+        H, self.L_cal = self.update_H_jit(n, Q_hat, e_minus,p, c)
 
-
+        return H 
 
 class PwLayer(PwGeneric):
     """
@@ -370,7 +369,6 @@ class PwLayer(PwGeneric):
         self.indices_v = None
         self.indices_sigma =None
         
-
     def __str__(self):
         pass
 
@@ -383,8 +381,7 @@ class PwLayer(PwGeneric):
             self.nb_waves = len(kx)
         else:
             self.nb_waves = 1
-
-        if self.method == "H":
+        if self.method == "HMM":
             # reordering the physical fields
             self.P, self.Q, self.lam  = self.method_PQ(self.medium, kx, omega)
         else:
@@ -466,6 +463,17 @@ class FluidLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r.' ,label="abs(recursive)")
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm.',label="imag(recursive)")
 
+    def plot_solution_H(self, plot, X, f, nb_points=25):
+        x_f = np.linspace(self.x[0], self.x[1], nb_points)
+        pr, ut = 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(2*self.nb_waves):        
+            pr += self.P[1, i_dim]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]
+            ut += self.P[0, i_dim]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]/(1j*2*pi*f)
+        if plot[2]:
+            plt.figure("Pressure")
+            plt.plot(x_f, np.abs(pr), 'r+' ,label="abs(H)")
+            plt.plot(x_f, np.imag(pr), 'm+',label="imag(H)")
+
     def plot_solution_characteristics(self, plot, X, nb_points=25):
         x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)
         pr, ut = 0*1j*x_f, 0*1j*x_f
@@ -489,6 +497,32 @@ class FluidLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r+' ,label="abs(TMM)")
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm+',label="imag(TMM)")
+
+    def compute_energetic_balance(self, f):
+        omega = 2*pi*f
+        M = compute_exp(self.lam, self.d)
+        n = self.nb_waves_in_medium
+        if self.medium.MEDIUM_TYPE == 'eqf':
+            rho = self.medium.rho_eq_til
+            K = self.medium.K_eq_til
+        elif self.medium.MEDIUM_TYPE == 'fluid':
+            rho = self.medium.rho
+            K = self.medium.K
+        b_r = -omega*rho.imag
+
+        if self.method == "Global Method":
+            self.q[n:] = self.q[n:]*np.exp(-self.lam[n:]*self.d) # to take into account the origin of propagation
+            u_y =  self.SV[0, :]*self.q  
+            p   = self.SV[1, :]*self.q
+            u_x = 1j*self.kx/(K*self.medium.k**2)*self.q 
+            integral  = u_y.conj().reshape((1,2)) @ M @ u_y.reshape((2,1))+u_x.conj().reshape((1,2)) @ M @ u_x.reshape((2,1))
+            P_viscous = b_r*pi*omega*np.real(integral[0,0])
+            integral  = p.conj().reshape((1,2)) @ M @ p.reshape((2,1))
+            P_thermal = pi*(K.imag/(np.abs(K)**2))*np.real(integral[0,0])
+            return P_viscous, P_thermal
+
+        elif self.method == "H":
+            self.q = self.q*np.exp(-self.lam*self.d)
 
 class PemLayer(PwLayer):
 
@@ -514,7 +548,6 @@ class PemLayer(PwLayer):
         # self.P_sigma = self.SV[self.indices_sigma, :].reshape((3,6))
         # self.Q_v = self.SI[:, self.indices_v].reshape((6,3))/(1j*omega)
         # self.Q_sigma = self.SI[:, self.indices_sigma].reshape((6,3))
-
 
     def state_matrix(self, omega):
         # self.medium.update_frequency(omega)
@@ -555,7 +588,7 @@ class PemLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm')
 
-    def plot_solution_recursive(self, plot, X, nb_points=10):
+    def plot_solution_recursive(self, plot, X, nb_points=25):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
         for i_dim in range(6*self.nb_waves):
@@ -575,6 +608,25 @@ class PemLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r.')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm.')
 
+    def plot_solution_H(self, plot, X, f, nb_points=25):
+        x_f = np.linspace(self.x[0], self.x[1], nb_points)
+        ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(6*self.nb_waves):
+            ux += self.P[1, i_dim  ]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]/(1j*2*pi*f)
+            uy += self.P[0, i_dim  ]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]/(1j*2*pi*f)
+            pr += self.P[5, i_dim  ]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]
+        if plot[0]:
+            plt.figure("Solid displacement along y")
+            plt.plot(x_f, np.abs(ux), 'r+')
+            plt.plot(x_f, np.imag(ux), 'm+')
+        if plot[1]:
+            plt.figure("Solid displacement along x")
+            plt.plot(x_f, np.abs(uy), 'r+')
+            plt.plot(x_f, np.imag(uy), 'm+')
+        if plot[2]:
+            plt.figure("Pressure")
+            plt.plot(x_f, np.abs(pr), 'r+')
+            plt.plot(x_f, np.imag(pr), 'm+')
 
     def plot_solution_TMM(self, plot, X, nb_points=25):
         q = LA.solve(self.SV, self.TM@X)
@@ -617,6 +669,58 @@ class PemLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(self.x[1]+x_f, np.abs(pr), 'r+')
             plt.plot(self.x[1]+x_f, np.imag(pr), 'm+')
+
+    def compute_energetic_balance(self, f, incident_power):
+        omega = 2*pi*f
+        M = compute_exp(self.lam, self.d)
+        n = self.nb_waves_in_medium
+        b_r = -omega*self.medium.rho_eq_til.imag
+        K = self.medium.K_eq_til
+        mu_1, mu_2, mu_3 = self.medium.mu_1, self.medium.mu_2, self.medium.mu_3
+
+        if self.method == "Global Method":
+            self.q[n:] = self.q[n:]*np.exp(-self.lam[n:]*self.d) # to take into account the origin of propagation
+            u_x_s, u_y_s =  self.SV[5, :]*self.q, self.SV[1, :]*self.q  
+            u_y_t = self.SV[2, :]*self.q
+            p   = self.SV[4, :]*self.q
+        elif self.method == "H":
+            self.q = self.q*np.exp(-self.lam*self.d)
+            u_x_s, u_y_s =  self.P[0, :]*self.q/(1j*omega), self.P[1, :]*self.q/(1j*omega)  
+            u_y_t = self.P[2, :]*self.q/(1j*omega)
+            p   = self.P[5, :]*self.q
+        u_x_t = np.array([mu_1, mu_2, mu_3, mu_1, mu_2, mu_3])*u_x_s 
+        
+
+        ufmus= (u_x_t - u_x_s)
+        integral  = ufmus.conj().reshape((1,6)) @ M @ ufmus.reshape((6,1))
+        P_viscous = b_r*pi*omega*np.real(integral[0,0])
+        ufmus= (u_y_t - u_y_s)
+        integral  = ufmus.conj().reshape((1,6)) @ M @ ufmus.reshape((6,1))
+        P_viscous += b_r*pi*omega*np.real(integral[0,0])
+
+        integral  = p.conj().reshape((1,6)) @ M @ p.reshape((6,1))
+        P_thermal = pi*(K.imag/(np.abs(K)**2))*np.real(integral[0,0])
+
+
+        eps_yy = self.lam*u_y_s 
+        sigma_yy = self.medium.P_hat.imag*eps_yy 
+        integral  = eps_yy.conj().reshape((1,6)) @ M @ sigma_yy.reshape((6,1))
+        P_structural = pi*np.real(integral[0,0])
+
+
+        eps_xy = (-1j*self.kx*u_y_s+self.lam*u_x_s)#(*2/2)
+        sigma_xy = 2*self.medium.N.imag*eps_xy 
+        integral  = eps_xy.conj().reshape((1,6)) @ M @ sigma_xy.reshape((6,1))
+        P_structural += pi*np.real(integral[0,0])
+
+        eps_xx = -1j*self.kx*u_x_s 
+        sigma_xx = self.medium.P_hat.imag*eps_xx 
+        integral = eps_xx.conj().reshape((1,6)) @ M @ sigma_xx.reshape((6,1))
+        P_structural += pi*np.real(integral[0,0])
+
+        return P_viscous/incident_power, P_thermal/incident_power, P_structural/incident_power
+
+
 
 class ElasticLayer(PwLayer):
 
@@ -671,7 +775,7 @@ class ElasticLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm')
 
-    def plot_solution_recursive(self, plot, X, nb_points=10):
+    def plot_solution_recursive(self, plot, X, nb_points=25):
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         x_b = x_f - (self.x[1]-self.x[0])
         ux, uy = 0*1j*x_f, 0*1j*x_f
@@ -687,7 +791,7 @@ class ElasticLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r.')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm.')
 
-    def plot_solution_TMM(self, plot, X, nb_points=10):
+    def plot_solution_TMM(self, plot, X, nb_points=25):
         q = LA.solve(self.SV, self.TM@X)
         x_f = np.linspace(0, self.x[1]-self.x[0], nb_points)
         ux, uy = 0*1j*x_f, 0*1j*x_f
@@ -718,6 +822,22 @@ class ElasticLayer(PwLayer):
             plt.figure("Solid displacement along x")
             plt.plot(self.x[1]+x_f, np.abs(uy), 'r+')
             plt.plot(self.x[1]+x_f, np.imag(uy), 'm+')
+
+
+    def plot_solution_H(self, plot, X, f, nb_points=25):
+        x_f = np.linspace(self.x[0], self.x[1], nb_points)
+        ux, uy, = 0*1j*x_f, 0*1j*x_f
+        for i_dim in range(4*self.nb_waves):
+            ux += self.P[1, i_dim  ]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]/(1j*2*pi*f)
+            uy += self.P[0, i_dim  ]*np.exp(self.lam[i_dim]*(x_f-self.x_ref))*X[i_dim]/(1j*2*pi*f)
+        if plot[0]:
+            plt.figure("Solid displacement along y")
+            plt.plot(x_f, np.abs(ux), 'r+')
+            plt.plot(x_f, np.imag(ux), 'm+')
+        if plot[1]:
+            plt.figure("Solid displacement along x")
+            plt.plot(x_f, np.abs(uy), 'r+')
+            plt.plot(x_f, np.imag(uy), 'm+')
 
 class InhomogeneousLayer(PwLayer):
     def __init__(self, mat, d, **kwargs):

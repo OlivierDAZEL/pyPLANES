@@ -39,23 +39,16 @@ class PwInterface():
     """
     Interface for Plane Wave Solver
     """
-    def __init__(self, layer1=None, layer2=None, method="characteristics"):
-        self.layers = [layer1, layer2]
+    def __init__(self, layer_bottom=None, layer_top=None, method="characteristics"):
+        self.layers = [layer_bottom, layer_top] 
         self.n_0 = None
-        self_n_1 = None 
+        self.n_1 = None 
         self.number_relations = None
         self.pw_method = None
         self.C_bottom, self.C_top = None, None
         self.C_bottomc, self.C_topc = None, None 
-
-        self.Omega_p = None
-        self.Omega_c = None
-        self.state2parent = None
-        self.state2child = None
-        self.H_0 = None
-        self.B = None
-        self.B_prime = None
         self.nb_waves = None
+        self.I_cal = None
 
     def update_frequency(self, omega, kx=[0]):
         self.nb_waves = len(kx)
@@ -112,7 +105,6 @@ class PwInterface():
         return i_eq
 
     def update_Omega(self, Om):
-
         if isinstance(self.layers[0], PwLayer):
             mat = self.layers[0].medium
         elif isinstance(self.layers[0], PeriodicLayer):
@@ -148,17 +140,15 @@ class PwInterface():
             Omega = np.kron(np.eye(self.nb_waves), P_in)@M_S +np.kron(np.eye(self.nb_waves), P_out) 
         return Omega, M_X
 
-    def update_H(self, H, Xi):
-        """
-        Update H and Xi according to the interface conditions
-        """
-        return self.H_0+self.B@H@self.B_prime, Xi@self.B_prime
+    def HMM_update(self, H):
+        pass
+
 
 class FluidFluidInterface(PwInterface):
     """
     Fluid-fluid interface 
     """
-    def __init__(self, layer1=None, layer2=None):
+    def __init__(self, layer1, layer2):
         super().__init__(layer1,layer2)
         self.n_0 = self.n_1 = 1
         self.number_relations = 2
@@ -166,18 +156,18 @@ class FluidFluidInterface(PwInterface):
         self.C_top = -np.eye(self.number_relations)
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
-
-        self.Omega_p = np.array([[1,0]]).reshape((2,1))  #v_y
-        self.Omega_c = np.array([[0,1]]).reshape((2,1))   #p
-        self.state2parent = np.array([[1,0]]).reshape((1,2))  #v_y
-        self.state2child = np.array([[0,1]]).reshape((1,2))   #p
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.eye(self.n_0)
-        self.B_prime = np.eye(self.n_0)
+        self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) # p
+        self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1)) # v_y
+        self.layers[1].P_cal = np.array([[0,1]]).reshape((1,2))   # p
+        self.layers[1].C_cal = np.array([[1,0]]).reshape((1,2))   # v_y
+        self.I_cal = np.eye(1)
 
     def __str__(self):
         out = "\t Fluid-fluid interface"
         return out
+    
+    def HMM_update(self, H):
+        return H
     
 class FluidElasticInterface(PwInterface):
     """
@@ -192,18 +182,18 @@ class FluidElasticInterface(PwInterface):
         self.C_top = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
-
-        self.Omega_p = np.array([[1,0]]).reshape((2,1)) # v_y
-        self.Omega_c = np.array([[0,1]]).reshape((2,1)) # p
-        self.state2parent = np.eye(4)[[1,2],:] # v_y, sigma_xy
-        self.state2child = np.eye(4)[[0,3],:] # v_x, sigma_yy
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.array([0,-1]).reshape((1,2))
-        self.B_prime = np.array([1,0]).reshape((2,1))
+        self.I_cal = np.array([[1,0]]).reshape((2,1))
+        self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) 
+        self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1))
+        self.layers[1].P_cal = np.array([[0,0,0,-1],[0,0,1,0]])
+        self.layers[1].C_cal = np.array([[0,1,0,0],[1,0,0,0]])
 
     def __str__(self):
         out = "\t Fluid-Elastic interface"
         return out
+    
+    def HMM_update(self, H):
+        return np.array([H[0,0]]).reshape((1,1))
 
 class FluidPemInterface(PwInterface):   
     """
@@ -230,18 +220,18 @@ class FluidPemInterface(PwInterface):
         self.pw_method = fluid_waves_TMM
 
 
-        self.Omega_p = np.array([[1, 0]]).reshape((2,1)) # v_y
-        self.Omega_c = np.array([[0, 1]]).reshape((2,1)) # p
-        self.state2parent = np.eye(6)[[2, 3, 4],:] # v_y_t, sigma_xy, sigma_yy
-        self.state2child = np.eye(6)[[0, 1, 5],:] # v_x_s, v_y_s, p
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.array([[0,0,1]]).reshape((1,3))
-        self.B_prime = np.array([1,0,0]).reshape((3,1))
-
+        self.layers[0].Omega_p = np.array([[0, 1]]).reshape((2,1)) # p
+        self.layers[0].Omega_c = np.array([[1, 0]]).reshape((2,1))
+        self.layers[1].P_cal = np.array([[0,0,0,0,0,1], [0,0,0,1,0,0], [0,0,0,0,1,0]])   # u_y^t, p
+        self.layers[1].C_cal = np.array([[0,0,1,0,0,0], [1,0,0,0,0,0], [0,1,0,0,0,0]])   # u_y^t, p
+        self.I_cal = np.array([[1,0,0]]).reshape((3,1))
 
     def __str__(self):
         out = "\t Fluid-PEM interface"
         return out
+
+    def HMM_update(self, H):
+        return np.array([H[0,0]]).reshape((1,1))
 
 class ElasticFluidInterface(PwInterface):
     """
@@ -257,18 +247,20 @@ class ElasticFluidInterface(PwInterface):
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = elastic_waves_TMM
 
-        self.Omega_p = np.vstack((np.eye(2), np.zeros((2,2)))) # v_x, v_y
-        self.Omega_c = np.vstack((np.zeros((2,2)), np.eye(2))) # sigma_xy, sigma_yy
-        self.state2parent = np.array([[1,0]]).reshape((1,2)) # v_y
-        self.state2child = np.array([[0,1]]).reshape((1,2)) # p
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.array([[0,-1]]).reshape((2,1))
-        self.B_prime = np.array([0,1]).reshape((1,2))
+        self.I_cal = np.array([[1,0]]).reshape((1,2))
+        self.layers[0].Omega_p = np.array([[0,1],[0,0], [0,0],[-1,0]])
+        self.layers[0].Omega_c = np.array([[0,0],[1,0], [0,1],[0,0]])
+        self.layers[1].P_cal = np.array([0,1]).reshape((1,2))   
+        self.layers[1].C_cal = np.array([1, 0]).reshape((1,2))
+
 
     def __str__(self):
         out = "\t Elastic-Fluid interface"
         return out
     
+    def HMM_update(self, H):
+        return np.array([[H[0,0],0],[0,0]])
+
 class ElasticElasticInterface(PwInterface):
     """
     Elastic-Elastic interface 
@@ -284,19 +276,21 @@ class ElasticElasticInterface(PwInterface):
 
         self.pw_method = elastic_waves_TMM
 
-        self.Omega_p = np.vstack((np.eye(2), np.zeros((2,2)))) 
-        self.Omega_c = np.vstack((np.zeros((2,2)), np.eye(2)))
-        self.state2parent = np.hstack((np.eye(2), np.zeros((2,2)))) 
-        self.state2child = np.hstack((np.zeros((2,2)), np.eye(2)))
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.eye(self.n_0)
-        self.B_prime = np.eye(self.n_0)
+        self.I_cal = np.eye(2) 
+        self.layers[0].Omega_p = np.array([[0,0],[0,0], [1,0],[0,1]])
+        self.layers[0].Omega_c = np.array([[1,0],[0,1], [0,0],[0,0]]) 
+        self.layers[1].P_cal = np.array([[0,0,1,0],[0,0,0,1]])
+        self.layers[1].C_cal = np.array([[1,0,0,0],[0,1,0,0]])   
+
         
 
 
     def __str__(self):
         out = "\t Elastic-Elastic interface"
         return out
+
+    def HMM_update(self, H):
+        return H
 
 class ElasticPemInterface(PwInterface):
     """
@@ -345,13 +339,15 @@ class ElasticPemInterface(PwInterface):
 
         self.pw_method = elastic_waves_TMM
 
-        self.Omega_p = np.vstack((np.eye(2), np.zeros((2,2)))) # v_x, v_y 
-        self.Omega_c = np.vstack((np.zeros((2,2)), np.eye(2))) # sigma_xy, sigma_yy
-        self.state2parent = np.eye(6)[[0, 1, 2],:] # v_x_s, v_y_s, v_y_t
-        self.state2child = np.eye(6)[[3, 4, 5],:] # sigma_xy, sigma_yy, p
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex) 
-        self.B = np.array([[1, 0, 0],[ 0, 1, -1]]).reshape((2,3))
-        self.B_prime = np.array([[1, 0],[0, 1],[0, 1]]).reshape((3,2))
+        self.I_cal = np.array([[1,0],[0,1],[0,0]])
+        self.layers[0].Omega_p = np.array([[0,0],[0,0],[1,0],[0,1]])
+        self.layers[0].Omega_c = np.array([[1,0],[0,1],[0,0],[0,0]])
+        self.layers[1].P_cal = np.array([[0,0,0,1,0,0], [0,0,0,0,1,-1], [0,1,-1,0,0,0]])   
+        self.layers[1].C_cal = np.array([[1,0,0,0,0,0], [0,1,0,0,0,0], [0,0,1,0,0,0]])
+
+    def HMM_update(self, H):
+        return np.array([[H[0,0], H[0,1]], [H[1,0], H[1,1]]])
+
 
     def __str__(self):
         out = "\t Elastic-PEM interface"
@@ -399,18 +395,20 @@ class PemFluidInterface(PwInterface):
         self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         
 
-        self.Omega_p = np.vstack((np.eye(3), np.zeros((3,3))))  # v_x_s, v_y_s, v_y_t
-        self.Omega_c = np.vstack((np.zeros((3,3)), np.eye(3))) # sigma_xy, sigma_yy, p
-        self.state2parent = np.array([1,0]).reshape((1,2))  # v_y
-        self.state2child = np.array([0,1]).reshape((1,2))  # p
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.array([[0,0, 1]]).reshape((3,1))
-        self.B_prime = np.array([[0,0,1]]).reshape((1,3))
+        self.I_cal = np.array([[1,0,0]]).reshape((1,3))
+        self.layers[0].Omega_p = np.array([[0,1,0],[0,0,1],[0,0,0],[0,0,0],[0,0,0],[1,0,0]])
+        self.layers[0].Omega_c = np.array([[0,0,0],[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0]])
+        self.layers[1].P_cal = np.array([[0,1]]).reshape((1,2))
+        self.layers[1].C_cal = np.array([[1,0]]).reshape((1,2))
+
 
     def __str__(self):
         out = "\t PEM-Fluid interface"
         return out
-
+    
+    def HMM_update(self, H):
+        return np.array([[H[0,0],0,0],[0,0,0],[0,0,0]])
+    
 class PemElasticInterface(PwInterface):
     """
     PEM-Elastic interface 
@@ -463,19 +461,19 @@ class PemElasticInterface(PwInterface):
                 self.C_bottomc =  self.C_bottom@LA.inv(M_01)
 
 
-        self.Omega_p = np.array([[1, 0, 0], [0, 1, 0],[0,0,0],[0,0,0],[0,0,0],[0,0,1]])         # v_x^s, v_y^s, p
 
-        self.Omega_c =  np.array([[0, 0, 0], [0, 0, 0],[1, 0,0],[0,1,0],[0,0,1],[0,0,0]])         # v_y_t, sigma_xy, sigma_yy
-        self.state2parent = np.eye(4)[[0, 1],:] # v_x, v_y
-        self.state2child = np.eye(4)[[2, 3],:] # sigma_xy, sigma_yy
-
-        self.H_0 = np.array(([[0,1,0],[0,0,0],[0, 0, 1]]), dtype=complex).reshape((3,3))       
-        self.B = np.array([[0, 0],[1, 0],[0,1]]).reshape((3,2))
-        self.B_prime = np.array([[1, 0,0],[0, 1,0]]).reshape((2,3))
+        self.layers[0].Omega_p = np.array([[0,0,0],[0,0,0],[0,0,0],[1,0,0],[0,1,1],[0,0,1]])
+        self.layers[0].Omega_c = np.array([[1,0,0],[0,1,0],[0,1,-1],[0,0,0],[0,0,0],[0,0,0]])
+        self.layers[1].P_cal = np.array([[0,0,1,0], [0,0,0,1]])
+        self.layers[1].C_cal = np.array([[1,0,0,0], [0,1,0,0]])
+        self.I_cal = np.array([[1,0,0],[0,1,0]])
 
     def __str__(self):
         out = "\t PEM-Elastic interface"
         return out
+
+    def HMM_update(self, H):
+        return np.array([[H[0,0],H[0,1],0],[H[1,0],H[1,1],0],[0,0,0]])
 
 class PemPemInterface(PwInterface):
     """
@@ -492,13 +490,12 @@ class PemPemInterface(PwInterface):
 
         self.pw_method = PEM_waves_TMM
 
-        self.Omega_p = np.vstack((np.eye(3), np.zeros((3,3)))) # v_x_s, v_y_s, v_y_t
-        self.Omega_c = np.vstack((np.zeros((3,3)), np.eye(3))) # sigma_xy, sigma_yy, p
-        self.state2parent = np.eye(6)[[0, 1, 2],:] # v_x_s, v_y_s, v_y_t
-        self.state2child = np.eye(6)[[3, 4, 5],:] # sigma_xy, sigma_yy, p
-        self.H_0 = np.zeros((self.n_0,self.n_0), dtype=complex)
-        self.B = np.eye(self.n_0)
-        self.B_prime = np.eye(self.n_0)
+        self.I_cal = np.eye(3)
+        self.layers[0].Omega_p = np.vstack((np.zeros((3,3)), np.eye(3)))
+        self.layers[0].Omega_c = np.vstack((np.eye(3), np.zeros((3,3))))
+        self.layers[1].P_cal = np.hstack((np.zeros((3,3)), np.eye(3)))
+        self.layers[1].C_cal = np.hstack((np.eye(3), np.zeros((3,3))))
+
 
 
     def __str__(self):
@@ -524,12 +521,16 @@ class PemPemInterface(PwInterface):
 
         return (mat_pem_0@mat_pem_1)@Om, Tau
     
+    def HMM_update(self, H):
+        return H
+    
 class RigidBacking(PwInterface):
     def __init__(self, layer1=None, layer2=None, method="characteristics"):
         super().__init__(layer1,layer2, method)
         self.method = method
         self.C = None
         self.number_relations = None
+
 
     def update_M_global(self, M, i_eq):
         if isinstance(self.layers[0], PeriodicLayer):
@@ -556,10 +557,8 @@ class RigidBacking(PwInterface):
     def Omegac(self, nb_bloch_waves=0):
         pass 
     
-    def update_H(self):
-        H = np.zeros((self.number_relations,self.number_relations))
-        Xi = np.eye(self.number_relations)
-        return H, Xi
+    def HMM_update(self):
+        return np.zeros((self.number_relations,self.number_relations))
 
 class FluidRigidBacking(RigidBacking):
     """
@@ -569,9 +568,9 @@ class FluidRigidBacking(RigidBacking):
         super().__init__(layer1,layer2, method)
         self.C = np.array([[1,0]]).reshape(1,2)
         self.number_relations = 1
-
-        self.Omega_p = np.array([[0,1]]).reshape((2,1)) 
-        self.Omega_c = np.array([[1,0]]).reshape((2,1))
+        self.I_cal = np.eye(1)
+        self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) 
+        self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1))
 
     def __str__(self):
         out = "\t Rigid backing"
@@ -602,8 +601,9 @@ class PemBacking(RigidBacking):
         self.C[1, 2] = 1.
         self.C[2, 5] = 1.
         self.number_relations = 3
-        self.Omega_p = np.vstack([np.zeros((3,3)), np.eye(3)])
-        self.Omega_c = np.vstack([ np.eye(3), np.zeros((3,3))])
+        self.I_cal = np.eye(3)
+        self.layers[0].Omega_p = np.vstack([np.zeros((3,3)), np.eye(3)])
+        self.layers[0].Omega_c = np.vstack([ np.eye(3), np.zeros((3,3))])
 
     def __str__(self):
         out = "\t PEM Rigid backing"
@@ -641,8 +641,9 @@ class ElasticBacking(RigidBacking):
         self.C[1, 3] = 1.
         self.number_relations = 2
    
-        self.Omega_p = np.vstack([np.zeros((2,2)), np.eye(2)] )
-        self.Omega_c = np.vstack([ np.eye(2), np.zeros((2,2))] )
+        self.I_cal = np.eye(2)
+        self.layers[0].Omega_p = np.vstack((np.zeros((2,2)), np.eye(2)))
+        self.layers[0].Omega_c = np.vstack((np.eye(2), np.zeros((2,2))))
 
     def __str__(self):
         out = "\t Elastic Rigid backing"
@@ -668,7 +669,7 @@ class SemiInfinite(PwInterface):
     """
     Semi-infinite boundary
     """
-    def __init__(self, layer1=None):
+    def __init__(self, layer1):
         transmission_layer = FluidLayer(Fluid(c=Air().c,rho=Air().rho), 1.e-2, x_0=-1.e-2)
         self.medium = load_material("Air")
         PwInterface.__init__(self, layer1, transmission_layer)
@@ -677,18 +678,18 @@ class SemiInfinite(PwInterface):
         # Determine the type of the last layer
         self.determine_type()
         if self.type_last_layer in ["fluid", "eqf"]:
-            self.interface = FluidFluidInterface()   
+            self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) # p
+            self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1)) # v_y
         elif self.type_last_layer == "pem":
-            self.interface = PemFluidInterface()
+            self.layers[0].Omega_p = np.array([[0,1,0],[0,0,1],[0,0,0],[0,0,0],[0,0,0],[1,0,0]])
+            self.layers[0].Omega_c = np.array([[0,0,0],[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,0,0]])
         elif self.type_last_layer == "elastic":
-            self.interface = ElasticFluidInterface()
+            self.layers[0].Omega_p = np.array([[0,1],[0,0],[0,0],[-1,0]])
+            self.layers[0].Omega_c = np.array([[0,0],[1,0],[0,1],[0,0]])
         else:
             raise NameError("Unknown layer type")
-        self.H_0 = self.interface.H_0
-        self.B = self.interface.B
-        self.B_prime = self.interface.B_prime  
-        self.Omega_p = self.interface.Omega_p
-        self.Omega_c = self.interface.Omega_c
+
+
 
     def determine_type(self):
         self.typ =None
@@ -704,7 +705,6 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-            self.number_relations = 3
             # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
@@ -737,11 +737,8 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
             self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-            
-
         else:
             raise NameError("Invalid type")
-        
         self.type_last_layer = t
 
     def __str__(self):
@@ -852,11 +849,19 @@ class SemiInfinite(PwInterface):
         i_eq += self.number_relations*self.nb_waves
         return i_eq
     
-    def update_H(self):
+    def HMM_update(self):
         """
         Returns the H matrix for the semi-infinite boundary
         """
-        H = np.array([(Air.Z*(self.k/self.ky[0]))]).reshape(1,1)
-        Xi = np.eye(1)
-        return self.interface.update_H(H, Xi)            
+        h =(self.ky[0]/self.k)/Air.Z
+        if self.typ == "fluid":
+            return np.array([h]).reshape(1,1)
+        elif self.typ == "elastic":
+            return np.array([[h,0],[0,0]])
+        elif self.typ == "pem":
+            return np.array([[h,0,0],[0,0,0],[0,0,0]])
+        else:
+            raise NameError("Invalid type")
+
+        
 

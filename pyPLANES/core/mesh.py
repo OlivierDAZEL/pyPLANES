@@ -62,17 +62,12 @@ class Mesh():
                 y_vertices =[_v.coord[1] for _v in _el.vertices]+[_el.vertices[0].coord[1]]
                 plt.plot(x_vertices, y_vertices, 'k-', lw=0.5)
 
-
-
     def print_mesh(self):
 
         print(f"{len(self.vertices)-1} nodes")
         print(f"{len(self.elements)-1} elements")        
         for e in self.fem_entities+self.pwfem_entities:
             print(e)
-
-
-
 
 
 class NeighbourElement():

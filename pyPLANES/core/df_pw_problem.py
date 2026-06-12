@@ -158,18 +158,18 @@ class DfPwProblem(PwProblem):
     def resolution(self):
         """  Resolution of the problem """
         self.start_time = time.process_time()
-        from cProfile import Profile
-        from pstats import Stats
-        pr = Profile()
-        pr.enable()
+        # from cProfile import Profile
+        # from pstats import Stats
+        # pr = Profile()
+        # pr.enable()
 
 
         self.resolution_kernel()
 
-        pr.disable()
-        # pr.print_stats(10, sort='time')
-        stats = Stats(pr)
-        stats.sort_stats('tottime').print_stats(15)
+        # pr.disable()
+        # # pr.print_stats(10, sort='time')
+        # stats = Stats(pr)
+        # stats.sort_stats('tottime').print_stats(15)
         # stats.print_callers('elastic_waves_TMM')
 
         self.end_time = time.process_time()

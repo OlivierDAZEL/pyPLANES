@@ -89,7 +89,7 @@ class Air(Medium):
     C_v = Cp/gamma  # (mass) specific heat capacity as constant volume [J.K^-1]
     nu = mu/rho  # kinematic viscosity [m.s^-2]
     nu_prime = nu/Pr  # viscothermal losses
-    
+    ##### End JPG
     
     def __str__(self):
         txt = "Air properties\n"

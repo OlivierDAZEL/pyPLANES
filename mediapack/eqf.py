@@ -22,7 +22,7 @@
 # copies or substantial portions of the Software.
 #
 
-from numpy import sqrt
+from numpy import sqrt, pi
 import scipy.special as sp
 
 from .medium import Medium
@@ -43,11 +43,11 @@ class EqFluid(Medium):
     MEDIUM_TYPE = 'eqf'
     MODEL = 'fluid'
     EXPECTED_PARAMS = [
-        ('phi', float),  # Porosity
         ('sigma', float),  # Flow resistivity
     ]
 
     OPT_PARAMS = [
+        ('phi', float),  # Porosity
         ('alpha', float),  # Tortuosity
         ('Lambda_prime', float),  # Thermal characteristic length
         ('Lambda', float),  # Viscous characteristic length
@@ -168,6 +168,82 @@ class EqFluidJCA(EqFluid):
 
         self.c_eq_til = sqrt(self.K_eq_til/self.rho_eq_til)
         self.k = omega/self.c_eq_til
+
+
+class EqFMiki(EqFluid):
+    """ Represents an equivalent fluid medium with the Miki
+
+    Attributes
+    ----------
+    sigma : float
+        Flow resistivity
+
+    Notes
+    -----
+
+    Populates the instance with the following attributes (and a few others left undocumented)
+
+    `rho_eq_til`
+        Frequency dependent equivalent density
+    `alpha_til`
+        Frequency dependent Johnson's tortuosity
+    `alpha_prime_til`
+        Frequency dependent Champoux-Allard's tortuosity
+    `K_eq_til`
+        Frequency dependent equivalent compressibility
+    `c_eq_til`
+        Frequency dependent equivalent speed of sound
+
+    References
+    ----------
+
+    .. [1] Miki Y., Acoustical properties of porous materials - Modifications of Delany-Bazley models, J. Acoust. Soc. Jpn (E). 11(1), 1990, pp. 19-24
+
+    """
+
+    MEDIUM_TYPE = 'eqf'
+    MODEL = 'fluid'
+    EXPECTED_PARAMS = [
+        ('sigma', float),  # Flow resistivity
+    ]
+
+    OPT_PARAMS = [
+        ('rho_1', float),  # Mass of solid per unit volume of aggregate
+        ('nu', float),  # poisson ratio
+        ('E', float),  # Young's modulus
+        ('eta', float)  # viscosity
+    ]
+
+    def __init__(self, **params):
+        self.sigma = None
+        super().__init__(**params)
+    def __str__(self):
+        txt = self.name  + " // Equivalent fluid : JKD "
+        return txt
+
+    def update_frequency(self, omega):
+        """ Computes the JCA parameters (see Notes on the class).
+
+        Parameters
+        ----------
+
+        omega :
+            Circular frequency of interest
+        """
+
+        #  Johnson et al model for rho_eq_til
+        f = self.omega/(2*pi)
+        X = f/self.sigma
+        Z = Air.rho*Air.c*( 1 + 5.50*(X*1000)**(-0.632)- 1j*8.43*(X*1000)**(-0.632) ); 
+        k = omega/Air.c * (-1j) * ( 11.41*(X*1000)**(-0.618)+ 1j* (1 + 7.81*(X*1000)**(-0.618) ) )
+        self.K_eq_til = Z*omega/k
+        self.rho_eq_til = k*Z/omega
+
+        self.c_eq_til = sqrt(self.K_eq_til/self.rho_eq_til)
+        self.k = omega/self.c_eq_til
+
+
+
 
 
 class EqFluidJZK(EqFluidJCA):

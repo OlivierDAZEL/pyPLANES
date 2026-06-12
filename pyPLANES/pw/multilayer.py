@@ -66,7 +66,7 @@ class MultiLayer():
                     mat = load_mat
                     if mat.MODEL in ["fluid", "eqf"]:
                         self.layers.append(FluidLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM))
-                    elif mat.MODEL == "pem":
+                    elif mat.MODEL in ["pem", "pem-miki"]:
                         self.layers.append(PemLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM))
                     elif mat.MODEL == "elastic":
                         self.layers.append(ElasticLayer(mat, d, x_0=_x, method=self.method, method_TM=self.method_TM))
@@ -82,7 +82,7 @@ class MultiLayer():
                 raise NameError("Invalid Material")
             _x += d
 
-
+        
         # Creation of the list of interfaces
         self.interfaces = []
         for i_l, _layer in enumerate(self.layers[:-1]):
@@ -93,23 +93,20 @@ class MultiLayer():
                     self.interfaces.append(FluidPemInterface(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(FluidElasticInterface(_layer,self.layers[i_l+1]))
-            elif _layer.medium.MEDIUM_TYPE in  ["pem"]:
+            elif _layer.medium.MEDIUM_TYPE in ["pem", "pem-miki"]:
                 if self.layers[i_l+1].medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
                     self.interfaces.append(PemFluidInterface(_layer,self.layers[i_l+1]))
-                elif self.layers[i_l+1].medium.MEDIUM_TYPE == "pem":
+                elif self.layers[i_l+1].medium.MEDIUM_TYPE in ["pem", "pem-miki"]:
                     self.interfaces.append(PemPemInterface(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(PemElasticInterface(_layer,self.layers[i_l+1]))
             elif _layer.medium.MEDIUM_TYPE in  ["elastic"]:
                 if self.layers[i_l+1].medium.MEDIUM_TYPE in  ["fluid", "eqf"]:
                     self.interfaces.append(ElasticFluidInterface(_layer,self.layers[i_l+1]))
-                elif self.layers[i_l+1].medium.MEDIUM_TYPE == "pem":
+                elif self.layers[i_l+1].medium.MEDIUM_TYPE in ["pem", "pem-miki"]:
                     self.interfaces.append(ElasticPemInterface(_layer,self.layers[i_l+1]))
                 elif self.layers[i_l+1].medium.MEDIUM_TYPE == "elastic":
                     self.interfaces.append(ElasticElasticInterface(_layer,self.layers[i_l+1]))
-
-
-
 
     def __str__(self):
         out = "Interface #0\n"
@@ -178,8 +175,8 @@ class MultiLayer():
                 interface_top = self.interfaces[i_l+1]
                 _l.Omega_p= interface_top.Omega_p
                 _l.Omega_c= interface_top.Omega_c
-                _l.state2parent = interface_bottom.state2parent
-                _l.state2child = interface_bottom.state2child
+                _l.P_cal_top = interface_bottom.P_cal_top
+                _l.C_cal_top = interface_bottom.C_cal_top
 
 
     def update_frequency(self, omega, kx):

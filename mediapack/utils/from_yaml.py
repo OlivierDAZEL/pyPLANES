@@ -17,12 +17,13 @@ import yaml
 from mediapack.eqf import EqFluidJCA#, EqFluidJCAL
 from mediapack.elastic import Elastic
 from mediapack.pem import PEM
+from mediapack.pem_miki import PEMMiki
 from mediapack.screen import Screen
 from mediapack.fluid import Fluid
 
 
 __MEDIUMCLASSES_MAP = {
-    _.MEDIUM_TYPE: _ for _ in [EqFluidJCA, Elastic, PEM, Fluid, Screen]
+    _.MEDIUM_TYPE: _ for _ in [EqFluidJCA, Elastic, PEM, PEMMiki, Fluid, Screen]
 }
 
 
