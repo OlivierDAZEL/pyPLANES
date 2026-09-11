@@ -170,6 +170,8 @@ class Result():
                     elif m == "tau":
                         d["tau"] = self.tau
                         d["TL"] = (-10*np.log10(self.tau)).tolist()
+                    elif m == "cond_number":
+                        d["cond_number"] = self.cond_number
                     elif m == "Z_prime":
                         d["real(Z_prime)"] = np.real(self.Z_prime).tolist()
                         d["imag(Z_prime)"] = np.imag(self.Z_prime).tolist()

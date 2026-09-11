@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from pyPLANES.gmsh.templates.layers import one_layer
 from pyPLANES.core.pw_problem import PwProblem
 from pyPLANES.core.periodic_pw_problem import PeriodicPwProblem
+from pyPLANES.core.HMM_periodic_pw_problem import HMMPeriodicPwProblem
 from pyPLANES.core.fem_problem import FemProblem
 from pyPLANES.core.result import Results, Result, Test
 
@@ -15,14 +16,14 @@ from pyPLANES.core.result import Results, Result, Test
 plot_solution = [True, True, True, False, False, False]
 plot_solution = [False]*6
 verbose = [True, False][1]
-energetic_balance = [False, True][1]
+energetic_balance = [False, True][0]
 # Parameters of the simulation
-theta_d = 89.000
+theta_d = 0.000
 nb_layers = 1
 L = 2.e-2
 d = 2.e-2
 lcar = d/5
-nb_bloch_waves = 3
+nb_bloch_waves = 0
 order = 2
 
 frequency = 3e3
@@ -32,7 +33,7 @@ name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global", "TMM"][0]
 termination = ["rigid", "transmission"][0]
-material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][2]
+material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][0]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -46,14 +47,23 @@ if case == "sandwich":
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
 global_method.resolution()
 
+print(global_method.result.Z_prime[0]*Air.Z)
 
 
+H_method = PwProblem(ml=ml, name_project=name_project+"_H", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="H", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
+H_method.resolution()
+
+eTMM_method = PeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose, save_append="a", print_result=True, method=method_FEM)
+eTMM_method.resolution()
+
+HMM_periodic_method = HMMPeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose)
+HMM_periodic_method.resolution()
 
 
-
-
-# H_method = PwProblem(ml=ml, name_project=name_project+"_H", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="H", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
-# H_method.resolution()
+print(f"R GM   ={global_method.result.R0[0]:.10f}")
+print(f"R HMM0 ={H_method.result.R0[0]:.10f}")
+print(f"R etMM ={eTMM_method.result.R0[0]:.10f}")
+print(f"R HMMp ={HMM_periodic_method.result.R0[0]:.10f}")
 
 
 # print(f"Z_global   ={global_method.result.Z_prime[0]*Air.Z}")

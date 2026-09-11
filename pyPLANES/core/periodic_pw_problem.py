@@ -156,6 +156,7 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             for _l in self.layers:
                 if isinstance(_l, PeriodicLayer):
                     _l.create_global_method_matrices()
+                    self.result
                     index_rel = slice(i_eq, i_eq+2*_l.nb_waves_in_medium*self.nb_waves)
                     self.A[index_rel, _l.dofs_bottom] = _l.M_b
                     self.A[index_rel, _l.dofs_top] = _l.M_t

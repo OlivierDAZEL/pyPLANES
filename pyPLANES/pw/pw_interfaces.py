@@ -31,7 +31,6 @@ from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.periodic_layer import PeriodicLayer
 from pyPLANES.pw.pw_layers import PwLayer, FluidLayer
-# from pyPLANES.pw.characteristics import Characteristics
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, PEM_waves_TMM, elastic_waves_TMM
 from scipy.linalg import block_diag
 
@@ -46,7 +45,6 @@ class PwInterface():
         self.number_relations = None
         self.pw_method = None
         self.C_bottom, self.C_top = None, None
-        self.C_bottomc, self.C_topc = None, None 
         self.nb_waves = None
         self.I_cal = None
 
@@ -154,13 +152,22 @@ class FluidFluidInterface(PwInterface):
         self.number_relations = 2
         self.C_bottom = np.eye(self.number_relations)
         self.C_top = -np.eye(self.number_relations)
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
         self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) # p
         self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1)) # v_y
         self.layers[1].P_cal = np.array([[0,1]]).reshape((1,2))   # p
         self.layers[1].C_cal = np.array([[1,0]]).reshape((1,2))   # v_y
         self.I_cal = np.eye(1)
+        self.layers[1].WfF = np.array([[0,1],[1,0]])
+        self.layers[0].FfW = np.array([[0,1],[1,0]])
+
+
+        # self.layers[1].WfF = np.eye(2)
+        # self.layers[0].FfW = np.eye(2)
+                
+        
+        
+        
 
     def __str__(self):
         out = "\t Fluid-fluid interface"
@@ -180,7 +187,6 @@ class FluidElasticInterface(PwInterface):
         self.number_relations = 3
         self.C_bottom = np.array([[0.,0.],[1.,0.],[0.,1.]])
         self.C_top = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = fluid_waves_TMM
         self.I_cal = np.array([[1,0]]).reshape((2,1))
         self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) 
@@ -208,15 +214,11 @@ class FluidPemInterface(PwInterface):
         # 0: u_y-u_y^t 1: p-p=0 2: hat{sigma}_{xy}=0 3 hat{sigma}_{xy}=0
         self.C_bottom = np.array([[1,0],[0,1], [0,0], [0, 0]])
         self.C_top = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         if isinstance(self.layers[1], PeriodicLayer):
             if self.layers[1].pwfem_entities[0].typ == "Biot01":
                 # 0: u_y-u_y^t 1: p-p=0 2: p+{sigma}^t_{yy}=0 3 hat{sigma}_{xy}=0
                 self.C_bottom = np.array([[1,0],[0,1], [0,1], [0, 0]])
                 self.C_top = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
-                # 0: u_y-u_y^t 1: p-p=0 2: p+{sigma}^t_{yy}=0 3 hat{sigma}_{xy}=0
-                self.C_bottomc = np.array([[1,0],[0,1], [0,1], [0, 0]])
-                self.C_topc = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
         self.pw_method = fluid_waves_TMM
 
 
@@ -244,7 +246,6 @@ class ElasticFluidInterface(PwInterface):
         self.number_relations = 3
         self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
         self.C_top = np.array([[0,0],[1,0],[0,1]])
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         self.pw_method = elastic_waves_TMM
 
         self.I_cal = np.array([[1,0]]).reshape((1,2))
@@ -272,7 +273,6 @@ class ElasticElasticInterface(PwInterface):
         self.number_relations = 4
         self.C_bottom = np.eye(self.number_relations)
         self.C_top = -np.eye(self.number_relations)
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
         self.pw_method = elastic_waves_TMM
 
@@ -323,8 +323,6 @@ class ElasticPemInterface(PwInterface):
         # u_x = u_x_s 
         self.C_bottom[4, 3], self.C_top[4, 5] = 1., -1.
         
-        self.C_bottomc = self.C_bottom
-        self.C_topc = self.C_top
         if isinstance(self.layers[1], PeriodicLayer):
             if self.layers[1].pwfem_entities[0].typ == "Biot01":
                 M_01 = np.zeros((6,6))
@@ -392,7 +390,6 @@ class PemFluidInterface(PwInterface):
             if self.layers[0].pwfem_entities[0].typ == "Biot01":
                 self.C_bottom = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
                 self.C_top = np.array([[1,0],[0,1], [0,1], [0, 0]])
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         
 
         self.I_cal = np.array([[1,0,0]]).reshape((1,3))
@@ -447,8 +444,6 @@ class PemElasticInterface(PwInterface):
         # u_x = u_x_s 
         self.C_top[4, 3], self.C_bottom[4, 5] = 1., -1.
         
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
-
         if isinstance(self.layers[0], PeriodicLayer):
             if self.layers[0].pwfem_entities[0].typ == "Biot01":
                 M_01 = np.zeros((6,6))
@@ -458,7 +453,6 @@ class PemElasticInterface(PwInterface):
                 M_01[3,5]=1
                 M_01[4,1]=1
                 M_01[5,4]=1                
-                self.C_bottomc =  self.C_bottom@LA.inv(M_01)
 
 
 
@@ -486,7 +480,6 @@ class PemPemInterface(PwInterface):
         self.number_relations = 6
         self.C_bottom = np.eye(self.number_relations)
         self.C_top = -np.eye(self.number_relations)
-        self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
 
         self.pw_method = PEM_waves_TMM
 
@@ -525,7 +518,7 @@ class PemPemInterface(PwInterface):
         return H
     
 class RigidBacking(PwInterface):
-    def __init__(self, layer1=None, layer2=None, method="characteristics"):
+    def __init__(self, layer1=None, layer2=None, method="HMM"):
         super().__init__(layer1,layer2, method)
         self.method = method
         self.C = None
@@ -564,14 +557,15 @@ class FluidRigidBacking(RigidBacking):
     """
     Rigid backing for a fluid layer
     """
-    def __init__(self, layer1=None, layer2=None, method="characteristics"):
+    def __init__(self, layer1=None, layer2=None, method="HMM"):
         super().__init__(layer1,layer2, method)
         self.C = np.array([[1,0]]).reshape(1,2)
         self.number_relations = 1
         self.I_cal = np.eye(1)
         self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) 
         self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1))
-
+        self.layers[0].FfW = np.array([[0,1],[1,0]])
+        
     def __str__(self):
         out = "\t Rigid backing"
         return out
@@ -592,7 +586,7 @@ class PemBacking(RigidBacking):
     """
     Rigid backing for a pem layer
     """
-    def __init__(self, layer1=None, layer2=None, method="characteristics"):
+    def __init__(self, layer1=None, layer2=None, method="HMM"):
         super().__init__(layer1,layer2, method)
         self.method = method
         
@@ -632,7 +626,7 @@ class ElasticBacking(RigidBacking):
     """
     Rigid backing for an elastic layer
     """
-    def __init__(self, layer1=None, layer2=None, method="characteristics"):
+    def __init__(self, layer1=None, layer2=None, method="HMM"):
         super().__init__(layer1,layer2, method)
         self.method = method
 
@@ -704,7 +698,6 @@ class SemiInfinite(PwInterface):
             self.number_relations = 2
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
-            self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
             # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
@@ -716,14 +709,11 @@ class SemiInfinite(PwInterface):
             self.number_relations = 4
             self.C_bottom = np.array([[0, 0, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [1, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
             self.C_top = np.array([[1,0],[0,1], [0,0], [0, 0]])
-            self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
             if isinstance(self.layers[0], PeriodicLayer):
                 if self.layers[0].pwfem_entities[0].typ == "Biot01":
                     typ = "Biot01"
                     self.C_bottom = np.array([[0, -1, -1, 0, 0, 0], [0, 0, 0, 0, -1, 0], [0, 0, 0, 1, 0, 0], [1, 0, 0, 0, 0, 0]])
                     self.C_top = np.array([[1,0],[0,1], [0,1], [0, 0]])
-                    self.C_bottomc = np.array([[0, 0, -1, 0, -1, 0], [0, 0, 0, 0, 0, -1], [0, 1, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0]])
-                    self.C_topc = np.array([[1,0],[0,1], [0,1], [0, 0]])
                 else:
                     typ = "Biot98"
             else:
@@ -736,7 +726,6 @@ class SemiInfinite(PwInterface):
             # \sigma_xy = 0, u_y = u_y^s, \sima_yy = -p
             self.C_bottom = np.array([[1, 0, 0, 0], [0, -1., 0, 0 ],[0, 0, 1, 0]])
             self.C_top = np.array([[0,0],[1,0],[0,1]])
-            self.C_bottomc, self.C_topc = self.C_bottom, self.C_top
         else:
             raise NameError("Invalid type")
         self.type_last_layer = t

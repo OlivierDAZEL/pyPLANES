@@ -34,7 +34,6 @@ from numpy import pi, sqrt
 
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, elastic_waves_TMM, PEM_waves_TMM
 from pyPLANES.pw.pw_polarisation import fluid_waves_PQ, elastic_waves_PQ, PEM_waves_PQ
-# from pyPLANES.pw.characteristics import Characteristics
 
 from scipy.linalg import expm, block_diag
 from pyPLANES.utils.utils_spectral import chebyshev, chebyshev_nodes
@@ -58,7 +57,6 @@ class PwGeneric():
         self.method_TM = kwargs.get("method_TM", "diag")
         if self.method_TM in ["cheb_1", "cheb_2"]:
             self.order_chebychev = kwargs.get("order_chebychev", 20)
-        # pymls layer constructor 
         self.x = [x_0, x_0+self.d]  # 
         self.dofs = None
         self.lam = None
@@ -70,7 +68,6 @@ class PwGeneric():
         self.P_cal = None
         self.C_cal = None
         self.L_cal = None
-
 
     def update_frequency(self, omega):
         pass
@@ -258,45 +255,6 @@ class PwGeneric():
             Xi = xi_prime_lambda*np.exp(lambda_[m-1]*self.d)
             return Om, Xi
 
-    def update_Omegac(self, Om, omega, method="Recursive Method"):
-        """
-        Update the information matrix Omega for characteristic method
-
-        Parameters
-        ----------
-        Om : ndarray
-            Information matrix on the + side of the layer
-
-        Returns
-        ----------
-        Om_ : ndarray
-            Information matrix on the - side of the layer
-
-        Xi : ndarray
-            Back_propagation matrix (to be used only for transmission problems)
-        """
-        self.order_lam()
-        
-        Phi = np.kron(np.eye(self.nb_waves),self.carac.Q)@self.SV
-        lambda_ = self.lam
-        
-        Phi_inv = LA.inv(Phi)
-        
-        m = self.nb_waves_in_medium*self.nb_waves
-        _list = [0.]*(m-1)+[1.] +[np.exp(-(lambda_[m+i]-lambda_[m-1])*self.d) for i in range(0, m)]
-        Lambda = np.diag(np.array(_list))
-        alpha_prime = Phi.dot(Lambda).dot(Phi_inv) # Eq (21)
-        
-        xi_prime = Phi_inv[:m,:] @ Om # Eq (23)
-        _list = [np.exp(-(lambda_[m-1]-lambda_[i])*self.d) for i in range(m-1)] + [1.]
-        xi_prime_lambda = LA.inv(xi_prime).dot(np.diag(_list))
-        Om = alpha_prime.dot(Om).dot(xi_prime_lambda)
-
-        Om[:,:m-1]  += Phi[:,:m-1]
-        
-        Xi = xi_prime_lambda*np.exp(lambda_[m-1]*self.d)
-        return Om, Xi
-
     def order_lam(self):
         _index = np.argsort(self.lam.real)
         self.SV = self.SV[:, _index]
@@ -360,7 +318,6 @@ class PwLayer(PwGeneric):
         """
         PwGeneric.__init__(self, d, **kwargs)
         self.medium = mat
-        # self.carac = Characteristics(self.medium)
         self.interfaces = [None, None]
         self.nb_waves_in_medium = None
         self.nb_fields_SV = None
@@ -375,8 +332,6 @@ class PwLayer(PwGeneric):
     def update_frequency(self, omega, kx):
         self.kx = kx
         self.medium.update_frequency(omega)
-        if self.method == "characteristics":
-            self.carac.update_frequency(omega)
         if isinstance(kx, np.ndarray):
             self.nb_waves = len(kx)
         else:
@@ -473,18 +428,6 @@ class FluidLayer(PwLayer):
             plt.figure("Pressure")
             plt.plot(x_f, np.abs(pr), 'r+' ,label="abs(H)")
             plt.plot(x_f, np.imag(pr), 'm+',label="imag(H)")
-
-    def plot_solution_characteristics(self, plot, X, nb_points=25):
-        x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)
-        pr, ut = 0*1j*x_f, 0*1j*x_f
-        X = LA.inv(self.SV)@self.carac.P@X
-        for i_dim in range(2*self.nb_waves):        
-            pr += self.SV[1, i_dim]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            ut += self.SV[0, i_dim]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-        if plot[2]:
-            plt.figure("Pressure")
-            plt.plot(self.x[1]+x_f, np.abs(pr), 'r+' ,label="abs(charac)")
-            plt.plot(self.x[1]+x_f, np.imag(pr), 'm+',label="imag(charac)")
 
     def plot_solution_TMM(self, plot, X, nb_points=25):
         q = LA.solve(self.SV, self.TM@X)
@@ -649,27 +592,6 @@ class PemLayer(PwLayer):
             plt.plot(self.x[0]+x_f, np.abs(pr), 'r+')
             plt.plot(self.x[0]+x_f, np.imag(pr), 'm+')
 
-    def plot_solution_characteristics(self, plot, X, nb_points=25):
-        x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)
-        ux, uy, pr, ut = 0*1j*x_f, 0*1j*x_f, 0*1j*x_f, 0*1j*x_f
-        X = LA.inv(self.SV)@self.carac.P@X
-        for i_dim in range(6*self.nb_waves):
-            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            uy += self.SV[5, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            pr += self.SV[4, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-        if plot[0]:
-            plt.figure("Solid displacement along y")
-            plt.plot(self.x[1]+x_f, np.abs(ux), 'r+')
-            plt.plot(self.x[1]+x_f, np.imag(ux), 'm+')
-        if plot[1]:
-            plt.figure("Solid displacement along x")
-            plt.plot(self.x[1]+x_f, np.abs(uy), 'r+')
-            plt.plot(self.x[1]+x_f, np.imag(uy), 'm+')
-        if plot[2]:
-            plt.figure("Pressure")
-            plt.plot(self.x[1]+x_f, np.abs(pr), 'r+')
-            plt.plot(self.x[1]+x_f, np.imag(pr), 'm+')
-
     def compute_energetic_balance(self, f, incident_power):
         omega = 2*pi*f
         M = compute_exp(self.lam, self.d)
@@ -806,23 +728,6 @@ class ElasticLayer(PwLayer):
             plt.figure("Solid displacement along x")
             plt.plot(self.x[0]+x_f, np.abs(uy), 'r+')
             plt.plot(self.x[0]+x_f, np.imag(uy), 'm+')
-
-    def plot_solution_characteristics(self, plot, X, nb_points=25):
-        x_f = np.linspace(-self.x[1]+self.x[0], 0, nb_points)
-        ux, uy, = 0*1j*x_f, 0*1j*x_f
-        X = LA.inv(self.SV)@np.kron(np.eye(self.nb_waves),self.carac.P)@X
-        for i_dim in range(4*self.nb_waves):
-            ux += self.SV[1, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-            uy += self.SV[3, i_dim  ]*np.exp(self.lam[i_dim]*x_f)*X[i_dim]
-        if plot[0]:
-            plt.figure("Solid displacement along y")
-            plt.plot(self.x[1]+x_f, np.abs(ux), 'r+')
-            plt.plot(self.x[1]+x_f, np.imag(ux), 'm+')
-        if plot[1]:
-            plt.figure("Solid displacement along x")
-            plt.plot(self.x[1]+x_f, np.abs(uy), 'r+')
-            plt.plot(self.x[1]+x_f, np.imag(uy), 'm+')
-
 
     def plot_solution_H(self, plot, X, f, nb_points=25):
         x_f = np.linspace(self.x[0], self.x[1], nb_points)

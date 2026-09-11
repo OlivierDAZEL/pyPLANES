@@ -39,6 +39,7 @@ from pyPLANES.fem.fem_entities_volumic import *
 
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import coo_matrix, csr_matrix, linalg as sla
+from scipy.sparse.linalg import svds
 
 from pyPLANES.fem.fem_preprocess import fem_preprocess
 from pyPLANES.utils.io import plot_fem_solution, export_paraview
@@ -183,6 +184,10 @@ class PeriodicLayerBase(Mesh):
 
 
         D_ii = self.P_periodicity_H@D_ii@self.P_periodicity
+
+
+        self.cond = np.linalg.cond(D_ii.toarray())
+
 
         self.A_i, self.A_j, self.A_v = [], [], []
         DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
