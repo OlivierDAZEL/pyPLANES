@@ -54,8 +54,8 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         D_XX = self.P_periodicity_H@D_XX@self.P_periodicity
         self.cond = np.linalg.cond(D_XX.toarray())
         self.A_i, self.A_j, self.A_v = [], [], []
-        DD_Xi = [] # Initialisation of the list of the R will be [D_bX D_tX]
-        DD_iX = [] # Initialisation of the list of the R will be [D_Xb D_Xt]
+        DD_iX = [] # Initialisation of the list of the R will be [D_bX D_tX]
+        DD_Xi = [] # Initialisation of the list of the R will be [D_Xb D_Xt]
         
         nb_w_b = self.pwfem_entities[0].nb_dof_per_node*self.nb_waves
         nb_w_t = self.pwfem_entities[1].nb_dof_per_node*self.nb_waves
@@ -63,7 +63,6 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
             raise ValueError("The number of waves at the bottom and top interfaces must be the same")
         else:
             nb_w = nb_w_b
-        
         
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
@@ -117,11 +116,11 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
                     else:
                         raise NameError("_ent.typ has no valid type")
 
-            DD_Xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.n_dof))@self.P_periodicity)
+            DD_iX.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.n_dof))@self.P_periodicity)
             # Creation of the D_ix, minus sign <- transposition +normal 
-            DD_iX.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
+            DD_Xi.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
         
-        D_iX = np.hstack([self.P_periodicity_H@D_i.todense() for D_i in DD_iX])
+        D_iX = np.hstack([self.P_periodicity_H@D_i.todense() for D_i in DD_Xi])
         RR = -spsolve(D_XX, D_iX).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
 
@@ -133,13 +132,13 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
 
         D_bb_NME = -self.period*np.eye(self.nb_waves)
         D_tt_NME = -self.period*np.eye(self.nb_waves)
-        D_bX_NME = DD_Xi[0]
-        D_tX_NME = DD_Xi[1]
+        D_bX_NME = DD_iX[0]
+        D_tX_NME = DD_iX[1]
         
         self.D_bb = -self.period*np.eye(self.nb_waves)
         self.D_tt = -self.period*np.eye(self.nb_waves)     
-        self.D_bX = DD_Xi[0]
-        self.D_tX = DD_Xi[1]
+        self.D_bX = DD_iX[0]
+        self.D_tX = DD_iX[1]
         
         self.M_b = np.zeros((2*nb_w, 2*nb_w), dtype=complex)
         self.M_t = np.zeros((2*nb_w, 2*nb_w), dtype=complex)
