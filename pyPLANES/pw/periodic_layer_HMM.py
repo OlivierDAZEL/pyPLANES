@@ -124,19 +124,19 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         RR = -spsolve(D_XX, D_iX).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
 
 
-        R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
-        R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
+        R_b = RR[:,:2*nb_w]
+        R_t = RR[:,2*nb_w:]
 
         self.R_b = R_b[:,_ent.dual]
         self.R_t = R_t[:,_ent.dual]
 
-        D_bb_NME = -self.period*np.eye(self.nb_waves)
-        D_tt_NME = -self.period*np.eye(self.nb_waves)
+        D_bb_NME = -self.period*np.eye(nb_w)
+        D_tt_NME = -self.period*np.eye(nb_w)
         D_bX_NME = DD_iX[0]
         D_tX_NME = DD_iX[1]
         
-        self.D_bb = -self.period*np.eye(self.nb_waves)
-        self.D_tt = -self.period*np.eye(self.nb_waves)     
+        self.D_bb = -self.period*np.eye(nb_w)
+        self.D_tt = -self.period*np.eye(nb_w)     
         self.D_bX = DD_iX[0]
         self.D_tX = DD_iX[1]
         
@@ -160,8 +160,9 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         U, Sigma, Vh = LA.svd(self.D_tX@self.R_b)
         Uh, V = U.conj().T, Vh.conj().T
         Q = -LA.inv(Uh@Omega_hat_u)@np.diag(Sigma)
-        Omega = np.vstack([-LA.inv(self.D_bb)@(self.D_bX@self.R_b@V+Omega_hat_b@Q), V])
-                
+        # Omega = np.vstack([-LA.inv(self.D_bb)@(self.D_bX@self.R_b@V+Omega_hat_b@Q), V])
+        Omega = np.vstack([-(-1/self.period)*(self.D_bX@self.R_b@V+Omega_hat_b@Q), V])
+        
         Omega = self.PQfromNME@Omega # Go from IJNME paper variables to HMM variables 
         Omega[:self.nb_waves, :] *= 1j*self.omega # replace displacements by velocities
         HH = self.C_cal@Omega@LA.inv(self.P_cal@Omega)

@@ -18,8 +18,8 @@ plot_solution = [False]*6
 verbose = [True, False][1]
 energetic_balance = [False, True][0]
 # Parameters of the simulation
-theta_d = 0.000
-nb_layers = 1
+theta_d = 45.000
+nb_layers = 2
 L = 2.e-2
 d = 2.e-2
 lcar = d/5
