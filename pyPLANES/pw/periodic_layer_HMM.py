@@ -54,13 +54,19 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         D_XX = self.P_periodicity_H@D_XX@self.P_periodicity
         self.cond = np.linalg.cond(D_XX.toarray())
         self.A_i, self.A_j, self.A_v = [], [], []
-        DD = [] # Initialisation of the list of the R will be [D_bb D_tt]
         DD_Xi = [] # Initialisation of the list of the R will be [D_bX D_tX]
         DD_iX = [] # Initialisation of the list of the R will be [D_Xb D_Xt]
-
+        
+        nb_w_b = self.pwfem_entities[0].nb_dof_per_node*self.nb_waves
+        nb_w_t = self.pwfem_entities[1].nb_dof_per_node*self.nb_waves
+        if nb_w_b != nb_w_t:
+            raise ValueError("The number of waves at the bottom and top interfaces must be the same")
+        else:
+            nb_w = nb_w_b
+        
+        
         for _ent in self.pwfem_entities:
             dof_FEM, dof_S_primal, dof_S_dual, D_val = [], [], [], []
-            D_xx = np.zeros((_ent.nb_dof_per_node*self.nb_waves, 2*_ent.nb_dof_per_node*self.nb_waves))
             for _w, kx in enumerate(self.kx):
                 for _elem in _ent.elements:
                     M_elem = imposed_pw_elementary_vector(_elem, kx)
@@ -74,8 +80,6 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
                         dof_S_primal.extend(len(dof_p)*[_w])
                         # Values for D_ix and D_xi (will be conjugated below)                      
                         D_val.extend(list(orient_p@M_elem))
-                        # Values for D_xx
-                        D_xx[_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     elif _ent.typ in ["Biot98", "Biot01"]:
                         # u_x
                         dof_ux, orient_ux = dof_ux_element(_elem)
@@ -83,21 +87,18 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
                         dof_S_dual.extend(len(dof_ux)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_ux)*[0+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_ux@M_elem))
-                        D_xx[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                         # u_y
                         dof_uy, orient_uy = dof_uy_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_uy])
                         dof_S_dual.extend(len(dof_uy)*[_ent.dual[1]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_uy@M_elem))
-                        D_xx[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                         #  p 
                         dof_p, orient_p, _ = dof_p_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_p])
                         dof_S_dual.extend(len(dof_p)*[_ent.dual[2]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_p)*[2+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_p@M_elem))
-                        D_xx[2+_ent.nb_dof_per_node*_w, _ent.primal[2]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     elif _ent.typ == "elastic":
                         # u_x                        
                         dof_ux, orient_ux = dof_ux_element(_elem)
@@ -105,18 +106,17 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
                         dof_S_dual.extend(len(dof_ux)*[_ent.dual[0]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_ux)*[0+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_ux@M_elem))
-                        D_xx[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        # D_xx[0+_ent.nb_dof_per_node*_w, _ent.primal[0]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                         # u_y
                         dof_uy, orient_uy = dof_uy_element(_elem)
                         dof_FEM.extend([d-1 for d in dof_uy])
                         dof_S_dual.extend(len(dof_uy)*[_ent.dual[1]+2*_ent.nb_dof_per_node*_w])
                         dof_S_primal.extend(len(dof_uy)*[1+_ent.nb_dof_per_node*_w])
                         D_val.extend(list(orient_uy@M_elem))
-                        D_xx[1+_ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
+                        # D_xx[1+ent.nb_dof_per_node*_w, _ent.primal[1]+2*_ent.nb_dof_per_node*_w] = -_ent.period
                     else:
                         raise NameError("_ent.typ has no valid type")
-            # DD.append(D_xx[:,_ent.primal[0]])
-            DD.append(D_xx)
+
             DD_Xi.append(coo_matrix((np.conj(D_val), (dof_S_primal, dof_FEM)), shape=(_ent.nb_dof_per_node*self.nb_waves, self.n_dof))@self.P_periodicity)
             # Creation of the D_ix, minus sign <- transposition +normal 
             DD_iX.append(coo_matrix((-_ent.ny*np.array(D_val), (dof_FEM, dof_S_dual)), shape=(self.n_dof, 2*_ent.nb_dof_per_node*self.nb_waves)))
@@ -128,42 +128,32 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
         R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
 
-
         self.R_b = R_b[:,_ent.dual]
         self.R_t = R_t[:,_ent.dual]
 
-
-        D_bb_NME =  DD[0]
-        D_tt_NME = DD[1]
+        D_bb_NME = -self.period*np.eye(self.nb_waves)
+        D_tt_NME = -self.period*np.eye(self.nb_waves)
         D_bX_NME = DD_Xi[0]
         D_tX_NME = DD_Xi[1]
         
-        self.D_bb = DD[0][:,_ent.primal[0]].reshape((self.nb_waves, self.nb_waves))     
-        self.D_tt = DD[1][:,_ent.primal[0]].reshape((self.nb_waves, self.nb_waves))
+        self.D_bb = -self.period*np.eye(self.nb_waves)
+        self.D_tt = -self.period*np.eye(self.nb_waves)     
         self.D_bX = DD_Xi[0]
         self.D_tX = DD_Xi[1]
         
-        _s = _ent.nb_dof_per_node*self.nb_waves
-    
-        self.M_b = np.zeros((2*_s, 2*_s), dtype=complex)
-        self.M_t = np.zeros((2*_s, 2*_s), dtype=complex)
-        
-        self.M_b[:_s,:] = D_tX_NME@R_b# [D_ti][R_b]
-        self.M_b[_s:,:] = D_bb_NME+D_bX_NME@R_b# [D_bb]+[D_bi][R_b]
-        self.M_t[:_s,:] = D_tt_NME+D_tX_NME@R_t# [D_tt]+[D_ti][R_t]
-        self.M_t[_s:,:] = D_bX_NME@R_t# [D_bi][R_t]
-        
+        self.M_b = np.zeros((2*nb_w, 2*nb_w), dtype=complex)
+        self.M_t = np.zeros((2*nb_w, 2*nb_w), dtype=complex)
+        self.M_b[:nb_w,:] = D_tX_NME@R_b# [D_ti][R_b]
+        self.M_b[nb_w:,:] = D_bb_NME+D_bX_NME@R_b# [D_bb]+[D_bi][R_b]
+        self.M_t[:nb_w,:] = D_tt_NME+D_tX_NME@R_t# [D_tt]+[D_ti][R_t]
+        self.M_t[nb_w:,:] = D_bX_NME@R_t# [D_bi][R_t]
         self.TM = np.linalg.inv(self.M_b)@self.M_t
 
     def HMM_update(self, H):
         self.create_HMM_matrices()
-        print(f"H = {H}")
         Omega = self.Omega_p+self.Omega_c@H # in HMM formalism
         Omega[:self.nb_waves,:] /= 1j*self.omega # replace velocities by displacements
-        # print(f"Omega = \n{Omega}")
-        # print(Omega[1]/Omega[0])
-        # print(Air.Z*1j*self.omega)
-        Omega = self.FfW@Omega # Go from HMM paper variables to HMM_peridic variables
+        Omega = self.NMEfromPQ@Omega # Go from HMM paper variables to HMM_peridic variables
         
         Omega_hat_u = np.hstack([  self.D_tt, self.D_tX@self.R_t])@Omega
         Omega_hat_b = np.hstack([0*self.D_bb, self.D_bX@self.R_t])@Omega
@@ -173,8 +163,9 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         Q = -LA.inv(Uh@Omega_hat_u)@np.diag(Sigma)
         Omega = np.vstack([-LA.inv(self.D_bb)@(self.D_bX@self.R_b@V+Omega_hat_b@Q), V])
                 
-        Omega = self.WfF@Omega # Go from IJNME paper variables to HMM variables 
+        Omega = self.PQfromNME@Omega # Go from IJNME paper variables to HMM variables 
         Omega[:self.nb_waves, :] *= 1j*self.omega # replace displacements by velocities
         HH = self.C_cal@Omega@LA.inv(self.P_cal@Omega)
         self.L_cal = Q@LA.inv(self.P_cal@Omega)
+        
         return HH

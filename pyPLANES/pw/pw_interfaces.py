@@ -159,12 +159,12 @@ class FluidFluidInterface(PwInterface):
         self.layers[1].P_cal = np.array([[0,1]]).reshape((1,2))   # p
         self.layers[1].C_cal = np.array([[1,0]]).reshape((1,2))   # v_y
         self.I_cal = np.eye(1)
-        self.layers[1].WfF = np.array([[0,1],[1,0]])
-        self.layers[0].FfW = np.array([[0,1],[1,0]])
+        self.layers[1].PQfromNME = np.array([[0,1],[1,0]])
+        self.layers[0].NMEfromPQ = np.array([[0,1],[1,0]])
 
 
-        # self.layers[1].WfF = np.eye(2)
-        # self.layers[0].FfW = np.eye(2)
+        # self.layers[1].PQfromNME = np.eye(2)
+        # self.layers[0].NMEfromPQ = np.eye(2)
                 
         
         
@@ -565,7 +565,7 @@ class FluidRigidBacking(RigidBacking):
         self.I_cal = np.eye(1)
         self.layers[0].Omega_p = np.array([[0,1]]).reshape((2,1)) 
         self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1))
-        self.layers[0].FfW = np.array([[0,1],[1,0]])
+        self.layers[0].NMEfromPQ = np.array([[0,1],[1,0]])
         
     def __str__(self):
         out = "\t Rigid backing"
@@ -700,7 +700,7 @@ class SemiInfinite(PwInterface):
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
             print(self.layers[1])
-            self.layers[0].FfW = np.array([[0,1],[1,0]])
+            self.layers[0].NMEfromPQ = np.array([[0,1],[1,0]])
             # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"
