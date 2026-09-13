@@ -248,8 +248,6 @@ class PeriodicPwProblem(Calculus, PeriodicMultiLayer):
             abs = 1-self.result.R[-1]
             if self.termination == "transmission":
                 T = (self.back_prop@self.X_0_minus)
-                if self.method != "characteristics":
-                    T = (self.back_prop@self.X_0_minus)[::self.interfaces[-1].carac_bottom.n_w]     
                 self.result.T0.append(T[0])
                 self.result.T.append(np.sum(np.real(self.ky)*np.abs(T**2))/np.real(self.ky[0]))
                 abs -= self.result.T[-1]

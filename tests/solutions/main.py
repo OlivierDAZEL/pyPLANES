@@ -19,7 +19,7 @@ verbose = [True, False][1]
 energetic_balance = [False, True][0]
 # Parameters of the simulation
 theta_d = 0.000
-nb_layers = 1
+nb_layers = 3
 L = 2.e-2
 d = 2.e-2
 lcar = d/5
@@ -32,8 +32,8 @@ frequency = 3e3
 name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global", "TMM"][0]
-termination = ["rigid", "transmission"][0]
-material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][0]
+termination = ["rigid", "transmission"][1]
+material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][4]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -44,10 +44,13 @@ if case == "sandwich":
     one_layer(name_mesh="mesh", L=L, d=d, lcar=lcar, mat=material)
     ml_fem = [("rubber",0.2e-3), ["mesh" , None], ("rubber",0.2e-3)]
 
+# k = 2*np.pi*frequency/Air.c
+# Z = -1j*Air.Z/np.tan(k*d)
+# print(f"k = {k},\n Y = {1/Z}")
+
+
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
 global_method.resolution()
-
-print(global_method.result.Z_prime[0]*Air.Z)
 
 
 H_method = PwProblem(ml=ml, name_project=name_project+"_H", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="H", verbose=verbose, print_result=True,energetic_balance=energetic_balance)

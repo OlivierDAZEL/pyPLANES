@@ -6,9 +6,8 @@
 # This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
 #
-# Copyright (c) 2024
+# Copyright (c) 2026
 # 	Olivier Dazel <olivier.dazel@univ-lemans.fr>
-# 	Mathieu Gaborit <gaborit@univ-lemans.fr>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +19,7 @@
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
 #
+
 
 import numpy as np
 import numpy.linalg as LA
@@ -96,30 +96,28 @@ class HMMPeriodicPwProblem(Calculus, PeriodicMultiLayer_HMM):
     def create_linear_system(self, omega):
         Calculus.create_linear_system(self, omega)
         self.H = self.interfaces[-1].HMM_update().astype(complex) 
-
         for i, _l in enumerate(self.layers[::-1]):
-            print(f"Layer {len(self.layers)-i-1} // {type(_l).__name__}")
             _l.H_top = self.H.copy()
             self.H = _l.HMM_update(self.H)
             self.H = self.interfaces[-i-2].HMM_update(self.H)
-            self.H = self.interfaces[-i-2].HMM_update(self.H)
 
-        
+
         
         
     def solve(self):
         Calculus.solve(self)
         H = self.H[0,0]
-        self.result.R0 = [(np.cos(self.theta_d*pi/180)-Air.Z*H)/(np.cos(self.theta_d*pi/180)+Air.Z*H)]
-        self.resultabs = 1-np.abs(self.result.R0)**2        
+        self.R0 = (np.cos(self.theta_d*pi/180)-Air.Z*H)/(np.cos(self.theta_d*pi/180)+Air.Z*H)
+        self.abs = 1-np.abs(self.R0)**2        
         if self.termination == "transmission":
-            self.result.T0 = np.array([1+self.R0]).reshape((1,1))
+            self.T0 = np.array([1+self.R0]).reshape((1,1))
             for i, _int in enumerate(self.interfaces[:-1]):
-                self.result.T0 = _int.I_cal@self.T0
-                self.result.T0 = self.layers[i].L_cal@self.T0
-            self.result.T0 = self.T0.flatten()[0]
-            self.result.abs -= np.abs(self.result.T0)**2
-        
+                self.T0 = _int.I_cal@self.T0
+                self.T0 = self.layers[i].L_cal@self.T0
+            self.T0 = self.T0.flatten()[0]
+            self.abs -= np.abs(self.T0)**2
+        self.result.R0.append(self.R0)
+        self.result.T0.append(self.T0)
         
         
 

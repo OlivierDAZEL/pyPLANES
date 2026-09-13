@@ -70,7 +70,8 @@ class PeriodicLayerBase(Mesh):
         self.medium = [None, None]
         self.start_time = time.time()
         self.TM = None
-
+        self.P_cal = None
+        self.C_cal = None
 
         fem_preprocess(self)
         

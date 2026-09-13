@@ -123,8 +123,6 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         
         D_iX = np.hstack([self.P_periodicity_H@D_i.todense() for D_i in DD_iX])
         RR = -spsolve(D_XX, D_iX).reshape((self.n_dof-len(self.dof_left), 2*2*_ent.nb_dof_per_node*self.nb_waves))
-
-
         R_b = RR[:,:2*_ent.nb_dof_per_node*self.nb_waves]
         R_t = RR[:,2*_ent.nb_dof_per_node*self.nb_waves:]
 
@@ -156,25 +154,21 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         self.TM = np.linalg.inv(self.M_b)@self.M_t
 
     def HMM_update(self, H):
-        
-        
-
         self.create_HMM_matrices()
-
-        Omega = self.Omega_p+self.Omega_c@H # in HMM formalism
+        Omega = self.Omega_p+self.Omega_c@H # in JASA formalism
         Omega[:self.nb_waves,:] /= 1j*self.omega # replace velocities by displacements
-        Omega = self.FfW@Omega # Go from HMM paper variables to HMM_peridic variables
+        Omega = self.FfW@Omega # Go from JASA paper variables to HMM_periodic variables
         
-        Omega_hat_u = np.hstack([  self.D_tt, self.D_tX@self.R_t])@Omega
-        Omega_hat_b = np.hstack([0*self.D_bb, self.D_bX@self.R_t])@Omega
+        Omega_hat_u = np.hstack([  -self.period*np.eye(self.nb_waves), self.D_tX@self.R_t])@Omega
+        Omega_hat_b = np.hstack([np.zeros((self.nb_waves, self.nb_waves)), self.D_bX@self.R_t])@Omega
         
         U, Sigma, Vh = LA.svd(self.D_tX@self.R_b)
         Q = -LA.inv(U.conj().T@Omega_hat_u)@np.diag(Sigma)
-        Omega = np.vstack([-LA.inv(self.D_bb)@(self.D_bX@self.R_b@Vh.conj().T+Omega_hat_b@Q), Vh.conj().T])
-        
-        
-        Omega = self.WfF@Omega # Go from IJNME paper variables to HMM variables 
-        Omega[:self.nb_waves, :] *= 1j*self.omega # replace displacements by velocities
-        HH = self.C_cal@Omega@LA.inv(self.P_cal@Omega)
+        Omega = np.vstack([-(1/self.period)*(self.D_bX@self.R_b@Vh.conj().T+Omega_hat_b@Q), Vh.conj().T])
         self.L_cal = Q@LA.inv(self.P_cal@Omega)
+   
+        Omega = self.WfF@Omega # Go from IJNME paper variables to HMM variables 
+        Omega[:self.nb_waves, :] *= 1j*self.omega # replace displacements by velocities to agree with JASA
+        HH = -self.C_cal@Omega@LA.inv(self.P_cal@Omega)
+        
         return HH
