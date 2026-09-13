@@ -30,6 +30,7 @@ from mediapack import Air, Fluid
 from pyPLANES.utils.io import load_material
 from pyPLANES.pw.pw_layers import PwLayer
 from pyPLANES.pw.periodic_layer import PeriodicLayer
+from pyPLANES.pw.periodic_layer_HMM import PeriodicLayer_HMM
 from pyPLANES.pw.pw_layers import PwLayer, FluidLayer
 from pyPLANES.pw.pw_polarisation import fluid_waves_TMM, PEM_waves_TMM, elastic_waves_TMM
 from scipy.linalg import block_diag
@@ -689,7 +690,7 @@ class SemiInfinite(PwInterface):
         self.typ =None
         if isinstance(self.layers[0], PwLayer):
             t = self.layers[0].medium.MEDIUM_TYPE
-        elif isinstance(self.layers[0], PeriodicLayer):
+        elif isinstance(self.layers[0], (PeriodicLayer, PeriodicLayer_HMM)):
             t = self.layers[0].medium[1].MEDIUM_TYPE
 
         if t in ["fluid", "eqf"]:
@@ -698,6 +699,8 @@ class SemiInfinite(PwInterface):
             self.number_relations = 2
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
+            print(self.layers[1])
+            self.layers[0].FfW = np.array([[0,1],[1,0]])
             # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
             self.typ = "pem"

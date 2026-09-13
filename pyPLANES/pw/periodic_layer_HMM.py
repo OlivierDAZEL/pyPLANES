@@ -156,23 +156,23 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         self.TM = np.linalg.inv(self.M_b)@self.M_t
 
     def HMM_update(self, H):
-        
-        
-
         self.create_HMM_matrices()
-
+        print(f"H = {H}")
         Omega = self.Omega_p+self.Omega_c@H # in HMM formalism
         Omega[:self.nb_waves,:] /= 1j*self.omega # replace velocities by displacements
+        # print(f"Omega = \n{Omega}")
+        # print(Omega[1]/Omega[0])
+        # print(Air.Z*1j*self.omega)
         Omega = self.FfW@Omega # Go from HMM paper variables to HMM_peridic variables
         
         Omega_hat_u = np.hstack([  self.D_tt, self.D_tX@self.R_t])@Omega
         Omega_hat_b = np.hstack([0*self.D_bb, self.D_bX@self.R_t])@Omega
         
         U, Sigma, Vh = LA.svd(self.D_tX@self.R_b)
-        Q = -LA.inv(U.conj().T@Omega_hat_u)@np.diag(Sigma)
-        Omega = np.vstack([-LA.inv(self.D_bb)@(self.D_bX@self.R_b@Vh.conj().T+Omega_hat_b@Q), Vh.conj().T])
-        
-        
+        Uh, V = U.conj().T, Vh.conj().T
+        Q = -LA.inv(Uh@Omega_hat_u)@np.diag(Sigma)
+        Omega = np.vstack([-LA.inv(self.D_bb)@(self.D_bX@self.R_b@V+Omega_hat_b@Q), V])
+                
         Omega = self.WfF@Omega # Go from IJNME paper variables to HMM variables 
         Omega[:self.nb_waves, :] *= 1j*self.omega # replace displacements by velocities
         HH = self.C_cal@Omega@LA.inv(self.P_cal@Omega)

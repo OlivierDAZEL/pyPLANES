@@ -110,15 +110,22 @@ class HMMPeriodicPwProblem(Calculus, PeriodicMultiLayer_HMM):
     def solve(self):
         Calculus.solve(self)
         H = self.H[0,0]
-        self.result.R0 = [(np.cos(self.theta_d*pi/180)-Air.Z*H)/(np.cos(self.theta_d*pi/180)+Air.Z*H)]
-        self.resultabs = 1-np.abs(self.result.R0)**2        
+        R0 = (np.cos(self.theta_d*pi/180)-Air.Z*H)/(np.cos(self.theta_d*pi/180)+Air.Z*H)
+        abs = 1-np.abs(R0)**2        
         if self.termination == "transmission":
-            self.result.T0 = np.array([1+self.R0]).reshape((1,1))
+            T0 = np.array([1+R0]).reshape((1,1))
             for i, _int in enumerate(self.interfaces[:-1]):
-                self.result.T0 = _int.I_cal@self.T0
-                self.result.T0 = self.layers[i].L_cal@self.T0
-            self.result.T0 = self.T0.flatten()[0]
-            self.result.abs -= np.abs(self.result.T0)**2
+                T0 = _int.I_cal@T0
+                T0 = self.layers[i].L_cal@T0
+            T0 = T0.flatten()[0]
+            abs -= np.abs(T0)**2
+            self.result.T0.append(T0)
+            
+        self.result.R0.append(R0)
+        self.result.abs.append(abs)
+
+
+        
         
         
         

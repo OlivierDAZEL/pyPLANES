@@ -32,8 +32,8 @@ frequency = 3e3
 name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global", "TMM"][0]
-termination = ["rigid", "transmission"][0]
-material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][0]
+termination = ["rigid", "transmission"][1]
+material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][-1]
 
 if case == "layer":
     ml = [(material, d)]*nb_layers
@@ -59,11 +59,15 @@ eTMM_method.resolution()
 HMM_periodic_method = HMMPeriodicPwProblem(ml=ml_fem, name_project=name_project, theta_d=theta_d, order=order, nb_bloch_waves=nb_bloch_waves, frequencies=frequency, plot_solution=plot_solution,termination=termination, verbose=verbose)
 HMM_periodic_method.resolution()
 
+print(f"R GM   = {global_method.result.R0[0]:.10f}")
+print(f"R HMM0 = {H_method.result.R0[0]:.10f}")
+print(f"R etMM = {eTMM_method.result.R0[0]:.10f}")
+print(f"R HMMp = {HMM_periodic_method.result.R0[0]:.10f}")
 
-print(f"R GM   ={global_method.result.R0[0]:.10f}")
-print(f"R HMM0 ={H_method.result.R0[0]:.10f}")
-print(f"R etMM ={eTMM_method.result.R0[0]:.10f}")
-print(f"R HMMp ={HMM_periodic_method.result.R0[0]:.10f}")
+print(f"T GM   = {global_method.result.T0[0]:.10f}")
+print(f"T HMM0 = {H_method.result.T0[0]:.10f}")
+print(f"T etMM = {eTMM_method.result.T0[0]:.10f}")
+print(f"T HMMp = {HMM_periodic_method.result.T0[0]:.10f}")
 
 
 # print(f"Z_global   ={global_method.result.Z_prime[0]*Air.Z}")
