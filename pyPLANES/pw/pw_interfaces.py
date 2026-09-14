@@ -347,7 +347,6 @@ class ElasticPemInterface(PwInterface):
     def HMM_update(self, H):
         return np.array([[H[0,0], H[0,1]], [H[1,0], H[1,1]]])
 
-
     def __str__(self):
         out = "\t Elastic-PEM interface"
         return out
@@ -552,7 +551,8 @@ class RigidBacking(PwInterface):
         pass 
     
     def HMM_update(self):
-        return np.zeros((self.number_relations,self.number_relations))
+        H = np.zeros((self.number_relations,self.number_relations))
+        return np.kron(np.eye(self.nb_waves), H)
 
 class FluidRigidBacking(RigidBacking):
     """

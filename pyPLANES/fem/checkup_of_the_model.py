@@ -64,8 +64,10 @@ def check_pwfem(self):
                 if isinstance(s, (Air, FluidFem)):
                     _e.nb_dof_per_node = 1
                     _e.medium = s.mat
-                    _e.primal = [1]
-                    _e.dual = [0]
+                    _e.primal = [1] # For Periodic legacy
+                    _e.dual = [0] # For Periodic legacy
+                    _e.pi = [0] # For HMM periodic
+                    _e.delta = [1] # For HMM periodic
                 elif (isinstance(s, ElasticFem)):
                     _e.nb_dof_per_node = 2
                     _e.medium = s.mat
@@ -85,6 +87,8 @@ def check_pwfem(self):
                         _e.typ = "Biot01"
                         _e.primal = [5, 1, 4]
                         _e.dual = [0, 3, 2]
+                else:
+                    raise NameError("Unknown type of neighbouring entity for PwFem")
     
 
     self.medium[0] = self.pwfem_entities[0].medium
