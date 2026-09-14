@@ -153,7 +153,6 @@ class PeriodicLayer_HMM(PeriodicLayerBase, GmshMesh):
         
     def HMM_update(self, H):
         
-        
         self.create_HMM_matrices()
         nb_physical_waves = self.Omega_c.shape[1]
         Omega_p = np.kron(np.eye(self.nb_waves),self.Omega_p)

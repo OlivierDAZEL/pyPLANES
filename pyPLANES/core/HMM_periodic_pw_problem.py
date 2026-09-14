@@ -98,7 +98,6 @@ class HMMPeriodicPwProblem(Calculus, PeriodicMultiLayer_HMM):
         self.H = self.interfaces[-1].HMM_update().astype(complex) 
 
         for i, _l in enumerate(self.layers[::-1]):
-            print(f"Layer {len(self.layers)-i-1} // {type(_l).__name__}")
             _l.H_top = self.H.copy()
             self.H = _l.HMM_update(self.H)
             self.H = self.interfaces[-i-2].HMM_update(self.H)
@@ -112,16 +111,17 @@ class HMMPeriodicPwProblem(Calculus, PeriodicMultiLayer_HMM):
         F[0] = self.ky[0]/(Air.rho*self.omega)
         R= LA.solve(HH+self.H,F-self.H[:,0])
         R0 = R[0,0]
-        
+        T = R.copy()
+        T[0] += 1
 
         abs = 1-np.abs(R0)**2        
         if self.termination == "transmission":
-            T0 = np.array([1+R0]).reshape((1,1))
             for i, _int in enumerate(self.interfaces[:-1]):
-                T0 = _int.I_cal@T0
-                T0 = self.layers[i].L_cal@T0
-            T0 = T0.flatten()[0]
-            abs -= np.abs(T0)**2
+                T = _int.I_cal@T
+                T = self.layers[i].L_cal@T
+            T0 = T.flatten()[0]
+            self.result.T.append(np.sum(np.real(self.ky)*np.abs(T)**2)/np.real(self.ky[0]))
+            abs -= self.result.T[-1]
             self.result.T0.append(T0)
             
         self.result.R0.append(R0)

@@ -6,10 +6,8 @@
 # This file is part of pyplanes, a software distributed under the MIT license.
 # For any question, please contact one of the authors cited below.
 #
-# Copyright (c) 2020
+# Copyright (c) 2026
 # 	Olivier Dazel <olivier.dazel@univ-lemans.fr>
-# 	Mathieu Gaborit <gaborit@kth.se>
-# 	Peter Göransson <pege@kth.se>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -142,7 +140,6 @@ class PwInterface():
     def HMM_update(self, H):
         pass
 
-
 class FluidFluidInterface(PwInterface):
     """
     Fluid-fluid interface 
@@ -158,7 +155,7 @@ class FluidFluidInterface(PwInterface):
         self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1)) # v_y
         self.layers[1].P_cal = np.array([[0,1]]).reshape((1,2))   # p
         self.layers[1].C_cal = np.array([[1,0]]).reshape((1,2))   # v_y
-        self.I_cal = np.eye(1)
+        self.I_cal = None
         self.layers[1].PQfromNME = np.array([[0,1],[1,0]])
         self.layers[0].NMEfromPQ = np.array([[0,1],[1,0]])
 
@@ -166,15 +163,12 @@ class FluidFluidInterface(PwInterface):
         # self.layers[1].PQfromNME = np.eye(2)
         # self.layers[0].NMEfromPQ = np.eye(2)
                 
-        
-        
-        
-
     def __str__(self):
         out = "\t Fluid-fluid interface"
         return out
     
     def HMM_update(self, H):
+        self.I_cal = np.eye(self.nb_waves)
         return H
     
 class FluidElasticInterface(PwInterface):
@@ -684,8 +678,6 @@ class SemiInfinite(PwInterface):
         else:
             raise NameError("Unknown layer type")
 
-
-
     def determine_type(self):
         self.typ =None
         if isinstance(self.layers[0], PwLayer):
@@ -699,7 +691,6 @@ class SemiInfinite(PwInterface):
             self.number_relations = 2
             self.C_bottom = np.eye(self.number_relations)
             self.C_top = -np.eye(self.number_relations)
-            print(self.layers[1])
             self.layers[0].NMEfromPQ = np.array([[0,1],[1,0]])
             # self.pw_method = fluid_waves_TMM
         elif t in ["pem"]:
@@ -845,9 +836,9 @@ class SemiInfinite(PwInterface):
         """
         Returns the H matrix for the semi-infinite boundary
         """
-        h =(self.ky[0]/self.k)/Air.Z
+        h =(self.ky/self.k)/Air.Z
         if self.typ == "fluid":
-            return np.array([h]).reshape(1,1)
+            return np.diag(h)
         elif self.typ == "elastic":
             return np.array([[h,0],[0,0]])
         elif self.typ == "pem":

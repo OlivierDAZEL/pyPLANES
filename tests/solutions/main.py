@@ -19,7 +19,7 @@ verbose = [True, False][1]
 energetic_balance = [False, True][0]
 # Parameters of the simulation
 theta_d = 0.000
-nb_layers = 1
+nb_layers = 2
 L = 2.e-2
 d = 2.e-2
 lcar = d/10
@@ -32,7 +32,7 @@ frequency = 3e3
 name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global", "TMM"][0]
-termination = ["rigid", "transmission"][0]
+termination = ["rigid", "transmission"][1]
 material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][-1]
 
 if case == "layer":
@@ -47,7 +47,6 @@ if case == "sandwich":
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
 global_method.resolution()
 
-print(global_method.result.Z_prime[0]*Air.Z)
 
 
 H_method = PwProblem(ml=ml, name_project=name_project+"_H", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="H", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
@@ -64,10 +63,12 @@ print(f"R HMM0 = {H_method.result.R0[0]:.10f}")
 print(f"R etMM = {eTMM_method.result.R0[0]:.10f}")
 print(f"R HMMp = {HMM_periodic_method.result.R0[0]:.10f}")
 
-# print(f"T GM   = {global_method.result.T0[0]:.10f}")
-# print(f"T HMM0 = {H_method.result.T0[0]:.10f}")
-# print(f"T etMM = {eTMM_method.result.T0[0]:.10f}")
-# print(f"T HMMp = {HMM_periodic_method.result.T0[0]:.10f}")
+if termination == "transmission":
+    print(("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"))
+    print(f"T GM   = {global_method.result.T0[0]:.10f}")
+    print(f"T HMM0 = {H_method.result.T0[0]:.10f}")
+    print(f"T etMM = {eTMM_method.result.T0[0]:.10f}")
+    print(f"T HMMp = {HMM_periodic_method.result.T0[0]:.10f}")
 
 
 # print(f"Z_global   ={global_method.result.Z_prime[0]*Air.Z}")
