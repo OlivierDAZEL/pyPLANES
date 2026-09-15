@@ -188,6 +188,8 @@ class FluidElasticInterface(PwInterface):
         self.layers[0].Omega_c = np.array([[1,0]]).reshape((2,1))
         self.layers[1].P_cal = np.array([[0,0,0,-1],[0,0,1,0]])
         self.layers[1].C_cal = np.array([[0,1,0,0],[1,0,0,0]])
+        self.layers[1].PQfromNME = np.array([[0,0,0,1],[0,1,0,0],[1,0,0,0],[0,0,1,0]])
+        self.layers[0].NMEfromPQ = np.array([[0,1],[1,0]])
 
     def __str__(self):
         out = "\t Fluid-Elastic interface"
@@ -633,6 +635,9 @@ class ElasticBacking(RigidBacking):
         self.I_cal = np.eye(2)
         self.layers[0].Omega_p = np.vstack((np.zeros((2,2)), np.eye(2)))
         self.layers[0].Omega_c = np.vstack((np.eye(2), np.zeros((2,2))))
+        self.layers[0].NMEfromPQ = np.array([[0,0,1,0],[0,1,0,0],[0,0,0,1],[1,0,0,0]])
+
+
 
     def __str__(self):
         out = "\t Elastic Rigid backing"

@@ -66,14 +66,16 @@ def check_pwfem(self):
                     _e.medium = s.mat
                     _e.primal = [1] # For Periodic legacy
                     _e.dual = [0] # For Periodic legacy
-                    _e.pi = [0] # For HMM periodic
-                    _e.delta = [1] # For HMM periodic
+                    # _e.pi = [0] # For HMM periodic
+                    # _e.delta = [1] # For HMM periodic
                 elif (isinstance(s, ElasticFem)):
                     _e.nb_dof_per_node = 2
                     _e.medium = s.mat
                     _e.typ = "elastic"
                     _e.primal = [3, 1]
                     _e.dual = [0, 2]
+                    # _e.pi = [0] # For HMM periodic
+                    # _e.delta = [1] # For HMM periodic
                 elif isinstance(s, PemFem):
                     if s.formulation98:
                         _e.nb_dof_per_node = 3

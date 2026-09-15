@@ -18,12 +18,12 @@ plot_solution = [False]*6
 verbose = [True, False][1]
 energetic_balance = [False, True][0]
 # Parameters of the simulation
-theta_d = 0.000
+theta_d = 40.000
 nb_layers = 2
 L = 2.e-2
 d = 2.e-2
 lcar = d/10
-nb_bloch_waves = 1
+nb_bloch_waves = 0
 order = 2
 
 frequency = 3e3
@@ -32,7 +32,7 @@ frequency = 3e3
 name_project="solution"
 case = ["layer", "sandwich"][0]
 method_FEM = ["jap", "global", "TMM"][0]
-termination = ["rigid", "transmission"][1]
+termination = ["rigid", "transmission"][0]
 material = ["Air", "Wwood", "melamine", "rubber", "melamine_eqf"][-1]
 
 if case == "layer":
@@ -46,8 +46,6 @@ if case == "sandwich":
 
 global_method = PwProblem(ml=ml, name_project=name_project+"_GM", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="global", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
 global_method.resolution()
-
-
 
 H_method = PwProblem(ml=ml, name_project=name_project+"_H", theta_d=theta_d, frequencies=frequency, plot_solution=plot_solution,termination=termination, method="H", verbose=verbose, print_result=True,energetic_balance=energetic_balance)
 H_method.resolution()
